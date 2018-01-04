@@ -4,7 +4,7 @@ Title: Measurement Error Corrections
 Version: 0.1.0
 Author: Linda Nab <l.nab@lumc.nl>
 Maintainer: Linda Nab <l.nab@lumc.nl>
-Description: Measurement error correction methods.
+Description: Implementation of methods correcting for measurement error in continuous endpoints.
 License: GLP-3
 Encoding: UTF-8
 LazyData: true
