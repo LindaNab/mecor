@@ -19,7 +19,7 @@ This package for R implements measurement error correction methods provided in t
 
 # Installation
 It can be installed via
-```{r}
+```r
 devtools::install_github("LindaNab/mecor")
 ```
 
