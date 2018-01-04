@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# The mecor package
+# The mecor Package
 This package for R implements measurement error correction methods provided in the tutorial by Nab, Groenwold, Welsing & van Smeden. 
 
 # Installation
