@@ -2,7 +2,7 @@
 The mecor Package
 =================
 
-This package for R implements measurement error correction methods provided in the tutorial by Nab, Groenwold, Welsing & van Smeden.
+This package for R implements measurement error correction methods provided in the tutorial by Nab, Groenwold, Welsing & van Smeden. The package mecor is currently under construction and more functionality will be released soon.
 
 Installation
 ============
