@@ -2,8 +2,7 @@ Package: mecor
 Type: Package
 Title: Measurement Error Corrections
 Version: 0.1.0
-Author: Linda Nab <l.nab@lumc.nl>
-Maintainer: Linda Nab <l.nab@lumc.nl>
+Authors@R: person("Linda", "Nab", email="l.nab@lumc.nl", role=c("aut","cre"))
 Description: Implementation of methods correcting for measurement error in continuous endpoints.
 Depends: R (>= 2.10)
 License: GPL-3
