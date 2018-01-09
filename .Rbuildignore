@@ -1,4 +1,4 @@
-devoo^.*\.Rproj$
+^.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
 ^README-.*\.png$
