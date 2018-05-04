@@ -6,31 +6,29 @@
 #'
 #' @param formula formula the calibration model
 #' @param data data
-#' @param type form of measurement error,
-#' \code{systematic} and \code{differential} are implemented
-#' @param method method to estimate standard errors, \code{zero-variance},
-#' \code{delta}, \code{fieller} and \code{bootstrap} are implemented
+#' @param alpha alpha level
 #'
-#' @return This function returns the calibration parameters.
+#' @return This function returns the calibration parameters form the validation set.
 #'
 #' @examples
 #' Xcal <- c(rep(0,50),rep(1,50))
 #' Ycal <- Xcal + rnorm(100,0,3)
 #' Vcal <- 1 + 2*Ycal + rnorm(100,0,3)
-#' syst <- systematic(formula = Vcal ~ Ycal)
+#' syst <- systematic(formula = Vcal ~ Ycal + Xcal)
 #'
 #' Vcal_dme <- 1 + (2 - 1) * Xcal + (2 - 2 * Xcal + 3 * Xcal) * Ycal + rnorm(100,0,3)
-#' model_calibration1 <- lm(Vcal_dme[1:50] ~ Ycal[0:50])
-#' model_calibration2 <- lm(Vcal_dme[51:100] ~ Y+cal[51:100])
-#' calibration(model = list(model_calibration1,model_calibration2), form = "differential")
+#' formula1 <- Vcal_dme[1:50] ~ Ycal[0:50]
+#' formula2 <- Vcal_dme[51:100] ~ Ycal[51:100]
+#' syst1 <- systematic(formula = formula1)
+#' syst2 <- systematic(formula = formula2)
 #'
 #' @export
 systematic <- function(formula,
                   data=NULL,
                   alpha = 0.05)
-  { if( length(formula[[2]])!=1 || length(formula[[3]])!=1 ){
-        stop("'formula' should be a simple linear model")
-    }
+  { if( length.formula(formula[[2]])!=1 || length(formula[[3]])!=1 ){ #does not work for dme
+        stop("'formula' should be a formula of a simple linear model")
+  }
     model <- lm(formula,data)
     summary_cal <- summary(model)
     theta0_hat <- summary_cal$coef[1,1]

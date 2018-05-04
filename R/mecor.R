@@ -10,7 +10,7 @@
 #' @param correction the method to correct \code{cv},
 #' a object of type \code{systematic} is implemented
 #'
-#' @return This function returns the corrected effect estimator.
+#' @return This function returns the corrected effect estimate.
 #'
 #' @examples
 #' Xcal <- c(rep(0,50),rep(1,50))
@@ -22,7 +22,6 @@
 #' Y <- X + rnorm(200,0,3)
 #' V <- 1 + 2*Y + rnorm(100,0,3)
 #' model_mecor <- mecor(formula = V ~ X, cv = "V", correction = syst)
-#'
 #'
 #' @export
 mecor <- function(formula,

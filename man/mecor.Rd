@@ -18,17 +18,21 @@ in \code{formula} to correct}
 a object of type \code{systematic} is implemented}
 }
 \value{
-This function returns the corrected effect estimator.
+This function returns the corrected effect estimate.
 }
 \description{
 mecor provides correction methods for measurement
 errors in continuous endpoints.
 }
 \examples{
+Xcal <- c(rep(0,50),rep(1,50))
+Ycal <- Xcal + rnorm(100,0,3)
+Vcal <- 1 + 2*Ycal + rnorm(100,0,3)
+syst <- systematic(formula = Vcal ~ Ycal)
+
 X <- c(rep(0,100),rep(1,100))
 Y <- X + rnorm(200,0,3)
 V <- 1 + 2*Y + rnorm(100,0,3)
-model_mecor <- mecor(formula=V~X, cv = "V", correction = sys)
-
+model_mecor <- mecor(formula = V ~ X, cv = "V", correction = syst)
 
 }
