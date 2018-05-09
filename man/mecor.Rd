@@ -4,35 +4,74 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data = NULL, cv, correction)
+mecor(formula, data = NULL, cv, range = NULL, correction)
 }
 \arguments{
-\item{formula}{formula of the naive regression model}
+\item{formula}{an object of class \link[stats]{formula} (or one that is
+coerced to that class): a symbolic description of the naive
+model to be fitted in an \link[stats]{lm} model.}
 
-\item{data}{data}
+\item{data}{an optional data frame, list or environment (or
+object coercible by as.data.frame to a data frame) containing
+the variables in the model. If not found in \code{data}, the
+variables are taken from \code{environment(formula)}, typically
+the enviroment from which \code{mecor} is called.}
 
 \item{cv}{a non-empty character string specifying the variable
 in \code{formula} to correct}
 
-\item{correction}{the method to correct \code{cv},
-a object of type \code{systematic} is implemented}
+\item{range}{(a vector of) character string(s) in the format "a:b" specifying
+the range for which \code{cv} needs to be corrected}
+
+\item{correction}{(a list of) object(s) of class \link[mecor]{systematic}
+used to correct \code{cv} for corresponding \code{range}}
 }
 \value{
-This function returns the corrected effect estimate.
+\code{mecor} returns an object of \link[base]{class} "mecor"
+
+An object of class \code{mecor} is a list containing the following components:
+
+\item{model}{an \code{lm} object of the corrected model}
+\item{ci}{a named vector with the confidence intervals of the effect
+estimate of the corrected model calculated with the zero variance,
+delta and fieller method. If fieller method produces \code{NA} the fieller
+confidence interval is undefined.}
 }
 \description{
 mecor provides correction methods for measurement
 errors in continuous endpoints.
 }
 \examples{
-Xcal <- c(rep(0,50),rep(1,50))
-Ycal <- Xcal + rnorm(100,0,3)
-Vcal <- 1 + 2*Ycal + rnorm(100,0,3)
+X <- c(rep(0,1000),rep(1,1000))
+Y <- X + rnorm(2000,0,3)
+real_model <- lm(Y ~ X)
+
+##external calibration set
+Xcal <- c(rep(0,500),rep(1,500))
+Ycal <- Xcal + rnorm(1000,0,3)
+
+##systematic measurement error (sme)
+V <- 1 + 2 * Y + rnorm(2000,0,3)
+naive_model_sme <- lm(V ~ X)
+Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
 syst <- systematic(formula = Vcal ~ Ycal)
+corrected_model_sme <- mecor(formula = V ~ X, cv = "V", correction = syst)
 
-X <- c(rep(0,100),rep(1,100))
-Y <- X + rnorm(200,0,3)
-V <- 1 + 2*Y + rnorm(100,0,3)
-model_mecor <- mecor(formula = V ~ X, cv = "V", correction = syst)
+##differential measurement error (dme)
+V_dme0 <- 1 + 2 * Y[1:1000] + rnorm(Y[1:1000], 0, 3)
+V_dme1 <- 2 + 3 * Y[1001:2000] + rnorm(Y[1001:2000], 0, 3)
+V_dme <- c(V_dme0, V_dme1)
+naive_model_dme <- lm(V_dme ~ X)
+Vcal_dme0 <- 1 + 2 * Ycal[1:500] + rnorm(Ycal[1:500], 0, 3)
+Vcal_dme1 <- 2 + 3 * Ycal[501:1000] + rnorm(Ycal[501:1000], 0, 3)
+syst1 <- systematic(formula = Vcal_dme0 ~ Ycal[1:500])
+syst2 <- systematic(formula = Vcal_dme1 ~ Ycal[501:1000])
+corrected_model_dme <- mecor(formula = V_dme ~ X, cv = "V_dme", range = c("1:1000", "1001:2000"), correction = list(syst1, syst2))
 
+}
+\references{
+
+}
+\author{
+Linda Nab, \email{l.nab@lumc.nl}
 }

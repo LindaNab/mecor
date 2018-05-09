@@ -7,30 +7,51 @@
 systematic(formula, data = NULL, alpha = 0.05)
 }
 \arguments{
-\item{formula}{formula the calibration model}
+\item{formula}{an object of class \link[stats]{formula} (or one that is
+coerced to that class): a symbolic description of the naive
+model to be fitted in an \link[stats]{lm} model.}
 
-\item{data}{data}
+\item{data}{an optional data frame, list or environment (or
+object coercible by as.data.frame to a data frame) containing
+the variables in the model. If not found in \code{data}, the
+variables are taken from \code{environment(formula)}, typically
+the enviroment from which \code{systematic} is called.}
 
-\item{alpha}{alpha level}
+\item{alpha}{the alpha level of which the confidence intervals
+are based.}
 }
 \value{
-This function returns the calibration parameters form the validation set.
+\code{systematic} returns an object of \link[base]{class} "systematic".
+
+An object of class \code{systematic} is a list containing the following components:
+
+\item{coefficients}{a named vector of the coefficients of the calibration model}
+\item{alpha}{the alpha level}
+\item{model}{an \code{lm} object}
 }
 \description{
-This is a function that runs a calibration to substract
-the measurement error parameters of the measurement error model
-from the external validation set.
+This is a function that fits a linear regression to extract the
+measurement error parameters of the measurement error model
+from the external validation set in case you assume that the underlying
+measurement error model is of the systematic form.
 }
 \examples{
-Xcal <- c(rep(0,50),rep(1,50))
-Ycal <- Xcal + rnorm(100,0,3)
-Vcal <- 1 + 2*Ycal + rnorm(100,0,3)
-syst <- systematic(formula = Vcal ~ Ycal + Xcal)
+Xcal <- c(rep(0,500),rep(1,500))
+Ycal <- Xcal + rnorm(1000,0,3)
+Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
+syst <- systematic(formula = Vcal ~ Ycal)
 
-Vcal_dme <- 1 + (2 - 1) * Xcal + (2 - 2 * Xcal + 3 * Xcal) * Ycal + rnorm(100,0,3)
-formula1 <- Vcal_dme[1:50] ~ Ycal[0:50]
-formula2 <- Vcal_dme[51:100] ~ Ycal[51:100]
-syst1 <- systematic(formula = formula1)
-syst2 <- systematic(formula = formula2)
+Vcal_dme0 <- 1 + 2 * Ycal[1:500] + rnorm(Ycal[1:500], 0, 3)
+Vcal_dme1 <- 2 + 3 * Ycal[501:1000] + rnorm(Ycal[501:1000], 0, 3)
+formula0 <- Vcal_dme0 ~ Ycal[1:500]
+formula1 <- Vcal_dme1 ~ Ycal[501:1000]
+syst1 <- systematic(formula = formula0)
+syst2 <- systematic(formula = formula1)
 
+}
+\references{
+
+}
+\author{
+Linda Nab, \email{l.nab@lumc.nl}
 }
