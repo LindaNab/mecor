@@ -4,7 +4,8 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data = NULL, cv, range = NULL, mefit, method = "rc")
+mecor(formula, data = NULL, cv, range = NULL, mefit, method = "rc",
+  alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -23,8 +24,15 @@ in \code{formula} to correct}
 \item{range}{(a vector of) character string(s) in the format "a:b" specifying
 the range for which \code{cv} needs to be corrected}
 
-\item{correction}{(a list of) object(s) of class \link[mecor]{systematic}
+\item{mefit}{(a list of) object(s) of class \link[mecor]{mefit}
 used to correct \code{cv} for corresponding \code{range}}
+
+\item{method}{a character string indicating the method used to correct for
+measurement error}
+
+\item{alpha}{alpha level}
+
+\item{B}{number of bootstrap samples}
 }
 \value{
 \code{mecor} returns an object of \link[base]{class} "mecor"
@@ -54,8 +62,8 @@ Ycal <- Xcal + rnorm(1000,0,3)
 V <- 1 + 2 * Y + rnorm(2000,0,3)
 naive_model_sme <- lm(V ~ X)
 Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
-syst <- systematic(formula = Vcal ~ Ycal)
-corrected_model_sme <- mecor(formula = V ~ X, cv = "V", correction = syst)
+fit <- mefit(formula = Vcal ~ Ycal)
+corrected_model_sme <- mecor(formula = V ~ X, cv = "V", mefit = fit, method = "rc")
 
 ##differential measurement error (dme)
 V_dme0 <- 1 + 2 * Y[1:1000] + rnorm(Y[1:1000], 0, 3)
