@@ -64,7 +64,8 @@ mecor <- function(formula,
                   data = NULL,
                   cv,
                   range = NULL,
-                  correction){
+                  mefit,
+                  method = "rc"){
   if(attr(terms(formula), "variables")[4]!="NULL()"){
     stop("variable 'formula' should be a formula describing one independent and one dependent variable")}
   if(!is.character(class(cv))){

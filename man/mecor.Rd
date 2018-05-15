@@ -4,7 +4,7 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data = NULL, cv, range = NULL, correction)
+mecor(formula, data = NULL, cv, range = NULL, mefit, method = "rc")
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is

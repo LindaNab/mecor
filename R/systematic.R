@@ -1,4 +1,4 @@
-#' Run calibration
+#'
 #'
 #' This is a function that fits a linear regression to extract the
 #' measurement error parameters of the measurement error model
@@ -42,9 +42,8 @@
 #' syst2 <- systematic(formula = formula1)
 #'
 #' @export
-systematic <- function(formula,
-                  data = NULL,
-                  alpha = 0.05)
+mefit <- function(formula,
+                  data = NULL)
   {if( attr(terms(formula), "variables")[4]!="NULL()"){
         stop("'formula' should be a formula of a simple linear model")
   }
