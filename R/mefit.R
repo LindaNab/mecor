@@ -1,9 +1,8 @@
 #'
 #'
-#' This is a function that fits a linear regression to extract the
-#' measurement error parameters of the measurement error model
-#' from the external validation set in case you assume that the underlying
-#' measurement error model is of the systematic form.
+#' This function fits a linear regression to your validation dataset
+#' in order to extract the measurement error parameters of the measurement
+#' error model from the external validation set.
 #'
 #' @param formula an object of class \link[stats]{formula} (or one that is
 #' coerced to that class): a symbolic description of the naive
@@ -12,16 +11,16 @@
 #' object coercible by as.data.frame to a data frame) containing
 #' the variables in the model. If not found in \code{data}, the
 #' variables are taken from \code{environment(formula)}, typically
-#' the enviroment from which \code{systematic} is called.
-#' @param alpha the alpha level of which the confidence intervals
-#' are based.
+#' the enviroment from which \code{mefit} is called.
+#' @param memodel a character string indicating the underlying measurement model
+#' of your data, i.e. "classical", "systematic" or "differential".
+#' @param id indicates the grouping variable if \code{memodel} is "differential".
 #'
-#' @return \code{systematic} returns an object of \link[base]{class} "systematic".
+#' @return \code{mefit} returns an object of \link[base]{class} "mefit".
 #'
-#' An object of class \code{systematic} is a list containing the following components:
+#' An object of class \code{mefit} is a list containing the following components:
 #'
-#' \item{coefficients}{a named vector of the coefficients of the calibration model}
-#' \item{alpha}{the alpha level}
+#' \item{coefficients}{a named vector containing the coefficients of the calibration model}
 #' \item{model}{an \code{lm} object}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
@@ -32,22 +31,29 @@
 #' Xcal <- c(rep(0,500),rep(1,500))
 #' Ycal <- Xcal + rnorm(1000,0,3)
 #' Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
-#' syst <- systematic(formula = Vcal ~ Ycal)
+#' fit_sme <- mefit(formula = Vcal ~ Ycal, memodel = "systematic")
 #'
 #' Vcal_dme0 <- 1 + 2 * Ycal[1:500] + rnorm(Ycal[1:500], 0, 3)
 #' Vcal_dme1 <- 2 + 3 * Ycal[501:1000] + rnorm(Ycal[501:1000], 0, 3)
-#' formula0 <- Vcal_dme0 ~ Ycal[1:500]
-#' formula1 <- Vcal_dme1 ~ Ycal[501:1000]
-#' syst1 <- systematic(formula = formula0)
-#' syst2 <- systematic(formula = formula1)
+#' Vcal_dme <- c(Vcal_dme0, Vcal_dme1)
+#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal, memodel = "differential", id = Xcal)
 #'
 #' @export
 mefit <- function(formula,
-                  data = NULL)
-  {if( attr(terms(formula), "variables")[4]!="NULL()"){
-        stop("'formula' should be a formula of a simple linear model")
-  }
-    model <- lm(formula,data)
+                  data = NULL,
+                  memodel = "systematic",
+                  id = NULL){
+  if(attr(terms(formula), "variables")[4] != "NULL()"){
+        stop("'formula' should be a formula of a simple linear model")}
+  if(memodel == "differential" && is.null(id)){
+    stop("No id variable")}
+  if(memodel == "systematic" && !is.null(id)){
+    warning("memodel is of form systematic so variable id is set null")
+    id <- NULL}
+  n <- ifelse(memodel == "differential", NROW(unique(id)), 1)
+  for(i in 1:n){
+    subset <- ifelse(memodel == "differential", (id=unique(id)[i]), NULL)
+    model <- lm(formula = formula, data = data, subset = subset)
     summary_cal <- summary(model)
     theta0_hat <- summary_cal$coef[1,1]
     theta1_hat <- summary_cal$coef[2,1]
@@ -55,15 +61,16 @@ mefit <- function(formula,
     K <- NROW(model$model)
     s_yy <- sum((model$model$Ycal-mean(model$model$Ycal))^2)
     mean_Ycal <- mean(model$model[,names(attr(terms(formula),"factors")[,1])[2]])
-    coefs <- c(theta0_hat=theta0_hat, theta1_hat=theta1_hat,
-               t=t, K=K, mean_Ycal=mean_Ycal, s_yy=s_yy)
-
-    out <- list(coefficients = coefs, # list of coefficients of measurement error model
-      alpha = alpha,
-      model = model # the calibration model
-    )
-    class(out) <- 'systematic'
-    return(out)
+    coefs[i] <- c(x = ifelse(memodel == "differential", unique(id)[i], "All"),
+                  theta0_hat = theta0_hat, theta1_hat = theta1_hat,
+                  t = t, K = K, mean_Ycal = mean_Ycal, s_yy = s_yy)
+    models[i] <- model
+    }
+  out <- list(coefficients = coefs, # list of coefficients of measurement error model
+              alpha = alpha,
+              models = models) # the calibration models
+  class(out) <- 'mefit'
+  return(out)
   }
 
 delta <- function(model_naive,

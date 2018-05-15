@@ -15,8 +15,12 @@
 #' in \code{formula} to correct
 #' @param range (a vector of) character string(s) in the format "a:b" specifying
 #' the range for which \code{cv} needs to be corrected
-#' @param correction (a list of) object(s) of class \link[mecor]{systematic}
+#' @param mefit (a list of) object(s) of class \link[mecor]{mefit}
 #' used to correct \code{cv} for corresponding \code{range}
+#' @param method a character string indicating the method used to correct for
+#' measurement error
+#' @param alpha alpha level
+#' @param B number of bootstrap samples
 #'
 #' @return \code{mecor} returns an object of \link[base]{class} "mecor"
 #'
@@ -45,8 +49,8 @@
 #' V <- 1 + 2 * Y + rnorm(2000,0,3)
 #' naive_model_sme <- lm(V ~ X)
 #' Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
-#' syst <- systematic(formula = Vcal ~ Ycal)
-#' corrected_model_sme <- mecor(formula = V ~ X, cv = "V", correction = syst)
+#' fit <- mefit(formula = Vcal ~ Ycal)
+#' corrected_model_sme <- mecor(formula = V ~ X, cv = "V", mefit = fit, method = "rc")
 #'
 #' ##differential measurement error (dme)
 #' V_dme0 <- 1 + 2 * Y[1:1000] + rnorm(Y[1:1000], 0, 3)
@@ -65,7 +69,9 @@ mecor <- function(formula,
                   cv,
                   range = NULL,
                   mefit,
-                  method = "rc"){
+                  method = "rc",
+                  alpha = 0.05,
+                  B = 0){
   if(attr(terms(formula), "variables")[4]!="NULL()"){
     stop("variable 'formula' should be a formula describing one independent and one dependent variable")}
   if(!is.character(class(cv))){
