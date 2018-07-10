@@ -2,16 +2,17 @@
 % Please edit documentation in R/mefit.R
 \name{mefit}
 \alias{mefit}
-\title{This function fits a linear regression to your validation dataset
-in order to extract the measurement error parameters of the measurement
-error model from the external validation set.}
+\title{Fitting Calibration Model}
 \usage{
-mefit(formula, data = NULL, memodel = "systematic", id = NULL)
+mefit(formula, data = NULL, mestructure = "systematic", difvar = NULL,
+  robust = FALSE)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
-coerced to that class): a symbolic description of the naive
-model to be fitted in an \link[stats]{lm} model.}
+coerced to that class): a symbolic description of the
+model to be fitted in an \link[stats]{lm} model. If \code{memodel} is "systematic",
+formula should be of the form 'V ~ Y'. If \code{memodel} is "differential,
+\code{formula} should be of the form 'V ~ Y * X'.}
 
 \item{data}{an optional data frame, list or environment (or
 object coercible by as.data.frame to a data frame) containing
@@ -19,34 +20,51 @@ the variables in the model. If not found in \code{data}, the
 variables are taken from \code{environment(formula)}, typically
 the enviroment from which \code{mefit} is called.}
 
-\item{memodel}{a character string indicating the underlying measurement model
-of your data, i.e. "classical", "systematic" or "differential".}
+\item{mestructure}{a character string indicating the underlying structure of the measurement errors
+in your data, i.e. "classical", "systematic" or "differential".}
 
-\item{id}{indicates the grouping variable if \code{memodel} is "differential".}
+\item{difvar}{variable indicating the grouping variable in formula if \code{memodel} is "differential".}
+
+\item{robust}{indicates whether robust standard errors need to be calculated, the "HC3"
+robust standard errors from \link[sandwich]{vcovHC} are used for the heteroskedasticity-consistent
+estimation of the covariance matrix of the coefficient estimates.}
 }
 \value{
 \code{mefit} returns an object of \link[base]{class} "mefit".
 
 An object of class \code{mefit} is a list containing the following components:
 
-\item{coefficients}{a named vector containing the coefficients of the calibration model}
-\item{model}{an \code{lm} object}
+\item{coefficients}{a named vector containing the coefficients of the fitted calibration model}
+\item{vcov}{the variance-covariance matrix of the parameters of the fitted calibration model, in case
+\code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
+\item{size}{the size of the calibration sample}
+\item{meanx}{mean of explanatory variable of the fitted calibration model}
+\item{call}{the matched call}
+\item{mestructure}{the assumed structure of the measurement errors}
+\item{difvar}{the used grouping variable}
+\item{diflevels}{the levels of the grouping variable 'difvar'}
+\item{rdf}{the residual degrees of freedom}
+\item{r.squared}{R^2, the 'fraction of variance explained by the model', see \link[stats]{lm}
+for calculation}
+\item{sigma}{the square root of the estimated variance of the random error, see \link[stats]{lm}
+for calculation}
 }
 \description{
-This function fits a linear regression to your validation dataset
+This function fits a linear regression to your calibration dataset
 in order to extract the measurement error parameters of the measurement
-error model from the external validation set.
+error model from the external calibration set.
 }
 \examples{
 Xcal <- c(rep(0,500),rep(1,500))
 Ycal <- Xcal + rnorm(1000,0,3)
-Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
-fit_sme <- mefit(formula = Vcal ~ Ycal, memodel = "systematic")
 
-Vcal_dme0 <- 1 + 2 * Ycal[1:500] + rnorm(Ycal[1:500], 0, 3)
-Vcal_dme1 <- 2 + 3 * Ycal[501:1000] + rnorm(Ycal[501:1000], 0, 3)
-Vcal_dme <- c(Vcal_dme0, Vcal_dme1)
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal, memodel = "differential", id = Xcal)
+##systematic measurement error (sme)
+Vcal_sme <- 1 + 2 * Ycal + rnorm(1000,0,3)
+fit_sme <- mefit(formula = Vcal_sme ~ Ycal, mestructure = "systematic")
+
+##differential measurement error (dme)
+Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000,0,3)
+fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal")
 
 }
 \references{

@@ -4,8 +4,8 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data = NULL, cv, range = NULL, mefit, method = "rc",
-  alpha = 0.05, B = 0)
+mecor(formula, data = NULL, mevar, mefit, difvar = NULL, method = "rc",
+  robust = FALSE, alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -18,19 +18,20 @@ the variables in the model. If not found in \code{data}, the
 variables are taken from \code{environment(formula)}, typically
 the enviroment from which \code{mecor} is called.}
 
-\item{cv}{a non-empty character string specifying the variable
-in \code{formula} to correct}
-
-\item{range}{(a vector of) character string(s) in the format "a:b" specifying
-the range for which \code{cv} needs to be corrected}
+\item{mevar}{a non-empty character string specifying the variable
+in \code{formula} with measurement error}
 
 \item{mefit}{(a list of) object(s) of class \link[mecor]{mefit}
-used to correct \code{cv} for corresponding \code{range}}
+used to correct \code{mevar}}
+
+\item{difvar}{needed if the structure of 'mefit' is 'differential',
+a non-empty character string specifying the grouping variable in \code{formula}
+that stands for the same difvar used in 'mefit'}
 
 \item{method}{a character string indicating the method used to correct for
 measurement error}
 
-\item{alpha}{alpha level}
+\item{alpha}{alpha level used to construct confidence intervals}
 
 \item{B}{number of bootstrap samples}
 }
@@ -39,42 +40,39 @@ measurement error}
 
 An object of class \code{mecor} is a list containing the following components:
 
-\item{model}{an \code{lm} object of the corrected model}
-\item{ci}{a named vector with the confidence intervals of the effect
-estimate of the corrected model calculated with the zero variance,
-delta and fieller method. If fieller method produces \code{NA} the fieller
-confidence interval is undefined.}
+\item{coefficients}{a named vector containing the coefficients of the corrected model}
+\item{stderr}{zero variance standard errors of coefficients of the corrected model}
+\item{coef.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
+\item{rdf}{the residual degrees of freedom of the corrected model}
+\item{call}{matched call}
+\item{ci}{a named matrix containing the confidence intervals for the slope of the corrected model}
 }
 \description{
 mecor provides correction methods for measurement
 errors in continuous endpoints.
 }
 \examples{
-X <- c(rep(0,1000),rep(1,1000))
-Y <- X + rnorm(2000,0,3)
-real_model <- lm(Y ~ X)
+X <- c(rep(0, 1000), rep(1, 1000))
+Y <- X + rnorm(2000, 0, 1)
+rm <- lm(Y ~ X)
 
 ##external calibration set
-Xcal <- c(rep(0,500),rep(1,500))
-Ycal <- Xcal + rnorm(1000,0,3)
+Xcal <- c(rep(0, 500), rep(1, 500))
+Ycal <- Xcal + rnorm(1000, 0, 1)
 
 ##systematic measurement error (sme)
-V <- 1 + 2 * Y + rnorm(2000,0,3)
-naive_model_sme <- lm(V ~ X)
-Vcal <- 1 + 2 * Ycal + rnorm(1000,0,3)
-fit <- mefit(formula = Vcal ~ Ycal)
-corrected_model_sme <- mecor(formula = V ~ X, cv = "V", mefit = fit, method = "rc")
+V_sme <- 1 + 2 * Y + rnorm(2000, 0, 3)
+nm_sme <- lm(V_sme ~ X) ##compare with rm
+Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3)
+fit_sme <- mefit(formula = Vcal_sme ~ Ycal)
+cm_sme <- mecor(formula = V_sme ~ X, mevar = "V_sme", mefit = fit_sme, method = "rc")
 
 ##differential measurement error (dme)
-V_dme0 <- 1 + 2 * Y[1:1000] + rnorm(Y[1:1000], 0, 3)
-V_dme1 <- 2 + 3 * Y[1001:2000] + rnorm(Y[1001:2000], 0, 3)
-V_dme <- c(V_dme0, V_dme1)
-naive_model_dme <- lm(V_dme ~ X)
-Vcal_dme0 <- 1 + 2 * Ycal[1:500] + rnorm(Ycal[1:500], 0, 3)
-Vcal_dme1 <- 2 + 3 * Ycal[501:1000] + rnorm(Ycal[501:1000], 0, 3)
-syst1 <- systematic(formula = Vcal_dme0 ~ Ycal[1:500])
-syst2 <- systematic(formula = Vcal_dme1 ~ Ycal[501:1000])
-corrected_model_dme <- mecor(formula = V_dme ~ X, cv = "V_dme", range = c("1:1000", "1001:2000"), correction = list(syst1, syst2))
+V_dme <- 2 + 2 * X + 3 * Y + 2 * X * Y + rnorm(2000,0,3)
+nm_dme <- lm(V_dme ~ X) ##compare with rm
+Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000,0,3)
+fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = Xcal)
+cm_dme <- mecor(formula = V_dme ~ X, mevar = "V_dme", mefit = fit_dme, difvar = "X", method = "rc", robust = TRUE)
 
 }
 \references{
