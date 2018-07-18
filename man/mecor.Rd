@@ -21,15 +21,15 @@ the enviroment from which \code{mecor} is called.}
 \item{mevar}{a non-empty character string specifying the variable
 in \code{formula} with measurement error}
 
-\item{mefit}{(a list of) object(s) of class \link[mecor]{mefit}
+\item{mefit}{object of class \link[mecor]{mefit}
 used to correct \code{mevar}}
 
 \item{difvar}{needed if the structure of 'mefit' is 'differential',
-a non-empty character string specifying the grouping variable in \code{formula}
-that stands for the same difvar used in 'mefit'}
+a named vector specifying the grouping variable in \code{formula}
+that stands for the difvar used in 'mefit'}
 
 \item{method}{a character string indicating the method used to correct for
-measurement error}
+measurement error, only the method "rc" is implemented}
 
 \item{alpha}{alpha level used to construct confidence intervals}
 
@@ -45,38 +45,41 @@ An object of class \code{mecor} is a list containing the following components:
 \item{coef.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
 \item{rdf}{the residual degrees of freedom of the corrected model}
 \item{call}{matched call}
-\item{ci}{a named matrix containing the confidence intervals for the slope of the corrected model}
+\item{ci}{a named matrix containing the confidence intervals for the effect estimate of the corrected
+model}
 }
 \description{
 mecor provides correction methods for measurement
 errors in continuous endpoints.
 }
 \examples{
+##data generation
 X <- c(rep(0, 1000), rep(1, 1000))
 Y <- X + rnorm(2000, 0, 1)
-rm <- lm(Y ~ X)
+V_sme <- 1 + 2 * Y + rnorm(2000, 0, 3) #systematic measurement error (sme)
+V_dme <- 2 + 2 * X + 3 * Y + 2 * X * Y + rnorm(2000, 0, 3 * (1 - X) + 2 * X) #differential measurement error (dme)
+rm <- lm(Y ~ X) #real model (rm)
 
-##external calibration set
+##generation of external calibration set
 Xcal <- c(rep(0, 500), rep(1, 500))
 Ycal <- Xcal + rnorm(1000, 0, 1)
-
-##systematic measurement error (sme)
-V_sme <- 1 + 2 * Y + rnorm(2000, 0, 3)
-nm_sme <- lm(V_sme ~ X) ##compare with rm
 Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3)
-fit_sme <- mefit(formula = Vcal_sme ~ Ycal)
-cm_sme <- mecor(formula = V_sme ~ X, mevar = "V_sme", mefit = fit_sme, method = "rc")
+Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal)
 
-##differential measurement error (dme)
-V_dme <- 2 + 2 * X + 3 * Y + 2 * X * Y + rnorm(2000,0,3)
+##solve systematic measurement error (sme)
+nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
+fit_sme <- mefit(formula = Vcal_sme ~ Ycal)
+cm_sme <- mecor(formula = V_sme ~ X, mevar = "V_sme", mefit = fit_sme, method = "rc", B = 999) #compare with nm and rm
+
+##solve differential measurement error (dme)
 nm_dme <- lm(V_dme ~ X) ##compare with rm
-Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000,0,3)
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = Xcal)
-cm_dme <- mecor(formula = V_dme ~ X, mevar = "V_dme", mefit = fit_dme, difvar = "X", method = "rc", robust = TRUE)
+fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal", robust = TRUE)
+cm_dme <- mecor(formula = V_dme ~ X, mevar = "V_dme", mefit = fit_dme, difvar = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
 
 }
 \references{
-
+L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.
+Measurement error in continuous endpoints in randomised trials: an exploration of problems and solutions
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

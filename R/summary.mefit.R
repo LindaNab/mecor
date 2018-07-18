@@ -56,7 +56,7 @@ print.summary.mefit <- function(x){
   printCoefmat(x$coefficients)
   if(x$mestructure == "differential")
     cat("\nThe structure is:", x$mestructure, "grouped by", x$difvar)
-  else cat("\n\nThe structure is:", x$mestructure)
+  else cat("\n\nThe assumed structure is:", x$mestructure)
   cat("\nSize of calibration data set:\n", x$size, sep = "")
   cat("\n\nResidual standard error:", x$sigma, "on", x$rdf, "degrees of freedom")
   cat("\nMultiple R-squared: ", x$r.squared)
