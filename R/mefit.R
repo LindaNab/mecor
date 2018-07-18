@@ -3,7 +3,7 @@
 #' @description
 #' This function fits a linear regression to your calibration dataset
 #' in order to extract the measurement error parameters of the measurement
-#' error model from the external calibration set.
+#' error model from the calibration set.
 #'
 #' @param formula an object of class \link[stats]{formula} (or one that is
 #' coerced to that class): a symbolic description of the
@@ -30,7 +30,6 @@
 #' \item{vcov}{the variance-covariance matrix of the parameters of the fitted calibration model, in case
 #' \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
 #' \item{size}{the size of the calibration sample}
-#' \item{meanx}{mean of explanatory variable of the fitted calibration model}
 #' \item{call}{the matched call}
 #' \item{mestructure}{the assumed structure of the measurement errors}
 #' \item{difvar}{the used grouping variable}
@@ -40,24 +39,22 @@
 #' for calculation}
 #' \item{sigma}{the square root of the estimated variance of the random error, see \link[stats]{lm}
 #' for calculation}
+#' \item{model}{the model frame used}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
-#' @references
-#'
 #' @examples
-#' Xcal <- c(rep(0,500),rep(1,500))
-#' Ycal <- Xcal + rnorm(1000,0,3)
+#' ##generation of external calibration set
+#' Xcal <- c(rep(0, 500), rep(1, 500))
+#' Ycal <- Xcal + rnorm(1000, 0, 1)
+#' Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3) #systematic measurement error (sme)
+#' Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal) #differential measurement error (dme)
 #'
-#' ##systematic measurement error (sme)
-#' Vcal_sme <- 1 + 2 * Ycal + rnorm(1000,0,3)
 #' fit_sme <- mefit(formula = Vcal_sme ~ Ycal, mestructure = "systematic")
-#'
-#' ##differential measurement error (dme)
-#' Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000,0,3)
-#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal")
+#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal", robust = T)
 #'
 #' @importFrom sandwich vcovHC
+#' @import boot
 #' @export
 mefit <- function(formula,
                   data = NULL,
@@ -78,51 +75,76 @@ mefit <- function(formula,
       stop("length of 'formula' too long, should be of form 'V ~ Y * X' for differential mestructures")  }
     if(!grepl(":", attr(terms(formula), "term.labels")[3])){
       stop("'mestructure' is differential, so there should be an interaction term in 'formula'")  }
-    if(NROW(unique(get(difvar))) == 1){
+    if(!is.null(data)) getdifvar <- data[difvar] else getdifvar <- get(difvar)
+    if(NROW(unique(getdifvar)) == 1){
       warning("'number of levels of 'difvar' is 1, so 'mestructure' is set 'systematic'")
       mestructure = "systematic"}
-    if(NROW(unique(get(difvar))) != 2){
+    if(NROW(unique(getdifvar)) != 2){
       stop("number of levels of difvar does not equal 2, this functionality is not supported by 'mecor'")  }
-    }
-  model <- lm(formula = formula, data = data, x = TRUE)
+  }
+  model <- lm(formula = formula, data = data)
   if(robust == TRUE){
     vcov <- vcovHC(model) }
   else vcov <- vcov(model)
-  if(mestructure == "differential") diflevels = unique(get(difvar)) else diflevels = NA
+  if(mestructure == "differential") diflevels = unique(getdifvar) else diflevels = NA
   out <- list(coefficients = model$coefficients,
               vcov = vcov,
-              size = nrow(model$x),
-              meanx = mean(model$x),
+              size = nrow(model$model),
               call = match.call(),
               mestructure = mestructure,
               difvar = difvar,
               diflevels = diflevels,
               rdf = model$df.residual,
               r.squared = summary(model)$r.squared,
-              sigma = summary(model)$sigma)
+              sigma = summary(model)$sigma,
+              model = model$model)
   class(out) <- 'mefit'
   return(out)
 }
 
-delta <- function(nm,
+delta.sme <- function(nm,
                   coef.cm,
                   mefit,
                   alpha){
   t1 <- coef(mefit)[2]
   b <- coef(nm)[2]
-  vart1 <- summary(mefit)$coef[2,2]
-  varnb <- summary(nm)$coef[2,2]
+  vart1 <- summary(mefit)$coef[2,2] ^ 2
+  varnb <- summary(nm)$coef[2,2] ^ 2
   varcb <- 1 / t1 ^ 2 * (varnb + b ^ 2 * vart1)
   tq <- qt((1 - alpha / 2), nm$df.residual)
+  ci <- unname(c(coef.cm[2] - tq * sqrt(varcb), coef.cm[2] + tq * sqrt(varcb)))
+  return(ci)
+}
 
-  ##X <- model_naive$model[,as.character(model_naive$terms[[3]])]
-  ##s_xx <- sum((X - mean(X)) ^ 2)
-  ##t_q <- qt((1 - systematic$alpha / 2),(NROW(X) - 2))
-  ##varbeta <- 1 / (systematic$coefficients["theta1_hat"]) ^ 2 *
-  ##              (summary(model_naive)$sigma ^ 2 / s_xx +
-  ##              (model_corrected$coefficients[2] ^ 2 * systematic$coefficients["t"] ^ 2) /
-  ##              systematic$coefficients["s_yy"] )
-  ci <- unname(c(coef.cm[2] - tq * varcb, coef.cm[2] + tq * varcb))
+delta.dme <- function(nm,
+                      coef.cm,
+                      mefit,
+                      alpha){
+  #coefficients
+  nb <- coef(nm)[2]
+  na <- coef(nm)[1]
+  t00 <- coef(mefit)[1]
+  t10 <- ifelse(names(coef(mefit)[2]) == mefit$difvar, coef(mefit)[3], coef(mefit)[2])
+  t01 <- coef(mefit)[mefit$difvar] + t00
+  t11 <- coef(mefit)[4] + t10
+  #variances
+  varnb <- vcovHC(nm)[2,2]
+  varna <- vcovHC(nm)[1,1]
+  covnanb <- vcovHC(nm)[1,2]
+  covm <- mefit$vcov
+  if(names(coef(mefit)[2]) == mefit$difvar){ #change order of covm if needed
+    covm <- cbind(covm[,1], covm[,3], covm[,2], covm[,4])}
+  vart00 <- covm[1,1]
+  vart10 <- covm[2,2]
+  vart01 <- covm[3,3] + covm[1,1] + 2 * covm[3,1]
+  vart11 <- covm[4,4] + covm[2,2] + 2 * covm[4,1]
+  covt10t00 <-  covm[2,1]
+  covt11t01 <- covm[3,4] + covm[3,2] + covm[1,4] + covm[1,2]
+  varca <- 1 / t10 ^ 2 * (varna + coef.cm[1] ^ 2 * vart10 + vart00 + 2 * coef.cm[1] * covt10t00)
+  varcb <- 1 / t11 ^ 2 * ((coef.cm[2] + coef.cm[1]) ^ 2 * vart11 + varnb + varna + 2 * covnanb +
+                            vart01 + 2 * (coef.cm[2] + coef.cm[1]) * covt11t01 ) + varca
+  tq <- qt((1 - alpha / 2), nm$df.residual)
+  ci <- unname(c(coef.cm[2] - tq * sqrt(varcb), coef.cm[2] + tq * sqrt(varcb)))
   return(ci)
 }
 
@@ -131,8 +153,8 @@ fieller <- function(nm,
                     alpha){
   t1 <- coef(mefit)[2]
   b <- coef(nm)[2]
-  vart1 <- summary(mefit)$coef[2,2]
-  varnb <- summary(nm)$coef[2,2]
+  vart1 <- summary(mefit)$coef[2,2] ^ 2
+  varnb <- summary(nm)$coef[2,2] ^ 2
   tq <- qt((1 - alpha / 2), nm$df.residual)
   v1 <- - 1 * (b * t1)
   v2 <- vart1 * tq ^ 2 - t1 ^2
@@ -147,12 +169,52 @@ fieller <- function(nm,
   }
   else ci <- c(lower = NA, upper = NA)
   return(ci)
+}
 
-  #X <- model_naive$model[,as.character(model_naive$terms[[3]])]
-  #s_xx <- sum((X - mean(X))^2)
-  #t_q <- qt((1 - systematic$alpha / 2), (NROW(X) - 2))
-  #v1 <- - 1 *  (model_naive$coefficients[2] * systematic$coefficients["theta1_hat"])
-  #v2 <- (systematic$coefficients["t"] ^ 2 / systematic$coefficients["s_yy"]) * t_q ^ 2 - systematic$coefficients["theta1_hat"] ^ 2
-  #v3 <- (summary(model_naive)$sigma ^ 2 / s_xx) * t_q ^ 2 - model_naive$coefficients[2]^2
+bootstrap.sme <- function(nm, mefit, alpha, B){
+  statme.sme <- function(data, indices, count = 1){
+    if(count == 1) {
+      t1 <- coef(mefit)[2]}
+    else {
+      ids <- sample(1:nrow(mefit$model), replace = T)
+      calsample <- mefit$model[ids,]
+      t1 <- coef(lm(formula = formula(mefit), data = calsample))[2]}
+    #count <<- count + 1
+    count <- count + 1
+    d <- data[indices,]
+    return(coef(lm(formula = formula(nm), data = d))[2] / t1)
+  }
+  #count <- 1
+  meboot <- boot(data = nm$model, statistic = statme.sme,
+                 R = B)
+  ci <- boot.ci(boot.out = meboot, conf = (1 - alpha), type = "norm")
+  return(ci)
+}
+
+bootstrap.dme <- function(nm, mefit, alpha, B){
+  statme.dme <- function(data, indices){
+    if(count == 1) {
+      t00 <- coef(mefit)[1]
+      t10 <- ifelse(names(coef(mefit)[2]) == mefit$difvar, coef(mefit)[3], coef(mefit)[2])
+      t01 <- coef(mefit)[mefit$difvar] + t00
+      t11 <- coef(mefit)[4] + t10}
+    else {
+      ids <- sample(1:nrow(mefit$model), replace = T)
+      calsample <- mefit$model[ids,]
+      calfit <- lm(formula = formula(mefit), data = calsample)
+      t00 <- coef(calfit)[1]
+      t10 <- ifelse(names(coef(calfit)[2]) == mefit$difvar, coef(calfit)[3], coef(calfit)[2])
+      t01 <- coef(calfit)[mefit$difvar] + t00
+      t11 <- coef(calfit)[4] + t10}
+    count <<- count + 1
+    d <- data[indices,]
+    fit <- lm(formula = formula(nm), data = d)
+    return( (coef(fit)[2] + coef(fit)[1] - t01)/ t11 - (coef(fit)[1] - t00) / t10)
+  }
+  count <- 1
+  meboot <- boot(data = nm$model, statistic = statme.dme,
+                 R = B)
+  ci <- boot.ci(boot.out = meboot, conf = (1 - alpha), type = "norm")
+  return(ci)
 }
 

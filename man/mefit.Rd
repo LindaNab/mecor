@@ -38,7 +38,6 @@ An object of class \code{mefit} is a list containing the following components:
 \item{vcov}{the variance-covariance matrix of the parameters of the fitted calibration model, in case
 \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
 \item{size}{the size of the calibration sample}
-\item{meanx}{mean of explanatory variable of the fitted calibration model}
 \item{call}{the matched call}
 \item{mestructure}{the assumed structure of the measurement errors}
 \item{difvar}{the used grouping variable}
@@ -48,26 +47,22 @@ An object of class \code{mefit} is a list containing the following components:
 for calculation}
 \item{sigma}{the square root of the estimated variance of the random error, see \link[stats]{lm}
 for calculation}
+\item{model}{the model frame used}
 }
 \description{
 This function fits a linear regression to your calibration dataset
 in order to extract the measurement error parameters of the measurement
-error model from the external calibration set.
+error model from the calibration set.
 }
 \examples{
-Xcal <- c(rep(0,500),rep(1,500))
-Ycal <- Xcal + rnorm(1000,0,3)
+##generation of external calibration set
+Xcal <- c(rep(0, 500), rep(1, 500))
+Ycal <- Xcal + rnorm(1000, 0, 1)
+Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3) #systematic measurement error (sme)
+Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal) #differential measurement error (dme)
 
-##systematic measurement error (sme)
-Vcal_sme <- 1 + 2 * Ycal + rnorm(1000,0,3)
 fit_sme <- mefit(formula = Vcal_sme ~ Ycal, mestructure = "systematic")
-
-##differential measurement error (dme)
-Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000,0,3)
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal")
-
-}
-\references{
+fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal", robust = T)
 
 }
 \author{

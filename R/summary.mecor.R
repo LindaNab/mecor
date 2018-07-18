@@ -41,6 +41,7 @@ summary.mecor <- function(object){
                                            lower.tail = FALSE))
   out$rdf <- rdf
   out$ci <- z$ci
+  out$est <- est
   class(out) <- "summary.mecor"
   out
 }
@@ -49,17 +50,12 @@ summary.mecor <- function(object){
 print.summary.mecor <- function(x){
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
       "\n\n", sep = "")
-  cat("\nCoefficients Corrected Model:\n")
-  printCoefmat(x$coefficients, signif.stars = F)
   cat("\nCoefficients Uncorrected Model:\n")
   printCoefmat(x$coef.nm, signif.stars = F)
-  cat("\nConfidence Interval for the slope obtained by the Zero Variance method\n")
-  cat("(", x$ci[1,1], ";", x$ci[1,2], ")", sep = "")
-  cat("\n\nConfidence Interval for the slope obtained by the Delta method\n")
-  cat("(", x$ci[2,1], ";", x$ci[2,2], ")", sep = "")
-  if(nrow(x$ci) >2){
-    cat("\n\nConfidence Interval for the slope obtained by the Fieller method\n")
-    cat("(", x$ci[3,1], ";", x$ci[3,2], ")", sep = "")}
+  cat("\nCoefficients Corrected Model:\n")
+  printCoefmat(x$coefficients, signif.stars = F)
+  cat("\nConfidence Intervals for", names(x$est)[2], "\n")
+  print(x$ci)
   invisible(x)
 }
 
