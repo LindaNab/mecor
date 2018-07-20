@@ -179,12 +179,11 @@ bootstrap.sme <- function(nm, mefit, alpha, B){
       ids <- sample(1:nrow(mefit$model), replace = T)
       calsample <- mefit$model[ids,]
       t1 <- coef(lm(formula = formula(mefit), data = calsample))[2]}
-    #count <<- count + 1
-    count <- count + 1
+    count <<- count + 1
     d <- data[indices,]
     return(coef(lm(formula = formula(nm), data = d))[2] / t1)
   }
-  #count <- 1
+  count <- 1
   meboot <- boot(data = nm$model, statistic = statme.sme,
                  R = B)
   ci <- boot.ci(boot.out = meboot, conf = (1 - alpha), type = "norm")
