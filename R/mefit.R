@@ -172,7 +172,7 @@ fieller <- function(nm,
 }
 
 bootstrap.sme <- function(nm, mefit, alpha, B){
-  statme.sme <- function(data, indices, count = 1){
+  statme.sme <- function(data, indices){
     if(count == 1) {
       t1 <- coef(mefit)[2]}
     else {

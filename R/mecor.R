@@ -110,7 +110,8 @@ mecor <- function(formula,
     ci.cm[2,] <- delta.sme(nm, coef.cm, mefit, alpha)
     ci.cm <- rbind(ci.cm, 'Fieller' = fieller(nm, mefit, alpha))
     if(B != 0){
-      ci.cm <- rbind(ci.cm, 'Bootstrap'= bootstrap.sme(nm, mefit, alpha, B)$normal[2:3])}
+      bt <- bootstrap.sme(nm, mefit, alpha, B)
+      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$normal[2:3])}
   }
   if(mefit$mestructure == "differential" && mevar[2] == "dep"){
     t00 <- unname(coef(mefit)[1])
@@ -128,14 +129,16 @@ mecor <- function(formula,
     ci.cm[1,] <- c(zv.l, zv.u)
     ci.cm[2,] <- delta.dme(nm, coef.cm, mefit, alpha)
     if(B != 0){
-      ci.cm <- rbind(ci.cm, 'Bootstrap'= bootstrap.dme(nm, mefit, alpha, B)$normal[2:3])}
+      bt <- bootstrap.dme(nm, mefit, alpha, B)
+      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$normal[2:3])}
   }
   out <- list(coefficients = coef.cm,
               stderr = stderr.cm,
               coefficients.nm = coef.nm,
               rdf = nm$df.residual,
               call = match.call(),
-              ci = ci.cm)
+              ci = ci.cm,
+              Rbtstrp = bt$R)
   class(out) <- 'mecor'
   return(out)
 }
