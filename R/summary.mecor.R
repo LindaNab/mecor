@@ -42,6 +42,7 @@ summary.mecor <- function(object){
   out$rdf <- rdf
   out$ci <- z$ci
   out$est <- est
+  out$Rbtstrp <- z$Rbtstrp
   class(out) <- "summary.mecor"
   out
 }
@@ -56,6 +57,8 @@ print.summary.mecor <- function(x){
   printCoefmat(x$coefficients, signif.stars = F)
   cat("\nConfidence Intervals for", names(x$est)[2], "\n")
   print(x$ci)
+  if(!is.na(x$call$B) && x$call$B != 0){
+    cat("Bootstrap Confidence Interval is based on", x$Rbtstrp, "bootstrap replicates")  }
   invisible(x)
 }
 
