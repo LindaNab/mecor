@@ -4,7 +4,7 @@
 \alias{mefit}
 \title{Fitting Calibration Model}
 \usage{
-mefit(formula, data = NULL, mestructure = "systematic", difvar = NULL,
+mefit(formula, data = NULL, me.structure = "systematic", dif.var = NULL,
   robust = FALSE)
 }
 \arguments{
@@ -20,10 +20,10 @@ the variables in the model. If not found in \code{data}, the
 variables are taken from \code{environment(formula)}, typically
 the enviroment from which \code{mefit} is called.}
 
-\item{mestructure}{a character string indicating the underlying structure of the measurement errors
+\item{me.structure}{a character string indicating the underlying structure of the measurement errors
 in your data, i.e. "classical", "systematic" or "differential".}
 
-\item{difvar}{variable indicating the grouping variable in formula if \code{memodel} is "differential".}
+\item{dif.var}{variable indicating the grouping variable in formula if \code{memodel} is "differential".}
 
 \item{robust}{indicates whether robust standard errors need to be calculated, the "HC3"
 robust standard errors from \link[sandwich]{vcovHC} are used for the heteroskedasticity-consistent
@@ -39,9 +39,9 @@ An object of class \code{mefit} is a list containing the following components:
 \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
 \item{size}{the size of the calibration sample}
 \item{call}{the matched call}
-\item{mestructure}{the assumed structure of the measurement errors}
-\item{difvar}{the used grouping variable}
-\item{diflevels}{the levels of the grouping variable 'difvar'}
+\item{me.structure}{the assumed structure of the measurement errors}
+\item{dif.var}{the used grouping variable}
+\item{diflevels}{the levels of the grouping variable 'dif.var'}
 \item{rdf}{the residual degrees of freedom}
 \item{r.squared}{R^2, the 'fraction of variance explained by the model', see \link[stats]{lm}
 for calculation}
@@ -61,8 +61,8 @@ Ycal <- Xcal + rnorm(1000, 0, 1)
 Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3) #systematic measurement error (sme)
 Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal) #differential measurement error (dme)
 
-fit_sme <- mefit(formula = Vcal_sme ~ Ycal, mestructure = "systematic")
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal", robust = T)
+fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
+fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = T)
 
 }
 \author{

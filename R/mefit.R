@@ -15,9 +15,9 @@
 #' the variables in the model. If not found in \code{data}, the
 #' variables are taken from \code{environment(formula)}, typically
 #' the enviroment from which \code{mefit} is called.
-#' @param mestructure a character string indicating the underlying structure of the measurement errors
+#' @param me.structure a character string indicating the underlying structure of the measurement errors
 #' in your data, i.e. "classical", "systematic" or "differential".
-#' @param difvar variable indicating the grouping variable in formula if \code{memodel} is "differential".
+#' @param dif.var variable indicating the grouping variable in formula if \code{memodel} is "differential".
 #' @param robust indicates whether robust standard errors need to be calculated, the "HC3"
 #' robust standard errors from \link[sandwich]{vcovHC} are used for the heteroskedasticity-consistent
 #' estimation of the covariance matrix of the coefficient estimates.
@@ -31,9 +31,9 @@
 #' \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
 #' \item{size}{the size of the calibration sample}
 #' \item{call}{the matched call}
-#' \item{mestructure}{the assumed structure of the measurement errors}
-#' \item{difvar}{the used grouping variable}
-#' \item{diflevels}{the levels of the grouping variable 'difvar'}
+#' \item{me.structure}{the assumed structure of the measurement errors}
+#' \item{dif.var}{the used grouping variable}
+#' \item{diflevels}{the levels of the grouping variable 'dif.var'}
 #' \item{rdf}{the residual degrees of freedom}
 #' \item{r.squared}{R^2, the 'fraction of variance explained by the model', see \link[stats]{lm}
 #' for calculation}
@@ -50,49 +50,49 @@
 #' Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3) #systematic measurement error (sme)
 #' Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal) #differential measurement error (dme)
 #'
-#' fit_sme <- mefit(formula = Vcal_sme ~ Ycal, mestructure = "systematic")
-#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal", robust = T)
+#' fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
+#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = T)
 #'
 #' @importFrom sandwich vcovHC
 #' @import boot
 #' @export
 mefit <- function(formula,
                   data = NULL,
-                  mestructure = "systematic",
-                  difvar = NULL,
+                  me.structure = "systematic",
+                  dif.var = NULL,
                   robust = FALSE){
-  if(mestructure == "systematic"){
+  if(me.structure == "systematic"){
     if(attr(terms(formula), "variables")[4] != "NULL()"){
-      stop("length of 'formula' too long, should be of form 'V ~ Y' for systematic mestructures")}
-    if(!is.null(difvar)){
-      warning("'mestructure' is systematic so variable difvar is set null")
+      stop("length of 'formula' too long, should be of form 'V ~ Y' for systematic me.structures")}
+    if(!is.null(dif.var)){
+      warning("'me.structure' is systematic so variable dif.var is set null")
       id <- NULL}
     }
-  if(mestructure == "differential"){
-    if(is.null(difvar)){
-      stop("'mestructure' is differential but there is no difvar")  }
+  if(me.structure == "differential"){
+    if(is.null(dif.var)){
+      stop("'me.structure' is differential but there is no dif.var")  }
     if(attr(terms(formula), "variables")[5] != "NULL()"){
-      stop("length of 'formula' too long, should be of form 'V ~ Y * X' for differential mestructures")  }
+      stop("length of 'formula' too long, should be of form 'V ~ Y * X' for differential me.structures")  }
     if(!grepl(":", attr(terms(formula), "term.labels")[3])){
-      stop("'mestructure' is differential, so there should be an interaction term in 'formula'")  }
-    if(!is.null(data)) getdifvar <- data[difvar] else getdifvar <- get(difvar)
-    if(NROW(unique(getdifvar)) == 1){
-      warning("'number of levels of 'difvar' is 1, so 'mestructure' is set 'systematic'")
-      mestructure = "systematic"}
-    if(NROW(unique(getdifvar)) != 2){
-      stop("number of levels of difvar does not equal 2, this functionality is not supported by 'mecor'")  }
+      stop("'me.structure' is differential, so there should be an interaction term in 'formula'")  }
+    if(!is.null(data)) getdif.var <- data[dif.var] else getdif.var <- get(dif.var)
+    if(NROW(unique(getdif.var)) == 1){
+      warning("'number of levels of 'dif.var' is 1, so 'me.structure' is set 'systematic'")
+      me.structure = "systematic"}
+    if(NROW(unique(getdif.var)) != 2){
+      stop("number of levels of dif.var does not equal 2, this functionality is not supported by 'mecor'")  }
   }
   model <- lm(formula = formula, data = data)
   if(robust == TRUE){
     vcov <- vcovHC(model) }
   else vcov <- vcov(model)
-  if(mestructure == "differential") diflevels = unique(getdifvar) else diflevels = NA
+  if(me.structure == "differential") diflevels = unique(getdif.var) else diflevels = NA
   out <- list(coefficients = model$coefficients,
               vcov = vcov,
               size = nrow(model$model),
               call = match.call(),
-              mestructure = mestructure,
-              difvar = difvar,
+              me.structure = me.structure,
+              dif.var = dif.var,
               diflevels = diflevels,
               rdf = model$df.residual,
               r.squared = summary(model)$r.squared,
@@ -124,20 +124,20 @@ delta.dme <- function(nm,
   nb <- coef(nm)[2]
   na <- coef(nm)[1]
   t00 <- coef(mefit)[1]
-  t10 <- ifelse(names(coef(mefit)[2]) == mefit$difvar, coef(mefit)[3], coef(mefit)[2])
-  t01 <- coef(mefit)[mefit$difvar] + t00
+  t10 <- ifelse(names(coef(mefit)[2]) == mefit$dif.var, coef(mefit)[3], coef(mefit)[2])
+  t01 <- coef(mefit)[mefit$dif.var] + t00
   t11 <- coef(mefit)[4] + t10
   #variances
   varnb <- vcovHC(nm)[2,2]
   varna <- vcovHC(nm)[1,1]
   covnanb <- vcovHC(nm)[1,2]
   covm <- mefit$vcov
-  if(names(coef(mefit)[2]) == mefit$difvar){ #change order of covm if needed
+  if(names(coef(mefit)[2]) == mefit$dif.var){ #change order of covm if needed
     covm <- cbind(covm[,1], covm[,3], covm[,2], covm[,4])}
   vart00 <- covm[1,1]
   vart10 <- covm[2,2]
   vart01 <- covm[3,3] + covm[1,1] + 2 * covm[3,1]
-  vart11 <- covm[4,4] + covm[2,2] + 2 * covm[4,1]
+  vart11 <- covm[4,4] + covm[2,2] + 2 * covm[4,2]
   covt10t00 <-  covm[2,1]
   covt11t01 <- covm[3,4] + covm[3,2] + covm[1,4] + covm[1,2]
   varca <- 1 / t10 ^ 2 * (varna + coef.cm[1] ^ 2 * vart10 + vart00 + 2 * coef.cm[1] * covt10t00)
@@ -194,16 +194,16 @@ bootstrap.dme <- function(nm, mefit, alpha, B){
   statme.dme <- function(data, indices){
     if(count == 1) {
       t00 <- coef(mefit)[1]
-      t10 <- ifelse(names(coef(mefit)[2]) == mefit$difvar, coef(mefit)[3], coef(mefit)[2])
-      t01 <- coef(mefit)[mefit$difvar] + t00
+      t10 <- ifelse(names(coef(mefit)[2]) == mefit$dif.var, coef(mefit)[3], coef(mefit)[2])
+      t01 <- coef(mefit)[mefit$dif.var] + t00
       t11 <- coef(mefit)[4] + t10}
     else {
       ids <- sample(1:nrow(mefit$model), replace = T)
       calsample <- mefit$model[ids,]
       calfit <- lm(formula = formula(mefit), data = calsample)
       t00 <- coef(calfit)[1]
-      t10 <- ifelse(names(coef(calfit)[2]) == mefit$difvar, coef(calfit)[3], coef(calfit)[2])
-      t01 <- coef(calfit)[mefit$difvar] + t00
+      t10 <- ifelse(names(coef(calfit)[2]) == mefit$dif.var, coef(calfit)[3], coef(calfit)[2])
+      t01 <- coef(calfit)[mefit$dif.var] + t00
       t11 <- coef(calfit)[4] + t10}
     count <<- count + 1
     d <- data[indices,]
