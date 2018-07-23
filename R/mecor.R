@@ -11,13 +11,13 @@
 #' the variables in the model. If not found in \code{data}, the
 #' variables are taken from \code{environment(formula)}, typically
 #' the enviroment from which \code{mecor} is called.
-#' @param mevar a non-empty character string specifying the variable
+#' @param me.var a non-empty character string specifying the variable
 #' in \code{formula} with measurement error
 #' @param mefit object of class \link[mecor]{mefit}
-#' used to correct \code{mevar}
-#' @param difvar needed if the structure of 'mefit' is 'differential',
+#' used to correct \code{me.var}
+#' @param dif.var needed if the structure of 'mefit' is 'differential',
 #' a named vector specifying the grouping variable in \code{formula}
-#' that stands for the difvar used in 'mefit'
+#' that stands for the dif.var used in 'mefit'
 #' @param method a character string indicating the method used to correct for
 #' measurement error, only the method "rc" is implemented
 #' @param alpha alpha level used to construct confidence intervals
@@ -58,36 +58,36 @@
 #' ##solve systematic measurement error (sme)
 #' nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
 #' fit_sme <- mefit(formula = Vcal_sme ~ Ycal)
-#' cm_sme <- mecor(formula = V_sme ~ X, mevar = "V_sme", mefit = fit_sme, method = "rc", B = 999) #compare with nm and rm
+#' cm_sme <- mecor(formula = V_sme ~ X, me.var = "V_sme", mefit = fit_sme, method = "rc", B = 999) #compare with nm and rm
 #'
 #' ##solve differential measurement error (dme)
 #' nm_dme <- lm(V_dme ~ X) ##compare with rm
-#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, mestructure = "differential", difvar = "Xcal", robust = TRUE)
-#' cm_dme <- mecor(formula = V_dme ~ X, mevar = "V_dme", mefit = fit_dme, difvar = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
+#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
+#' cm_dme <- mecor(formula = V_dme ~ X, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
 #'
 #' @export
 mecor <- function(formula,
                   data = NULL,
-                  mevar,
+                  me.var,
                   mefit,
-                  difvar = NULL,
+                  dif.var = NULL,
                   method = "rc",
                   robust = FALSE,
                   alpha = 0.05,
                   B = 0){
   if(attr(terms(formula), "variables")[4]!="NULL()"){
     stop("variable 'formula' should be a formula describing one independent and one dependent variable")}
-  if(!is.character(class(mevar))){
-    stop("variable 'mevar' should be a character string")}
-  if(names(attr(terms(formula),"factors")[,1])[1] == mevar){
-    mevar <- cbind(mevar, "dep")}
-    else stop("variable 'mevar' should be the dependent variable")
+  if(!is.character(class(me.var))){
+    stop("variable 'me.var' should be a character string")}
+  if(names(attr(terms(formula),"factors")[,1])[1] == me.var){
+    me.var <- cbind(me.var, "dep")}
+    else stop("variable 'me.var' should be the dependent variable")
   if(class(mefit) != "mefit"){
     stop("variable 'mefit' should be of class 'mefit'")}
-  if(mefit$mestructure == "differential") {
-    if(!is.null(data)) getdifvar <- data[names(difvar)] else getdifvar <- get(names(difvar))
-    if(!all.equal(mefit$diflevels, unique(getdifvar), check.attributes = FALSE)){
-    stop("diflevels in the mefit object differ from the levels of difvar")}
+  if(mefit$me.structure == "differential") {
+    if(!is.null(data)) getdif.var <- data[names(dif.var)] else getdif.var <- get(names(dif.var))
+    if(!all.equal(mefit$diflevels, unique(getdif.var), check.attributes = FALSE)){
+    stop("diflevels in the mefit object differ from the levels of dif.var")}
   }
   nm <- lm(formula, data)
   coef.nm <- summary(nm)$coef
@@ -96,7 +96,7 @@ mecor <- function(formula,
   else vcov <- vcov(nm)
   ci.cm <- matrix(data = NA, nrow = 2L, ncol = 2L,
                   dimnames = list(c('Zero Variance (ZV)', 'Delta'), c('Lower', 'Upper')))
-  if(mefit$mestructure == "systematic" && mevar[2] == "dep"){
+  if(mefit$me.structure == "systematic" && me.var[2] == "dep"){
     t0 <- unname(coef(mefit)[1])
     t1 <- unname(coef(mefit)[2])
     int <- (unname(coef.nm[1,1]) - t0) / t1
@@ -113,10 +113,10 @@ mecor <- function(formula,
       bt <- bootstrap.sme(nm, mefit, alpha, B)
       ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$normal[2:3])}
   }
-  if(mefit$mestructure == "differential" && mevar[2] == "dep"){
+  if(mefit$me.structure == "differential" && me.var[2] == "dep"){
     t00 <- unname(coef(mefit)[1])
-    t10 <- ifelse(names(coef(mefit)[2]) == mefit$difvar, unname(coef(mefit)[3]), unname(coef(mefit)[2]))
-    t01 <- unname(coef(mefit)[mefit$difvar]) + t00
+    t10 <- ifelse(names(coef(mefit)[2]) == mefit$dif.var, unname(coef(mefit)[3]), unname(coef(mefit)[2]))
+    t01 <- unname(coef(mefit)[mefit$dif.var]) + t00
     t11 <- unname(coef(mefit)[4]) + t10
     int <- (unname(coef.nm[1,1]) - t00) / t10
     slope <- (unname(coef.nm[2,1]) + unname(coef.nm[1,1]) - t01) / t11 - int
@@ -138,7 +138,7 @@ mecor <- function(formula,
               rdf = nm$df.residual,
               call = match.call(),
               ci = ci.cm,
-              Rbtstrp = bt$R)
+              Rbtstrp = ifelse(exists("bt"), bt$R, NA))
   class(out) <- 'mecor'
   return(out)
 }
