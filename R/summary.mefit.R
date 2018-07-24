@@ -39,8 +39,8 @@ summary.mefit <- function(object){
                             `Pr(>|t|)` = 2 * pt(abs(t), rdf,
                                                 lower.tail = FALSE))
   out$size <- z$size
-  out$mestructure <- z$mestructure
-  out$difvar <- z$difvar
+  out$me.structure <- z$me.structure
+  out$dif.var <- z$dif.var
   out$rdf <- rdf
   out$r.squared <- z$r.squared
   out$sigma <- z$sigma
@@ -54,9 +54,9 @@ print.summary.mefit <- function(x){
       "\n\n", sep = "")
   cat("\nCoefficients:\n")
   printCoefmat(x$coefficients)
-  if(x$mestructure == "differential")
-    cat("\nThe structure is:", x$mestructure, "grouped by", x$difvar)
-  else cat("\n\nThe assumed structure is:", x$mestructure)
+  if(x$me.structure == "differential")
+    cat("\nThe structure is:", x$me.structure, "grouped by", x$dif.var)
+  else cat("\n\nThe assumed structure is:", x$me.structure)
   cat("\nSize of calibration data set:\n", x$size, sep = "")
   cat("\n\nResidual standard error:", x$sigma, "on", x$rdf, "degrees of freedom")
   cat("\nMultiple R-squared: ", x$r.squared)
