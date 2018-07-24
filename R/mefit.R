@@ -83,6 +83,8 @@ mefit <- function(formula,
       stop("number of levels of dif.var does not equal 2, this functionality is not supported by 'mecor'")  }
   }
   model <- lm(formula = formula, data = data)
+  if(all(model$residuals == 0)){
+    stop("all residuals of the measurement error fit are 0")  }
   if(robust == TRUE){
     vcov <- vcovHC(model) }
   else vcov <- vcov(model)
@@ -157,7 +159,7 @@ fieller <- function(nm,
   varnb <- summary(nm)$coef[2,2] ^ 2
   tq <- qt((1 - alpha / 2), nm$df.residual)
   v1 <- - 1 * (b * t1)
-  v2 <- vart1 * tq ^ 2 - t1 ^2
+  v2 <- vart1 * tq ^ 2 - t1 ^ 2
   v3 <- varnb * tq ^ 2 - b ^ 2
   D <- v1 ^ 2 - v2 * v3
   if(v2 < 0 & D > 0){
