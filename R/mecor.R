@@ -111,7 +111,7 @@ mecor <- function(formula,
     ci.cm <- rbind(ci.cm, 'Fieller' = fieller(nm, mefit, alpha))
     if(B != 0){
       bt <- bootstrap.sme(nm, mefit, alpha, B)
-      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$normal[2:3])}
+      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$percent[4:5])}
   }
   if(mefit$me.structure == "differential" && me.var[2] == "dep"){
     t00 <- unname(coef(mefit)[1])
@@ -130,7 +130,7 @@ mecor <- function(formula,
     ci.cm[2,] <- delta.dme(nm, coef.cm, mefit, alpha)
     if(B != 0){
       bt <- bootstrap.dme(nm, mefit, alpha, B)
-      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$normal[2:3])}
+      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$percent[4:5])}
   }
   out <- list(coefficients = coef.cm,
               stderr = stderr.cm,
