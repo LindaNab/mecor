@@ -4,8 +4,8 @@
 \alias{mefit}
 \title{Fitting Calibration Model}
 \usage{
-mefit(formula, data = NULL, me.structure = "systematic", dif.var = NULL,
-  robust = FALSE)
+mefit(formula, data = NULL, me.structure = "systematic",
+  dif.var = NULL, robust = FALSE)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is

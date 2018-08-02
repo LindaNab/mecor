@@ -215,7 +215,7 @@ bootstrap.dme <- function(nm, mefit, alpha, B){
   count <- 1
   meboot <- boot(data = nm$model, statistic = statme.dme,
                  R = B)
-  ci <- boot.ci(boot.out = meboot, conf = (1 - alpha), type = "norm")
+  ci <- boot.ci(boot.out = meboot, conf = (1 - alpha), type = "perc")
   return(ci)
 }
 
