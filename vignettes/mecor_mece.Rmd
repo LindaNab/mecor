@@ -1,0 +1,31 @@
+---
+title: "Measurement errors in continuous trial endpoints"
+author: "Linda Nab"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{mecor_mece}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+If endpoints in a trial are measured with error, you need to:
+
+- Quantify the measurement error in an external dataset
+
+- Correct for the measurement error 
+
+## Quantification of measurement error
+
+The function 'mefit' in the mecor package can be used for quantification of the measurement error in an external calibration set by fitting a linear regression between the true endpoint and the with error contaminated endpoint measure (that is used in the trial for endpoint measurement). Depending on the assumed structure of the underlying measurement error model (e.g., systematic or differential), a different fit is used for the data. 
+
+## Correction of measurment error
+
+The function 'mecor' is the mecor package can be used to correct for the measurement error in the trial. It needs a 'mefit' object where the measurement error is quantified. 
+
