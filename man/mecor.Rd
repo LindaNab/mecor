@@ -4,8 +4,8 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data = NULL, me.var, mefit, dif.var = NULL,
-  method = "rc", robust = FALSE, alpha = 0.05, B = 0)
+mecor(formula, data, me.var, mefit, dif.var, method = "rc",
+  robust = FALSE, alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -24,12 +24,14 @@ in \code{formula} with measurement error}
 \item{mefit}{object of class \link[mecor]{mefit}
 used to correct \code{me.var}}
 
-\item{dif.var}{needed if the structure of 'mefit' is 'differential',
-a named vector specifying the grouping variable in \code{formula}
-that stands for the dif.var used in 'mefit'}
+\item{dif.var}{an optional named vector specifying the grouping variable in \code{formula}
+that corresponds to the dif.var used in 'mefit', which is only needed if the structure
+of 'mefit' is 'differential'. If 'dif.var' is not specified and me.structure is
+'differential, mecor searches the environment for the dif.var variable specified in 'mefit'
+object.}
 
 \item{method}{a character string indicating the method used to correct for
-measurement error, only the method "rc" is implemented}
+measurement error, only the method "rc" (regression calibration) is implemented}
 
 \item{alpha}{alpha level used to construct confidence intervals}
 
@@ -42,11 +44,14 @@ An object of class \code{mecor} is a list containing the following components:
 
 \item{coefficients}{a named vector containing the coefficients of the corrected model}
 \item{stderr}{zero variance standard errors of coefficients of the corrected model}
-\item{coef.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
+\item{coefficients.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
 \item{rdf}{the residual degrees of freedom of the corrected model}
 \item{call}{matched call}
 \item{ci}{a named matrix containing the confidence intervals for the effect estimate of the corrected
 model}
+\item{dif.var}{a named vector linking the grouping variable in formula to the grouping variable in
+the used mefit object (used for differential measurement error models)}
+\item{Rbtstrp}{number of bootstrap replicates used to construct Bootstrap Confidence Interval}
 }
 \description{
 mecor provides correction methods for measurement
@@ -68,13 +73,13 @@ Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - 
 
 ##solve systematic measurement error (sme)
 nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-fit_sme <- mefit(formula = Vcal_sme ~ Ycal)
+fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
 cm_sme <- mecor(formula = V_sme ~ X, me.var = "V_sme", mefit = fit_sme, method = "rc", B = 999) #compare with nm and rm
 
 ##solve differential measurement error (dme)
 nm_dme <- lm(V_dme ~ X) ##compare with rm
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
-cm_dme <- mecor(formula = V_dme ~ X, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
+fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
+cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
 
 }
 \references{

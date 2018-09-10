@@ -42,6 +42,7 @@ summary.mecor <- function(object){
   out$rdf <- rdf
   out$ci <- z$ci
   out$est <- est
+  out$dif.var <- z$dif.var
   out$Rbtstrp <- z$Rbtstrp
   class(out) <- "summary.mecor"
   out
@@ -50,12 +51,14 @@ summary.mecor <- function(object){
 #' @export
 print.summary.mecor <- function(x){
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
-      "\n\n", sep = "")
+      "\n", sep = "")
+  if(!is.null(x$dif.var)){
+    cat("\nDifferential measurement error model:\n", paste(names(x$dif.var), "specified in formula, is linked to", x$dif.var, "specified in mefit object\n"), sep = "")}
   cat("\nCoefficients Uncorrected Model:\n")
   printCoefmat(x$coef.nm, signif.stars = F)
   cat("\nCoefficients Corrected Model:\n")
   printCoefmat(x$coefficients, signif.stars = F)
-  cat("\nConfidence Intervals for", names(x$est)[2], "\n")
+  cat("\nConfidence Intervals for", paste(names(x$est)[2], ":", sep = ""), "\n")
   print(x$ci)
   if(!is.na(x$call$B) && x$call$B != 0){
     cat("Bootstrap Confidence Interval is based on", x$Rbtstrp, "bootstrap replicates")  }
@@ -65,12 +68,14 @@ print.summary.mecor <- function(x){
 #' @export
 print.mecor <- function(x){
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
-      "\n\n", sep = "")
+      "\n", sep = "")
+  if(!is.null(x$dif.var)){
+    cat("\nDifferential measurement error model:\n", paste(names(x$dif.var), "specified in formula, is linked to", x$dif.var, "specified in mefit object\n"), sep = "")}
   if (length(coef(x))) {
-    cat("Coefficients corrected model:\n")
+    cat("\nCoefficients corrected model:\n")
     print(x$coefficients)
   }
-  else cat("No coefficients\n")
+  else cat("\nNo coefficients\n")
   cat("\n")
   invisible(x)
 }

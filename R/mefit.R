@@ -8,19 +8,21 @@
 #' @param formula an object of class \link[stats]{formula} (or one that is
 #' coerced to that class): a symbolic description of the
 #' model to be fitted in an \link[stats]{lm} model. If \code{memodel} is "systematic",
-#' formula should be of the form 'V ~ Y'. If \code{memodel} is "differential,
+#' formula should be of the form 'V ~ Y'. If \code{me.structure} is "differential,
 #' \code{formula} should be of the form 'V ~ Y * X'.
 #' @param data an optional data frame, list or environment (or
 #' object coercible by as.data.frame to a data frame) containing
 #' the variables in the model. If not found in \code{data}, the
 #' variables are taken from \code{environment(formula)}, typically
 #' the enviroment from which \code{mefit} is called.
-#' @param me.structure a character string indicating the underlying structure of the measurement errors
-#' in your data, i.e. "classical", "systematic" or "differential".
-#' @param dif.var variable indicating the grouping variable in formula if \code{memodel} is "differential".
-#' @param robust indicates whether robust standard errors need to be calculated, the "HC3"
-#' robust standard errors from \link[sandwich]{vcovHC} are used for the heteroskedasticity-consistent
-#' estimation of the covariance matrix of the coefficient estimates.
+#' @param me.structure a character string indicating the underlying structure of the
+#' measurement errors in your data, i.e. "classical", "systematic" or "differential".
+#' @param dif.var a non-empty character string specifying the variable indicating the
+#' grouping variable in formula if \code{memodel} is "differential".
+#' @param robust indicates whether robust standard errors need to be calculated, the
+#' "HC3" robust standard errors from \link[sandwich]{vcovHC} are used for the
+#' heteroskedasticity-consistent estimation of the covariance matrix of the coefficient
+#' estimates.
 #'
 #' @return \code{mefit} returns an object of \link[base]{class} "mefit".
 #'
@@ -47,9 +49,11 @@
 #' ##generation of external calibration set
 #' Xcal <- c(rep(0, 500), rep(1, 500))
 #' Ycal <- Xcal + rnorm(1000, 0, 1)
+#' Vcal_cme <- Ycal + rnorm(1000, 0, 3) #classical measurement error (cme)
 #' Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3) #systematic measurement error (sme)
 #' Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal) #differential measurement error (dme)
 #'
+#' fit_cme <- mefit(formula = Vcal_cme ~ Ycal - 1)
 #' fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
 #' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = T)
 #'
@@ -57,29 +61,44 @@
 #' @import boot
 #' @export
 mefit <- function(formula,
-                  data = NULL,
-                  me.structure = "systematic",
-                  dif.var = NULL,
+                  data,
+                  me.structure = "classical",
+                  dif.var,
                   robust = FALSE){
+  if(missing(data)) data = NULL
+  else if(!is.data.frame(data)) data <- as.data.frame(data)
+  if(missing(dif.var)) dif.var = NULL
+  if(me.structure == "classical"){
+    diflevels <- NA
+    if(NROW(all.vars(formula)) != 2){
+      stop("length of 'formula' wrong, should be of form 'V ~ Y' for classical me.structures")}
+    if(attr(terms(formula), "intercept") == 1){
+      warning("'formula' had an implied intercept term and is removed because 'me.structure' is classical")
+      formula <- update(formula, . ~ . - 1)}
+  }
   if(me.structure == "systematic"){
-    if(attr(terms(formula), "variables")[4] != "NULL()"){
-      stop("length of 'formula' too long, should be of form 'V ~ Y' for systematic me.structures")}
+    diflevels <- NA
+    if(NROW(all.vars(formula)) != 2){
+      stop("length of 'formula' wrong, should be of form 'V ~ Y' for systematic me.structures")}
     if(!is.null(dif.var)){
       warning("'me.structure' is systematic so variable dif.var is set null")
-      id <- NULL}
+      id = NULL}
     }
   if(me.structure == "differential"){
     if(is.null(dif.var)){
-      stop("'me.structure' is differential but there is no dif.var")  }
-    if(attr(terms(formula), "variables")[5] != "NULL()"){
-      stop("length of 'formula' too long, should be of form 'V ~ Y * X' for differential me.structures")  }
+      stop("'me.structure' is differential but dif.var is null")  }
+    if(NROW(all.vars(formula)) > 3){
+      stop("length of 'formula' wrong, should be of form 'V ~ Y * X' for differential me.structures")  }
     if(!grepl(":", attr(terms(formula), "term.labels")[3])){
       stop("'me.structure' is differential, so there should be an interaction term in 'formula'")  }
-    if(!is.null(data)) getdif.var <- data[dif.var] else getdif.var <- get(dif.var)
-    if(NROW(unique(getdif.var)) == 1){
+    if(!is.null(data)) getdif.var <- data[dif.var]
+      else if(grepl("$", dif.var, fixed = TRUE)) stop("use the 'data' argument to specify the dataframe where 'dif.var' can be found, use of $ is not supported here")
+        else if(exists(dif.var)) getdif.var <- get(dif.var) else stop("'dif.var' does not exist in environment")
+    if(!is.numeric(unique(getdif.var))) diflevels <- as.numeric(unlist(unique(getdif.var))) else diflevels <- unique(getdif.var)
+    if(NROW(diflevels) == 1){
       warning("'number of levels of 'dif.var' is 1, so 'me.structure' is set 'systematic'")
       me.structure = "systematic"}
-    if(NROW(unique(getdif.var)) != 2){
+    if(NROW(diflevels) != 2){
       stop("number of levels of dif.var does not equal 2, this functionality is not supported by 'mecor'")  }
   }
   model <- lm(formula = formula, data = data)
@@ -88,7 +107,6 @@ mefit <- function(formula,
   if(robust == TRUE){
     vcov <- vcovHC(model) }
   else vcov <- vcov(model)
-  if(me.structure == "differential") diflevels = unique(getdif.var) else diflevels = NA
   out <- list(coefficients = model$coefficients,
               vcov = vcov,
               size = nrow(model$model),

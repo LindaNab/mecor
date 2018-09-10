@@ -51,7 +51,7 @@ summary.mefit <- function(object){
 #' @export
 print.summary.mefit <- function(x){
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
-      "\n\n", sep = "")
+      "\n", sep = "")
   cat("\nCoefficients:\n")
   printCoefmat(x$coefficients)
   if(x$me.structure == "differential")
@@ -66,7 +66,7 @@ print.summary.mefit <- function(x){
 #' @export
 print.mefit <- function(x){
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
-      "\n\n", sep = "")
+      "\n", sep = "")
   if (length(coef(x))) {
     cat("Coefficients:\n")
     print(x$coefficients)

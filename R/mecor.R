@@ -15,11 +15,13 @@
 #' in \code{formula} with measurement error
 #' @param mefit object of class \link[mecor]{mefit}
 #' used to correct \code{me.var}
-#' @param dif.var needed if the structure of 'mefit' is 'differential',
-#' a named vector specifying the grouping variable in \code{formula}
-#' that stands for the dif.var used in 'mefit'
+#' @param dif.var an optional named vector specifying the grouping variable in \code{formula}
+#' that corresponds to the dif.var used in 'mefit', which is only needed if the structure
+#' of 'mefit' is 'differential'. If 'dif.var' is not specified and me.structure is
+#' 'differential, mecor searches the environment for the dif.var variable specified in 'mefit'
+#' object.
 #' @param method a character string indicating the method used to correct for
-#' measurement error, only the method "rc" is implemented
+#' measurement error, only the method "rc" (regression calibration) is implemented
 #' @param alpha alpha level used to construct confidence intervals
 #' @param B number of bootstrap samples
 #'
@@ -29,11 +31,14 @@
 #'
 #' \item{coefficients}{a named vector containing the coefficients of the corrected model}
 #' \item{stderr}{zero variance standard errors of coefficients of the corrected model}
-#' \item{coef.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
+#' \item{coefficients.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
 #' \item{rdf}{the residual degrees of freedom of the corrected model}
 #' \item{call}{matched call}
 #' \item{ci}{a named matrix containing the confidence intervals for the effect estimate of the corrected
 #' model}
+#' \item{dif.var}{a named vector linking the grouping variable in formula to the grouping variable in
+#' the used mefit object (used for differential measurement error models)}
+#' \item{Rbtstrp}{number of bootstrap replicates used to construct Bootstrap Confidence Interval}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
@@ -57,25 +62,33 @@
 #'
 #' ##solve systematic measurement error (sme)
 #' nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-#' fit_sme <- mefit(formula = Vcal_sme ~ Ycal)
+#' fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
 #' cm_sme <- mecor(formula = V_sme ~ X, me.var = "V_sme", mefit = fit_sme, method = "rc", B = 999) #compare with nm and rm
 #'
 #' ##solve differential measurement error (dme)
 #' nm_dme <- lm(V_dme ~ X) ##compare with rm
-#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
-#' cm_dme <- mecor(formula = V_dme ~ X, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
+#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
+#' cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
 #'
 #' @export
 mecor <- function(formula,
-                  data = NULL,
+                  data,
                   me.var,
                   mefit,
-                  dif.var = NULL,
+                  dif.var,
                   method = "rc",
                   robust = FALSE,
                   alpha = 0.05,
                   B = 0){
-  if(attr(terms(formula), "variables")[4]!="NULL()"){
+  if(missing(data)) data = NULL
+  else if(!is.data.frame(data)) data <- as.data.frame(data)
+  if(missing(dif.var) && mefit$me.structure == "differential"){
+    warning("dif.var is not specified, so dif.var specified in 'mefit' is used")
+    if(!any(grepl(mefit$dif.var, formula))) stop("dif.var specified in 'mefit' does not occur in formula")
+    dif.var <- mefit$dif.var
+    names(dif.var) <- mefit$dif.var}
+  else if(missing(dif.var)) dif.var = NULL
+  if(NROW(all.vars(formula)) != 2){
     stop("variable 'formula' should be a formula describing one independent and one dependent variable")}
   if(!is.character(class(me.var))){
     stop("variable 'me.var' should be a character string")}
@@ -84,10 +97,13 @@ mecor <- function(formula,
     else stop("variable 'me.var' should be the dependent variable")
   if(class(mefit) != "mefit"){
     stop("variable 'mefit' should be of class 'mefit'")}
+  if(mefit$me.structure == "classical" && me.var[2] == "dep"){
+    stop("me.structure of 'mefit' is classical and 'me.var' is the dependent variable so there is nothing to correct")}
   if(mefit$me.structure == "differential") {
-    if(!is.null(data)) getdif.var <- data[names(dif.var)] else getdif.var <- get(names(dif.var))
-    if(!all.equal(mefit$diflevels, unique(getdif.var), check.attributes = FALSE)){
-    stop("diflevels in the mefit object differ from the levels of dif.var")}
+    if(!is.null(data)) {getdif.var <- data[names(dif.var)]} else getdif.var <- get(names(dif.var))
+    if(!is.numeric(unique(getdif.var))) diflevels <- as.numeric(unlist(unique(getdif.var))) else diflevels <- unique(getdif.var)
+    if(!all.equal(mefit$diflevels, diflevels, check.attributes = FALSE)){
+    stop("levels of dif.var in mefit object differ from the levels of the grouping variable specified in formula")}
   }
   nm <- lm(formula, data)
   coef.nm <- summary(nm)$coef
@@ -138,6 +154,7 @@ mecor <- function(formula,
               rdf = nm$df.residual,
               call = match.call(),
               ci = ci.cm,
+              dif.var = dif.var,
               Rbtstrp = ifelse(exists("bt"), bt$R, NA))
   class(out) <- 'mecor'
   return(out)
