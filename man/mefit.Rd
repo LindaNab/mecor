@@ -4,8 +4,8 @@
 \alias{mefit}
 \title{Fitting Calibration Model}
 \usage{
-mefit(formula, data, me.structure = "classical", dif.var,
-  robust = FALSE)
+mefit(formula, data, me.structure = "classical",
+  data.type = "external", dif.var, robust = FALSE)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -22,6 +22,9 @@ the enviroment from which \code{mefit} is called.}
 
 \item{me.structure}{a character string indicating the underlying structure of the
 measurement errors in your data, i.e. "classical", "systematic" or "differential".}
+
+\item{data.type}{a character string indicating whether the used calibration data
+is "external" or "internal".}
 
 \item{dif.var}{a non-empty character string specifying the variable indicating the
 grouping variable in formula if \code{memodel} is "differential".}

@@ -3,7 +3,7 @@
 #' @description
 #' \code{summary} method for class "mecor"
 #'
-#' @param object an object of class "mecor", a result of a call to \link[mecor]{mefit}
+#' @param object an object of class "mecor", a result of a call to \link[mecor]{mecor}
 #'
 #' @return
 #' The function \code{summary.mecor} returns a list of summary statistics of the fitted

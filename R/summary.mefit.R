@@ -31,19 +31,19 @@ summary.mefit <- function(object){
   est <- z$coefficients
   se <- sqrt(diag(z$vcov))
   t <- est/se
-  rdf <- z$rdf
+  rdf <- z$df.residual
   out <- z[c("call")]
   out$coefficients <- cbind('Estimate' = est,
                             'Std. Error' = se,
                             't' = t,
                             `Pr(>|t|)` = 2 * pt(abs(t), rdf,
                                                 lower.tail = FALSE))
-  out$size <- z$size
+  out$size <- nrow(z$model)
   out$me.structure <- z$me.structure
   out$dif.var <- z$dif.var
   out$rdf <- rdf
-  out$r.squared <- z$r.squared
-  out$sigma <- z$sigma
+  out$r.squared <- summary.lm(z)$r.squared
+  out$sigma <- summary.lm(z)$sigma
   class(out) <- "summary.mefit"
   out
 }
@@ -54,12 +54,13 @@ print.summary.mefit <- function(x){
       "\n", sep = "")
   cat("\nCoefficients:\n")
   printCoefmat(x$coefficients)
+  cat("\nCharacteristics Calibration Data:")
   if(x$me.structure == "differential")
-    cat("\nThe structure is:", x$me.structure, "grouped by", x$dif.var)
-  else cat("\n\nThe assumed structure is:", x$me.structure)
-  cat("\nSize of calibration data set:\n", x$size, sep = "")
-  cat("\n\nResidual standard error:", x$sigma, "on", x$rdf, "degrees of freedom")
-  cat("\nMultiple R-squared: ", x$r.squared)
+    cat("\nThe assumed measurement error structure is:", x$me.structure, "grouped by", x$dif.var)
+  else cat("\nThe assumed measurement error structure is:", x$me.structure)
+  cat("\nSize of calibration data set:", x$size)
+  cat("\nResidual standard error:", x$sigma, "on", x$rdf, "degrees of freedom")
+  cat("\nMultiple R-squared:", x$r.squared)
   invisible(x)
 }
 

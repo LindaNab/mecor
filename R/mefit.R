@@ -17,6 +17,8 @@
 #' the enviroment from which \code{mefit} is called.
 #' @param me.structure a character string indicating the underlying structure of the
 #' measurement errors in your data, i.e. "classical", "systematic" or "differential".
+#' @param data.type a character string indicating whether the used calibration data
+#' is "external" or "internal".
 #' @param dif.var a non-empty character string specifying the variable indicating the
 #' grouping variable in formula if \code{memodel} is "differential".
 #' @param robust indicates whether robust standard errors need to be calculated, the
@@ -63,6 +65,7 @@
 mefit <- function(formula,
                   data,
                   me.structure = "classical",
+                  data.type = "external",
                   dif.var,
                   robust = FALSE){
   if(missing(data)) data = NULL
@@ -107,18 +110,25 @@ mefit <- function(formula,
   if(robust == TRUE){
     vcov <- vcovHC(model) }
   else vcov <- vcov(model)
-  out <- list(coefficients = model$coefficients,
-              vcov = vcov,
-              size = nrow(model$model),
-              call = match.call(),
-              me.structure = me.structure,
-              dif.var = dif.var,
-              diflevels = diflevels,
-              rdf = model$df.residual,
-              r.squared = summary(model)$r.squared,
-              sigma = summary(model)$sigma,
-              model = model$model)
-  class(out) <- 'mefit'
+  out <- model
+  out$call <- match.call()
+  out$vcov <- vcov
+  out$me.structure <- me.structure
+  out$dif.var <- dif.var
+  out$diflevels <- diflevels
+  # out <- list(coefficients = model$coefficients,
+  #             vcov = vcov,
+  #             size = nrow(model$model),
+  #             call = match.call(),
+  #             me.structure = me.structure,
+  #             dif.var = dif.var,
+  #             diflevels = diflevels,
+  #             rdf = model$df.residual,
+  #             r.squared = summary(model)$r.squared,
+  #             sigma = summary(model)$sigma,
+  #             model = model$model,
+  #             terms = model$terms)
+  class(out) <- c('mefit', 'lm')
   return(out)
 }
 

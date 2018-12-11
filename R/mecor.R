@@ -13,6 +13,9 @@
 #' the enviroment from which \code{mecor} is called.
 #' @param me.var a non-empty character string specifying the variable
 #' in \code{formula} with measurement error
+#' @param true.var a non empty character string specifying the variable
+#' that corresponds to the correctly measured me.var. Required if data.type
+#' in mefit object is 'internal'.
 #' @param mefit object of class \link[mecor]{mefit}
 #' used to correct \code{me.var}
 #' @param dif.var an optional named vector specifying the grouping variable in \code{formula}
@@ -74,9 +77,11 @@
 mecor <- function(formula,
                   data,
                   me.var,
+                  true.var,
                   mefit,
                   dif.var,
                   method = "rc",
+                  original = TRUE,
                   robust = FALSE,
                   alpha = 0.05,
                   B = 0){
@@ -92,11 +97,20 @@ mecor <- function(formula,
     stop("variable 'formula' should be a formula describing one independent and one dependent variable")}
   if(!is.character(class(me.var))){
     stop("variable 'me.var' should be a character string")}
+  if(!is.character(class(true.var))){
+    stop("variable 'true.var' should be a character string")}
   if(names(attr(terms(formula),"factors")[,1])[1] == me.var){
     me.var <- cbind(me.var, "dep")}
-    else stop("variable 'me.var' should be the dependent variable")
+    else if(names(attr(terms(formula),"factors")[,1])[2] == me.var){
+    me.var <- cbind(me.var, "indep")}
+    else stop("variable 'me.var' should be the dependent variable or the first independent variable in formula")
+  if(!is.null(data)) {getme.var <- data[names(me.var)]} else getme.var <- get(names(me.var))
   if(class(mefit) != "mefit"){
     stop("variable 'mefit' should be of class 'mefit'")}
+  if(mefit$data.type == "internal"){
+    if(missing(true.var)){
+      stop("data.type of 'mefit' is internal and 'true.var' is missing")}
+    else if(!is.null(data)) {gettrue.var <- data[names(true.var)]} else gettrue.var <- get(names(true.var))}
   if(mefit$me.structure == "classical" && me.var[2] == "dep"){
     stop("me.structure of 'mefit' is classical and 'me.var' is the dependent variable so there is nothing to correct")}
   if(mefit$me.structure == "differential") {
@@ -110,44 +124,63 @@ mecor <- function(formula,
   if(robust == TRUE){
     vcov <- vcovHC(nm) }
   else vcov <- vcov(nm)
-  ci.cm <- matrix(data = NA, nrow = 2L, ncol = 2L,
-                  dimnames = list(c('Zero Variance (ZV)', 'Delta'), c('Lower', 'Upper')))
-  if(mefit$me.structure == "systematic" && me.var[2] == "dep"){
-    t0 <- unname(coef(mefit)[1])
-    t1 <- unname(coef(mefit)[2])
-    int <- (unname(coef.nm[1,1]) - t0) / t1
-    slope <- unname(coef.nm[2,1]) / t1
-    coef.cm <- c('(Intercept)' = int, 'X' = slope)
-    tq <- qt((1 - alpha / 2), nm$df.residual)
-    stderr.cm <- coef.nm[,2] / t1 ^ 2
-    zv.l <- coef.cm[2] - tq * stderr.cm[2]
-    zv.u <- coef.cm[2] + tq * stderr.cm[2]
-    ci.cm[1,] <- c(zv.l, zv.u)
-    ci.cm[2,] <- delta.sme(nm, coef.cm, mefit, alpha)
-    ci.cm <- rbind(ci.cm, 'Fieller' = fieller(nm, mefit, alpha))
-    if(B != 0){
-      bt <- bootstrap.sme(nm, mefit, alpha, B)
-      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$percent[4:5])}
+
+  if(method == "rc"){
+    if(me.var[2] == "dep"){
+      ci.cm <- matrix(data = NA, nrow = 2L, ncol = 2L,
+                      dimnames = list(c('Zero Variance (ZV)', 'Delta'), c('Lower', 'Upper')))
+      if(mefit$me.structure == "systematic"){
+        t0 <- unname(coef(mefit)[1])
+        t1 <- unname(coef(mefit)[2])
+        int <- (unname(coef.nm[1,1]) - t0) / t1
+        slope <- unname(coef.nm[2,1]) / t1
+        coef.cm <- c('(Intercept)' = int, 'X' = slope)
+        tq <- qt((1 - alpha / 2), nm$df.residual)
+        stderr.cm <- coef.nm[,2] / t1 ^ 2
+        zv.l <- coef.cm[2] - tq * stderr.cm[2]
+        zv.u <- coef.cm[2] + tq * stderr.cm[2]
+        ci.cm[1,] <- c(zv.l, zv.u)
+        ci.cm[2,] <- delta.sme(nm, coef.cm, mefit, alpha)
+        ci.cm <- rbind(ci.cm, 'Fieller' = fieller(nm, mefit, alpha))
+        if(B != 0){
+          bt <- bootstrap.sme(nm, mefit, alpha, B)
+          ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$percent[4:5])}
+      }
+      if(mefit$me.structure == "differential"){
+        t00 <- unname(coef(mefit)[1])
+        t10 <- ifelse(names(coef(mefit)[2]) == mefit$dif.var, unname(coef(mefit)[3]), unname(coef(mefit)[2]))
+        t01 <- unname(coef(mefit)[mefit$dif.var]) + t00
+        t11 <- unname(coef(mefit)[4]) + t10
+        int <- (unname(coef.nm[1,1]) - t00) / t10
+        slope <- (unname(coef.nm[2,1]) + unname(coef.nm[1,1]) - t01) / t11 - int
+        coef.cm <- c('(Intercept)' = int, 'X' = slope)
+        stderr.cm <- c(sqrt(vcov[1,1] / t10^2),
+                     sqrt(vcov[2,2]/ t11^2 - vcov[1,1] / t11^2 + vcov[1,1] / t10^2))
+        tq <- qt((1 - alpha / 2), nm$df.residual)
+        zv.l <- coef.cm[2] - tq * stderr.cm[2]
+        zv.u <- coef.cm[2] + tq * stderr.cm[2]
+        ci.cm[1,] <- c(zv.l, zv.u)
+        ci.cm[2,] <- delta.dme(nm, coef.cm, mefit, alpha)
+        if(B != 0){
+          bt <- bootstrap.dme(nm, mefit, alpha, B)
+          ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$percent[4:5])}
+      }
+    }
+    if(me.var[2] == "indep"){
+      ci.cm <- matrix(data = NA, nrow = 2L, ncol = 2L)
+      if(mefit$structure == "systematic"){
+        new <- data.frame(
+
+        )
+        predval <- predict(mefit, getme.var)
+        if(original == F){
+          cor.var <- predval}
+        else
+
+      }
+    }
   }
-  if(mefit$me.structure == "differential" && me.var[2] == "dep"){
-    t00 <- unname(coef(mefit)[1])
-    t10 <- ifelse(names(coef(mefit)[2]) == mefit$dif.var, unname(coef(mefit)[3]), unname(coef(mefit)[2]))
-    t01 <- unname(coef(mefit)[mefit$dif.var]) + t00
-    t11 <- unname(coef(mefit)[4]) + t10
-    int <- (unname(coef.nm[1,1]) - t00) / t10
-    slope <- (unname(coef.nm[2,1]) + unname(coef.nm[1,1]) - t01) / t11 - int
-    coef.cm <- c('(Intercept)' = int, 'X' = slope)
-    stderr.cm <- c(sqrt(vcov[1,1] / t10^2),
-                   sqrt(vcov[2,2]/ t11^2 - vcov[1,1] / t11^2 + vcov[1,1] / t10^2))
-    tq <- qt((1 - alpha / 2), nm$df.residual)
-    zv.l <- coef.cm[2] - tq * stderr.cm[2]
-    zv.u <- coef.cm[2] + tq * stderr.cm[2]
-    ci.cm[1,] <- c(zv.l, zv.u)
-    ci.cm[2,] <- delta.dme(nm, coef.cm, mefit, alpha)
-    if(B != 0){
-      bt <- bootstrap.dme(nm, mefit, alpha, B)
-      ci.cm <- rbind(ci.cm, 'Bootstrap'= bt$percent[4:5])}
-  }
+
   out <- list(coefficients = coef.cm,
               stderr = stderr.cm,
               coefficients.nm = coef.nm,

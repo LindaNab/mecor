@@ -7,7 +7,7 @@
 \method{summary}{mecor}(object)
 }
 \arguments{
-\item{object}{an object of class "mecor", a result of a call to \link[mecor]{mefit}}
+\item{object}{an object of class "mecor", a result of a call to \link[mecor]{mecor}}
 }
 \value{
 The function \code{summary.mecor} returns a list of summary statistics of the fitted
