@@ -168,16 +168,6 @@ mecor <- function(formula,
     }
     if(me.var[2] == "indep"){
       ci.cm <- matrix(data = NA, nrow = 2L, ncol = 2L)
-      if(mefit$structure == "systematic"){
-        new <- data.frame(
-
-        )
-        predval <- predict(mefit, getme.var)
-        if(original == F){
-          cor.var <- predval}
-        else
-
-      }
     }
   }
 

@@ -4,8 +4,8 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, me.var, mefit, dif.var, method = "rc",
-  robust = FALSE, alpha = 0.05, B = 0)
+mecor(formula, data, me.var, true.var, mefit, dif.var, method = "rc",
+  original = TRUE, robust = FALSE, alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -20,6 +20,10 @@ the enviroment from which \code{mecor} is called.}
 
 \item{me.var}{a non-empty character string specifying the variable
 in \code{formula} with measurement error}
+
+\item{true.var}{a non empty character string specifying the variable
+that corresponds to the correctly measured me.var. Required if data.type
+in mefit object is 'internal'.}
 
 \item{mefit}{object of class \link[mecor]{mefit}
 used to correct \code{me.var}}
