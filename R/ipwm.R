@@ -62,8 +62,6 @@
 #' )
 #' ipwm_out
 #'
-#' @importFrom boot boot
-#'
 #' @export ipwm
 #' @export
 ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,exposure_mis=NULL,nboot=1000,conf_level=0.95,
