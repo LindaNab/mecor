@@ -40,7 +40,7 @@
 #' @references
 #' Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436.
 #'
-#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcme misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
+#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcme misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
 #'
 #' @examples
 #' data(sim) # simulated data on 10 covariates, exposure A and outcome Y.
