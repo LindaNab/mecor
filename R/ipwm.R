@@ -64,7 +64,6 @@
 #'
 #' @importFrom boot boot
 #'
-#' @export ipwm
 #' @export
 ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,exposure_mis=NULL,nboot=1000,conf_level=0.95,
   fix_nNAs=FALSE,semiparametric=FALSE,optim_args=list(method="BFGS"),force_optim=FALSE,sp=Inf,print=TRUE
