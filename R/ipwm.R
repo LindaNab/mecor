@@ -72,7 +72,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
   nullZ <- is.null(outcome_mis)
   nullB <- is.null(exposure_mis)
   dep_var <- lapply(formulas,"[[",2L)
-  if(any(lengths(dep_var)>1L)) stop("formulas should have untransformed binary variables.")
+  if(any(lengths(dep_var)>1L)) stop("formulas should have untransformed binary variables as dependent variables.")
   dep_var <- as.character(dep_var)
   mt <- match(c(outcome_true,exposure_true,outcome_mis,exposure_mis),dep_var)
   if(any(is.na(mt))) stop(paste0("formula missing for variable",ifelse(sum(is.na(mt))>1,"s: ",": "),
