@@ -40,7 +40,7 @@
 #' @references
 #' Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436.
 #'
-#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcme misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
+#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcme misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
 #'
 #' @examples
 #' data(sim) # simulated data on 10 covariates, exposure A and outcome Y.
@@ -62,9 +62,6 @@
 #' )
 #' ipwm_out
 #'
-#' @importFrom boot boot
-#'
-#' @export ipwm
 #' @export
 ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,exposure_mis=NULL,nboot=1000,conf_level=0.95,
   fix_nNAs=FALSE,semiparametric=FALSE,optim_args=list(method="BFGS"),force_optim=FALSE,sp=Inf,print=TRUE
@@ -75,7 +72,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
   nullZ <- is.null(outcome_mis)
   nullB <- is.null(exposure_mis)
   dep_var <- lapply(formulas,"[[",2L)
-  if(any(lengths(dep_var)>1L)) stop("formulas should have untransformed binary variables.")
+  if(any(lengths(dep_var)>1L)) stop("formulas should have untransformed binary variables as dependent variables.")
   dep_var <- as.character(dep_var)
   mt <- match(c(outcome_true,exposure_true,outcome_mis,exposure_mis),dep_var)
   if(any(is.na(mt))) stop(paste0("formula missing for variable",ifelse(sum(is.na(mt))>1,"s: ",": "),
