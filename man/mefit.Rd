@@ -2,34 +2,16 @@
 % Please edit documentation in R/mefit.R
 \name{mefit}
 \alias{mefit}
-\title{Fitting Calibration Model}
+\title{Fitting Measurement Error Model}
 \usage{
-mefit(formula, data, me.structure = "classical",
-  data.type = "external", dif.var, robust = FALSE)
+mefit(formula, data, robust = FALSE)
 }
 \arguments{
-\item{formula}{an object of class \link[stats]{formula} (or one that is
-coerced to that class): a symbolic description of the
-model to be fitted in an \link[stats]{lm} model. If \code{memodel} is "systematic",
-formula should be of the form 'V ~ Y'. If \code{me.structure} is "differential,
-\code{formula} should be of the form 'V ~ Y * X'.}
+\item{formula}{formula of the measurement error model}
 
-\item{data}{an optional data frame, list or environment (or
-object coercible by as.data.frame to a data frame) containing
-the variables in the model. If not found in \code{data}, the
-variables are taken from \code{environment(formula)}, typically
-the enviroment from which \code{mefit} is called.}
+\item{data}{optional data frame}
 
-\item{me.structure}{a character string indicating the underlying structure of the
-measurement errors in your data, i.e. "classical", "systematic" or "differential".}
-
-\item{data.type}{a character string indicating whether the used calibration data
-is "external" or "internal".}
-
-\item{dif.var}{a non-empty character string specifying the variable indicating the
-grouping variable in formula if \code{memodel} is "differential".}
-
-\item{robust}{indicates whether robust standard errors need to be calculated, the
+\item{robust}{boolean indicating whether robust standard errors need to be calculated, the
 "HC3" robust standard errors from \link[sandwich]{vcovHC} are used for the
 heteroskedasticity-consistent estimation of the covariance matrix of the coefficient
 estimates.}
@@ -37,39 +19,33 @@ estimates.}
 \value{
 \code{mefit} returns an object of \link[base]{class} "mefit".
 
-An object of class \code{mefit} is a list containing the following components:
-
-\item{coefficients}{a named vector containing the coefficients of the fitted calibration model}
-\item{vcov}{the variance-covariance matrix of the parameters of the fitted calibration model, in case
-\code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
-\item{size}{the size of the calibration sample}
+An object of class \code{mefit} is lm object (the fit of the measurement error model) and
+contains additionally, the following components:
 \item{call}{the matched call}
-\item{me.structure}{the assumed structure of the measurement errors}
-\item{dif.var}{the used grouping variable}
-\item{diflevels}{the levels of the grouping variable 'dif.var'}
-\item{rdf}{the residual degrees of freedom}
-\item{r.squared}{R^2, the 'fraction of variance explained by the model', see \link[stats]{lm}
-for calculation}
-\item{sigma}{the square root of the estimated variance of the random error, see \link[stats]{lm}
-for calculation}
-\item{model}{the model frame used}
+\item{vcov}{the variance-covariance matrix of the parameters of the fitted measurement error model, in case
+\item{me.model}{the assumed measurement error model}
+\code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
 }
 \description{
-This function fits a linear regression to your calibration dataset
+This function fits a linear model to model the relationship between the test
+measurement (error-prone measurement) and the reference measurement (true measurement)
 in order to extract the measurement error parameters of the measurement
-error model from the calibration set.
+error model from a validation set.
 }
 \examples{
-##generation of external calibration set
-Xcal <- c(rep(0, 500), rep(1, 500))
-Ycal <- Xcal + rnorm(1000, 0, 1)
-Vcal_cme <- Ycal + rnorm(1000, 0, 3) #classical measurement error (cme)
-Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3) #systematic measurement error (sme)
-Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal) #differential measurement error (dme)
+##generation of external validation set
+Xval <- c(rep(0, 500), rep(1, 500))
+Yval <- Xval + rnorm(1000, 0, 1)
+Vval_cme <- Yval + rnorm(1000, 0, 3) #classical measurement error (cme)
+Vval_sme <- 1 + 2 * Yval + rnorm(1000, 0, 3) #systematic measurement error (sme)
+Vval_dme <- 2 + 2 * Xval + 3 * Yval + 2 * Xval * Yval + rnorm(1000, 0, 3 * (1 - Xval) + 2 * Xval) #differential measurement error (dme)
 
-fit_cme <- mefit(formula = Vcal_cme ~ Ycal - 1)
-fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, me.structure = "differential", dif.var = "Xcal", robust = T)
+#classical
+fitCme <- mefit(MeasError(Vval_cme, Yval) ~ - 1)
+#systematic
+fitSme <- mefit(MeasError(Vval_sme, Yval) ~ 1)
+#differential
+fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
 
 }
 \author{

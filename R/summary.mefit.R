@@ -21,8 +21,8 @@
 #'
 #' @examples
 #' ## Continuing the mefit() example:
-#' coef(fit_sme)
-#' summary(fit_sme)
+#' coef(fitSme)
+#' summary(fitSme)
 #'
 #' @export summary.mefit
 #' @export
@@ -39,8 +39,7 @@ summary.mefit <- function(object){
                             `Pr(>|t|)` = 2 * pt(abs(t), rdf,
                                                 lower.tail = FALSE))
   out$size <- nrow(z$model)
-  out$me.structure <- z$me.structure
-  out$dif.var <- z$dif.var
+  out$me.model <- z$me.model
   out$rdf <- rdf
   out$r.squared <- summary.lm(z)$r.squared
   out$sigma <- summary.lm(z)$sigma
@@ -55,9 +54,7 @@ print.summary.mefit <- function(x){
   cat("\nCoefficients:\n")
   printCoefmat(x$coefficients)
   cat("\nCharacteristics Calibration Data:")
-  if(x$me.structure == "differential")
-    cat("\nThe assumed measurement error structure is:", x$me.structure, "grouped by", x$dif.var)
-  else cat("\nThe assumed measurement error structure is:", x$me.structure)
+  cat("\nThe assumed measurement error model is:", x$me.model)
   cat("\nSize of calibration data set:", x$size)
   cat("\nResidual standard error:", x$sigma, "on", x$rdf, "degrees of freedom")
   cat("\nMultiple R-squared:", x$r.squared)

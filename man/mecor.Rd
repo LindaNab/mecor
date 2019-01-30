@@ -4,8 +4,8 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, me.var, true.var, mefit, dif.var, method = "rc",
-  original = TRUE, robust = FALSE, alpha = 0.05, B = 0)
+mecor(formula, data, method = "rc", external, original = TRUE,
+  robust = FALSE, alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -17,6 +17,13 @@ object coercible by as.data.frame to a data frame) containing
 the variables in the model. If not found in \code{data}, the
 variables are taken from \code{environment(formula)}, typically
 the enviroment from which \code{mecor} is called.}
+
+\item{method}{a character string indicating the method used to correct for
+measurement error, only the method "rc" (regression calibration) is implemented}
+
+\item{alpha}{alpha level used to construct confidence intervals}
+
+\item{B}{number of bootstrap samples}
 
 \item{me.var}{a non-empty character string specifying the variable
 in \code{formula} with measurement error}
@@ -33,13 +40,6 @@ that corresponds to the dif.var used in 'mefit', which is only needed if the str
 of 'mefit' is 'differential'. If 'dif.var' is not specified and me.structure is
 'differential, mecor searches the environment for the dif.var variable specified in 'mefit'
 object.}
-
-\item{method}{a character string indicating the method used to correct for
-measurement error, only the method "rc" (regression calibration) is implemented}
-
-\item{alpha}{alpha level used to construct confidence intervals}
-
-\item{B}{number of bootstrap samples}
 }
 \value{
 \code{mecor} returns an object of \link[base]{class} "mecor"
@@ -77,8 +77,8 @@ Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - 
 
 ##solve systematic measurement error (sme)
 nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-fit_sme <- mefit(formula = Vcal_sme ~ Ycal, me.structure = "systematic")
-cm_sme <- mecor(formula = V_sme ~ X, me.var = "V_sme", mefit = fit_sme, method = "rc", B = 999) #compare with nm and rm
+cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
+                                          method = "rc", B = 999) #compare with nm and rm
 
 ##solve differential measurement error (dme)
 nm_dme <- lm(V_dme ~ X) ##compare with rm
