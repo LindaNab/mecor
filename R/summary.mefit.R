@@ -21,8 +21,8 @@
 #'
 #' @examples
 #' ## Continuing the mefit() example:
-#' coef(fitSme)
-#' summary(fitSme)
+#' #coef(fitSme)
+#' #summary(fitSme)
 #'
 #' @export summary.mefit
 #' @export

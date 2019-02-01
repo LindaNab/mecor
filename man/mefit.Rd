@@ -23,8 +23,8 @@ An object of class \code{mefit} is lm object (the fit of the measurement error m
 contains additionally, the following components:
 \item{call}{the matched call}
 \item{vcov}{the variance-covariance matrix of the parameters of the fitted measurement error model, in case
-\item{me.model}{the assumed measurement error model}
 \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
+\item{me.model}{the assumed measurement error model}
 }
 \description{
 This function fits a linear model to model the relationship between the test
@@ -45,7 +45,7 @@ fitCme <- mefit(MeasError(Vval_cme, Yval) ~ - 1)
 #systematic
 fitSme <- mefit(MeasError(Vval_sme, Yval) ~ 1)
 #differential
-fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
+#fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
 
 }
 \author{

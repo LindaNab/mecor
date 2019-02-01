@@ -19,8 +19,8 @@
 #' contains additionally, the following components:
 #' \item{call}{the matched call}
 #' \item{vcov}{the variance-covariance matrix of the parameters of the fitted measurement error model, in case
-#' \item{me.model}{the assumed measurement error model}
 #' \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
+#' \item{me.model}{the assumed measurement error model}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
@@ -37,7 +37,7 @@
 #' #systematic
 #' fitSme <- mefit(MeasError(Vval_sme, Yval) ~ 1)
 #' #differential
-#' fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
+#' #fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
 #'
 #' @importFrom sandwich vcovHC
 #' @import boot

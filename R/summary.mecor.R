@@ -21,8 +21,8 @@
 #'
 #' @examples
 #' ## Continuing the mecor() example:
-#' coef(fit_sme)
-#' summary(cm_sme)
+#' #coef(fitSme)
+#' #summary(cm_sme)
 #'
 #' @export summary.mecor
 #' @export

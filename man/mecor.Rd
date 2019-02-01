@@ -77,13 +77,13 @@ Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - 
 
 ##solve systematic measurement error (sme)
 nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
-                                          method = "rc", B = 999) #compare with nm and rm
+#cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
+                                         # method = "rc", B = 999) #compare with nm and rm
 
 ##solve differential measurement error (dme)
-nm_dme <- lm(V_dme ~ X) ##compare with rm
-fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
-cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
+#nm_dme <- lm(V_dme ~ X) ##compare with rm
+#fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
+#cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
 
 }
 \references{

@@ -65,56 +65,15 @@
 #'
 #' ##solve systematic measurement error (sme)
 #' nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-#' cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
-#'                                           method = "rc", B = 999) #compare with nm and rm
+#' #cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
+#'                                          # method = "rc", B = 999) #compare with nm and rm
 #'
 #' ##solve differential measurement error (dme)
-#' nm_dme <- lm(V_dme ~ X) ##compare with rm
-#' fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
-#' cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
+#' #nm_dme <- lm(V_dme ~ X) ##compare with rm
+#' #fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
+#' #cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
 #'
 #' @export
-# mecor <- function(formula,
-#                   data,
-#                   method,
-#                   original,
-#                   B){
-#   if(missing(data)) data = NULL
-#   else if(!is.data.frame(data)) data <- as.data.frame(data)
-#
-# }
-#I basically need two formula's: one to get new fitted values and one replacing the MeasError
-#object for the new values
-
-# X <- rnorm(1000, 0, 1)
-# W <- X + rnorm(0,1)
-# Y <- 2 * X + rnorm(0,1)
-# formula <- Y ~ MeasError(W, X) + Z
-# formula <- Y ~ Z + MeasError(W,X)
-# formula <- MeasError(V, Y) ~ X + Z
-# formula <- Y ~ X
-# formula <- MeasError(V, Y) + Z ~ X + Z
-
-# rc.formula <- function(formula, method){
-#   if(missing(formula)){
-#     stop("a formula argument is needed")}
-#   if(length(formula[[2]]) != 1L)
-#     stop("formula should have one response variable")
-#   t <- terms(formula)
-#   ind <- grep("MeasError", t)
-#   if(length(ind) == 0){
-#     stop("a MeasError object is missing")}
-#   else if(ind == 3){
-#     ind2 <- grep("MeasError", t[[ind]])
-#     f <- eval.parent(parse(text = t[[ind]][ind2]))
-#     ct <- as.character(t)
-#     sub(as.character(t[[ind]][[ind2]]), as.character
-#     calf <- attributes(f)$input$reference ~ attributes(f)$input$test + t[[ind]][-ind2]}
-#   else if(ind == 2){
-#     ME <- eval.parent(parse(text = t[[2]]))}
-#
-#
-# }
 mecor <- function(formula,
                   data,
                   method = "rc",

@@ -22,8 +22,8 @@ t-statistic and corresponding (two-sided) p-value.}
 }
 \examples{
 ## Continuing the mecor() example:
-coef(fit_sme)
-summary(cm_sme)
+#coef(fitSme)
+#summary(cm_sme)
 
 }
 \seealso{

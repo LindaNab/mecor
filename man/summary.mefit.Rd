@@ -22,8 +22,8 @@ t-statistic and corresponding (two-sided) p-value.}
 }
 \examples{
 ## Continuing the mefit() example:
-coef(fitSme)
-summary(fitSme)
+#coef(fitSme)
+#summary(fitSme)
 
 }
 \seealso{

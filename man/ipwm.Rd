@@ -30,9 +30,9 @@ ipwm(formulas, data, outcome_true, outcome_mis = NULL, exposure_true,
 
 \item{semiparametric}{logical indicator specifying whether or not to parametrically sample \code{exposure_true}, \code{exposure_mis}, \code{outcome_true} and \code{outcome_mis}. If \code{semiparametric == TRUE}, it is assumed that the missing data pattern is conditionally independent of these variables given covariates. Provided \code{nboot > 0}, the missing data pattern and covariates are sampled nonparametrically. \code{semiparametric} is ignored if \code{nboot == 0}.}
 
-\item{optim_args}{arguments passed onto \code{\link[stats]{stats::optim}} if called. See Details below for more information.}
+\item{optim_args}{arguments passed onto \code{\link[stats]{optim}} if called. See Details below for more information.}
 
-\item{force_optim}{logical indicator specifying whether or not to force the \code{\link[stats]{stats::optim}} function to be called}
+\item{force_optim}{logical indicator specifying whether or not to force the \code{\link[stats]{optim}} function to be called}
 
 \item{sp}{scalar shrinkage parameter in the interval \code{(0, Inf)}. Values closer to zero result in greater shrinkage of the estimated odds ratio to unity; \code{sp == Inf} results in no shrinkage.}
 }
@@ -57,7 +57,7 @@ The method defaults to the estimator proposed by Gravel and Platt (2018) in the 
 
 The function assumes that the exposure or the outcome has a misclassified version. An error is issued when both \code{outcome_mis} and \code{exposure_mis} are set to \code{NULL}.
 
-Provided \code{force_optim = FALSE}, \code{ipwm} is considerably more efficient when the \code{\link[stats]{stats::optim}} function is not invoked; i.e., when (1) \code{exposure_mis = NULL} and the formula for \code{outcome_true} does not contain terms involving \code{outcome_mis} or \code{exposure_true}, (2) \code{outcome_mis = NULL} and the formula for \code{exposure_true} does not contain terms involving \code{exposure_mis} or \code{outcome_true}, or (3) \code{all(is.na(data[, exposure_true]) == is.na(data[, outcome_true]))} and the formulas for \code{exposure_true} and \code{outcome_true} do not contain terms involving \code{exposure_mis} or \code{outcome_mis}. In these cases, \code{ipwm} uses iteratively reweighted least squares via the \code{\link[stats]{stats::glm}} function for maximum likelihood estimation. In all other cases, \code{optim_args} is passed on to \code{\link[stats]{stats::optim}} for optimisation of the joint likelihood of \code{outcome_true}, \code{outcome_mis}, \code{exposure_true} and \code{exposure_mis}.
+Provided \code{force_optim = FALSE}, \code{ipwm} is considerably more efficient when the \code{\link[stats]{optim}} function is not invoked; i.e., when (1) \code{exposure_mis = NULL} and the formula for \code{outcome_true} does not contain terms involving \code{outcome_mis} or \code{exposure_true}, (2) \code{outcome_mis = NULL} and the formula for \code{exposure_true} does not contain terms involving \code{exposure_mis} or \code{outcome_true}, or (3) \code{all(is.na(data[, exposure_true]) == is.na(data[, outcome_true]))} and the formulas for \code{exposure_true} and \code{outcome_true} do not contain terms involving \code{exposure_mis} or \code{outcome_mis}. In these cases, \code{ipwm} uses iteratively reweighted least squares via the \code{\link[stats]{glm}} function for maximum likelihood estimation. In all other cases, \code{optim_args} is passed on to \code{\link[stats]{optim}} for optimisation of the joint likelihood of \code{outcome_true}, \code{outcome_mis}, \code{exposure_true} and \code{exposure_mis}.
 }
 \examples{
 data(sim) # simulated data on 10 covariates, exposure A and outcome Y.
