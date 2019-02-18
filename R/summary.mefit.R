@@ -1,4 +1,4 @@
-#' @title Summarizing Calibration Model Fits
+#' @title Summarizing Measurement Error Model fits
 #'
 #' @description
 #' \code{summary} method for class "mefit"
@@ -7,69 +7,70 @@
 #'
 #' @return
 #' The function \code{summary.mefit} returns a list of summary statistics of the fitted
-#' calibration model given in \code{object} using the components \code{"call"}, \code{"size"},
-#' \code{"rdf"}, \code{"r.squared"} and \code{"sigma"} from its argument plus
-#'
-#' \item{coefficients}{a px4 matrix with columns for the estimated coefficient, its standard error,
-#' t-statistic and corresponding (two-sided) p-value.}
+#' measurement erro models given in \code{object}
 #'
 #' @seealso
-#' The calibration model fitting function \link[mecor]{mefit}, \link[base]{summary}
-#'
-#' Function \link[stats]{coef} will extract the matrix of coefficients with standard errors,
-#' t-statistics and p-values
+#' The measurement error model fitting function \link[mecor]{mefit}, \link[base]{summary}
 #'
 #' @examples
 #' ## Continuing the mefit() example:
-#' #coef(fitSme)
-#' #summary(fitSme)
+#' #coef(fit1)
+#' #summary(fit1)
 #'
 #' @export summary.mefit
 #' @export
 summary.mefit <- function(object){
-  z <- object
-  est <- z$coefficients
-  se <- sqrt(diag(z$vcov))
-  t <- est/se
-  rdf <- z$df.residual
-  out <- z[c("call")]
-  out$coefficients <- cbind('Estimate' = est,
-                            'Std. Error' = se,
-                            't' = t,
-                            `Pr(>|t|)` = 2 * pt(abs(t), rdf,
-                                                lower.tail = FALSE))
-  out$size <- nrow(z$model)
-  out$me.model <- z$me.model
-  out$rdf <- rdf
-  out$r.squared <- summary.lm(z)$r.squared
-  out$sigma <- summary.lm(z)$sigma
+  out <- object
   class(out) <- "summary.mefit"
   out
 }
 
 #' @export
 print.summary.mefit <- function(x){
-  cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
+  cat("\nCall:\n", paste(deparse(attr(x, "call")), sep = "\n", collapse = "\n"),
       "\n", sep = "")
-  cat("\nCoefficients:\n")
-  printCoefmat(x$coefficients)
+  if(length(coef(x$cme))){
+    cat("\nClassical Measurement Error:")
+    cat("\nCoefficients:\n")
+    print(coef(x$cme))
+    cat("\nResidual standard error:", x$cme$Sigma, "on", x$cme$df, "degrees of freedom\n")}
+  if(length(coef(x$sme1))){
+    cat("\nSystematic Measurement Error (zero intercept):\n")
+    print(coef(x$sme1))
+    cat("\nResidual standard error:", x$sme1$Sigma, "on", x$sme1$df, "degrees of freedom\n")}
+  if(length(coef(x$sme2))){
+    cat("\nSystematic Measurement Error (non-zero intercept):\n")
+    print(coef(x$sme2))
+    cat("\nResidual standard error:", x$sme2$Sigma, "on", x$sme2$df, "degrees of freedom\n")}
+  if(length(coef(x$dme))){
+    cat("\nDifferential Measurement Error:\n")
+    print(coef(x$dme))
+    cat("\nResidual standard error:", x$dme$Sigma, "on", x$dme$df, "degrees of freedom\n")}
   cat("\nCharacteristics Calibration Data:")
-  cat("\nThe assumed measurement error model is:", x$me.model)
-  cat("\nSize of calibration data set:", x$size)
-  cat("\nResidual standard error:", x$sigma, "on", x$rdf, "degrees of freedom")
-  cat("\nMultiple R-squared:", x$r.squared)
+  cat("\nSize of calibration data set:", attr(x, "size"))
   invisible(x)
 }
 
 #' @export
 print.mefit <- function(x){
-  cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
+  cat("\nCall:\n", paste(deparse(attr(x, "call")), sep = "\n", collapse = "\n"),
       "\n", sep = "")
-  if (length(coef(x))) {
-    cat("Coefficients:\n")
-    print(x$coefficients)
-  }
-  else cat("No coefficients\n")
+  if (length(coef(x$cme))) {
+    cat("\nClassical Measurement Error:\n")
+    coef <- c(coef(x$cme)[,1])
+    names(coef) <- rownames(coef(x$cme))
+    print(coef)}
+  if (length(coef(x$sme1))) {
+    cat("\nSystematic Measurement Error (zero intercept):\n")
+    coef2 <- c(coef(x$sme1)[,1])
+    names(coef2) <- rownames(coef(x$sme1))
+    print(coef2)}
+  if (length(coef(x$sme2))) {
+    cat("\nSystematic Measurement Error (non-zero intercept):\n")
+    print(coef(x$sme2)[,1])}
+  if (length(coef(x$dme))) {
+    cat("\nDifferential Measurement Error:\n")
+    print(coef(x$dme)[,1])}
   cat("\n")
   invisible(x)
 }

@@ -1,13 +1,14 @@
 #' @title Fitting Measurement Error Model
 #'
 #' @description
-#' This function fits a linear model to model the relationship between the test
-#' measurement (error-prone measurement) and the reference measurement (true measurement)
-#' in order to extract the measurement error parameters of the measurement
-#' error model from a validation set.
+#' This function fits several measurement error models to model the relationship between the
+#' test measurement (error-prone measurement) and the reference measurement (true measurement)
+#' in a validation set.
 #'
-#' @param formula formula of the measurement error model
-#' @param data optional data frame
+#' @param MeasError object of class MeasError
+#' @param differential vector containing the differential measurement error variable
+#' @param model optional character string or vector of character strings indicating
+#' the assumed measurement error model: "all" (default), "cme", "sme", "dme".
 #' @param robust boolean indicating whether robust standard errors need to be calculated, the
 #' "HC3" robust standard errors from \link[sandwich]{vcovHC} are used for the
 #' heteroskedasticity-consistent estimation of the covariance matrix of the coefficient
@@ -15,51 +16,123 @@
 #'
 #' @return \code{mefit} returns an object of \link[base]{class} "mefit".
 #'
-#' An object of class \code{mefit} is lm object (the fit of the measurement error model) and
-#' contains additionally, the following components:
+#' An object of class \code{mefit} is a list containing the following components:
+#' \item{cme}{a list containing the coefficients, sigma, df and model of the classical
+#' measurement error model}
+#' \item{sme1}{a list containing the coefficients, sigma, df and model of the systematic
+#' measurement error model with zero intercept}
+#' \item{sme2}{a list containing the coefficients, sigma, df and model of the systematic
+#' measurement error model with non-zero intercept}
+#' \item{dme}{a list containing the coefficients, sigma, df and model of the differential
+#' measurement error model}
 #' \item{call}{the matched call}
-#' \item{vcov}{the variance-covariance matrix of the parameters of the fitted measurement error model, in case
-#' \code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
-#' \item{me.model}{the assumed measurement error model}
+#' \item{robust}{boolean indicating if robust standard errors are used}
+#' \item{size}{size of validation data set}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
 #' @examples
-#' ##generation of external validation set
-#' Xval <- c(rep(0, 500), rep(1, 500))
-#' Yval <- Xval + rnorm(1000, 0, 1)
-#' Vval_cme <- Yval + rnorm(1000, 0, 3) #classical measurement error (cme)
-#' Vval_sme <- 1 + 2 * Yval + rnorm(1000, 0, 3) #systematic measurement error (sme)
-#' Vval_dme <- 2 + 2 * Xval + 3 * Yval + 2 * Xval * Yval + rnorm(1000, 0, 3 * (1 - Xval) + 2 * Xval) #differential measurement error (dme)
+#' ##measurement error in endpoint
+#' X <- c(rep(0, 50), rep(1, 50))
+#' Y <- X + rnorm(100, 0, 1)
+#' Vcme <- Y + rnorm(100, 0, 3) #classical measurement error (cme)
+#' Vsme <- 1 + 2*Y + rnorm(100, 0, 3) #systematic measurement error (sme)
+#' Vdme <- 2 + 2*X + 3*Y + 2*X*Y + rnorm(10, 0, 3*(1-X) + 2*X) #systematic differential measurement error (dme)
 #'
-#' #classical
-#' fitCme <- mefit(MeasError(Vval_cme, Yval) ~ - 1)
-#' #systematic
-#' fitSme <- mefit(MeasError(Vval_sme, Yval) ~ 1)
-#' #differential
-#' #fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
+#' ##measurement error in exposure
+#' X <- rnorm(100, 0, 1)
+#' Y <- 1.5*X + rnorm(100, 0, 0.5)
+#' W1 <- X + rnorm(100, 0, 0.5)
+#' W2 <- X + rnorm(100, 0, 0.5)
+#'
+#' fit1 <- mefit(MeasError(Vcme, Y))
+#' fit2 <- mefit(MeasError(Vsme, Y))
+#' fit3 <- mefit(MeasError(Vdme, Y), X, robust = T)
+#' fit4 <- mefit(MeasError(W1, X))
+#' #fit5 <- mefit(MeasError(cbind(W1, W2), NA)) #not yet supported
 #'
 #' @importFrom sandwich vcovHC
 #' @import boot
 #' @export
-mefit <- function(formula,
-                  data,
+mefit <- function(MeasError,
+                  differential,
+                  model = "all",
                   robust = FALSE){
-  if(missing(data)) data = NULL
-  else if(!is.data.frame(data)) data <- as.data.frame(data)
-  f <- mefit.formula(formula, data)
-  fit <- lm(f)
-  if(all(fit$residuals == 0)){
-    stop("all residuals of the measurement error model fit are 0")  }
-  if(robust == TRUE){
-    vcov <- vcovHC(fit) }
-  else vcov <- vcov(fit)
-  out <- fit
-  out$call <- match.call()
-  out$vcov <- vcov
-  out$me.model <- attr(f, "model")
-  out$robust <- robust
-  class(out) <- c("mefit", "lm")
+  if(missing(differential)) differential <- NULL
+  if(any(class(MeasError) != c("MeasError", "data.frame")))
+    stop("MeasError is not a MeasError object")
+  if(model == "all"){
+    if(missing(differential)) model <- c("cme", "sme1", "sme2")
+    else model <- c("cme", "sme1", "sme2", "dme")}
+  reference <- MeasError$reference
+  if(is.matrix(MeasError$test)){
+    stop("replicate measurements are not yet supported in mefit")
+    if(!all(is.na(reference))) stop("if test contains multiple measurements, reference should be NA")
+    else if(all(model == c("cme", "sme", "dme"))){
+      model = "cme"
+      warning("as there are multiple measurements, the classical measurement error model is assumed")}}
+  else {test <- MeasError$test}
+  opar <- par(no.readonly = T)
+  par(mfrow = c(2,2))
+  out <- list()
+  #classical measurement error
+  if(any(model == "cme")){
+    t <- t.test(test, reference, paired = T)
+    coef <- cbind("Estimate" = unname(t$estimate),
+                  "Std. Error" = sd(test-reference)/sqrt(NROW(test)),
+                  "t value" = unname(t$statistic), "Pr(>|t|)" = t$p.value)
+    rownames(coef) <- "test-reference"
+    cme <- list(coefficients = coef, Sigma = sd(test-reference),
+                df = unname(t$parameter), model = "classical")
+    plot(reference, test-reference, main = "Classical")
+    out$cme <- cme}
+  #systematic measurement error
+  if(any(model == "sme1")){
+    fitsme1 <- lm(test ~ reference - 1)
+    if(robust == T){
+      sandwich_se1 <- diag(vcovHC(fitsme1))^0.5
+      t_stat1 <- coef(fitsme1)/sandwich_se1
+      coef1 <- cbind("Estimate" = coef(fitsme1), "Std. Error" = sandwich_se1,
+                     "t value" = t_stat1, "Pr(>|t|)" = pchisq(t_stat1^2, 1, lower.tail=FALSE) )}
+    else{
+      coef1 <- coef(summary(fitsme1))}
+    sme1 <- list(coefficients = coef1, Sigma = summary(fitsme1)$sigma,
+                 df = summary(fitsme1)$df[2], model = "systematic zero intercept")
+    plot(reference, fitsme1$residuals, ylab = "residuals", main = "Sys zero int")
+    out$sme1 <- sme1}
+  if(any(model == "sme2")){
+    fitsme2 <- lm(test ~ reference)
+    if(robust == T){
+      sandwich_se2 <- diag(vcovHC(fitsme1))^0.5
+      t_stat2 <- coef(fitsme2)/sandwich_se2
+      coef2 <- cbind("Estimate" = coef(fitsme2), "Std. Error" = sandwich_se2,
+                     "t value" = t_stat2, "Pr(>|t|)" = pchisq(t_stat2^2, 1, lower.tail=FALSE) )}
+    else{
+      coef2 <- coef(summary(fitsme2))}
+    sme2 <- list(coefficients = coef2, Sigma = summary(fitsme2)$sigma,
+                 df = summary(fitsme2)$df[2], model = "systematic non-zero intercept")
+    plot(reference, fitsme2$residuals, ylab = "residuals", main = "Sys non-zero int")
+    out$sme2 <- sme2}
+  #differential measurement error
+  if(any(model == "dme")){
+    if(!is.null(differential)){
+      fitdme <- lm(test ~ reference * differential)
+      if(robust == T){
+        sandwich_se <- diag(vcovHC(fitdme))^0.5
+        t_stat <- coef(fitdme)/sandwich_se
+        coef <- cbind("Estimate" = coef(fitdme), "Std. Error" = sandwich_se,
+                       "t value" = t_stat, "Pr(>|t|)" = pchisq(t_stat^2, 1, lower.tail=FALSE) )}
+      else coef <- coef(summary(fitdme))
+      dme <- list(coefficients = coef, Sigma = summary(fitdme)$sigma,
+                df = summary(fitdme)$df[2], model = paste("differential on", deparse(substitute(differential))))
+      plot(reference, fitdme$residuals, ylab = "residuals", main = "Differential")}
+    else dme <- NULL
+    out$dme <- dme}
+  par(opar)
+  attr(out, "call") <- match.call()
+  attr(out, "robust") <- robust
+  attr(out, "size") <- NROW(MeasError)
+  class(out) <- c("mefit")
   out
 }
 
@@ -82,7 +155,8 @@ mefit.formula <- function(formula, data)
       warning("number of levels of the explanatory variable in formula is 1, so formula is updated to non-differential systematic")
       model <- "systematic"}
     else {
-      f <- update(f, ~ . * factor)
+      factor <- deparse(t[[3L]])
+      f <- update(f, ~ . * eval.parent(factor))
       model <- "differential"}}
   else {model <- "systematic"}
   out <- f

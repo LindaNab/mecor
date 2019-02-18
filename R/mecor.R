@@ -50,6 +50,10 @@
 #' Measurement error in continuous endpoints in randomised trials: an exploration of problems and solutions
 #'
 #' @examples
+#' cm <- mecor(formula = Y ~ MeasError(W1, X) + Z, rc())
+#' X ~ W + Z
+#' cm <- mecor(Y ~ MeasError(W, X) + Z, mime())
+#'
 #' ##data generation
 #' X <- c(rep(0, 1000), rep(1, 1000))
 #' Y <- X + rnorm(2000, 0, 1)
@@ -57,16 +61,10 @@
 #' V_dme <- 2 + 2 * X + 3 * Y + 2 * X * Y + rnorm(2000, 0, 3 * (1 - X) + 2 * X) #differential measurement error (dme)
 #' rm <- lm(Y ~ X) #real model (rm)
 #'
-#' ##generation of external calibration set
-#' Xcal <- c(rep(0, 500), rep(1, 500))
-#' Ycal <- Xcal + rnorm(1000, 0, 1)
-#' Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3)
-#' Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal)
-#'
 #' ##solve systematic measurement error (sme)
 #' nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-#' #cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
-#'                                          # method = "rc", B = 999) #compare with nm and rm
+#' cm_sme <- mecor(MeasError(Vsme, NA) ~ X, method = rc(), B = 999) #compare with nm and rm
+#'
 #'
 #' ##solve differential measurement error (dme)
 #' #nm_dme <- lm(V_dme ~ X) ##compare with rm
@@ -76,14 +74,60 @@
 #' @export
 mecor <- function(formula,
                   data,
-                  method = "rc",
-                  external,
-                  original = TRUE,
+                  method = rc(),
                   robust = FALSE,
                   alpha = 0.05,
                   B = 0){
-  if(missing(data)) data = NULL
+  if(missing(data)) stop("data not found")#data = NULL
   else if(!is.data.frame(data)) data <- as.data.frame(data)
+  if(missing(formula)) stop("formula not found")
+
+  l <- as.list(attr(terms(formula), "variables"))[-1]
+  indx <- grep("MeasError", l)
+  if(indx == 1) type <- "outcome"
+  else type <- "expl"
+  me <- l[indx]
+  if(length(me) == 0){
+    stop("formula should contain a MeasError object")}
+  else if (length(me) != 1){
+    stop("formula can only contain one MeasError object")}
+  me <- me[[1]]
+  evalme <- eval.parent(me)
+  test <- evalme$test
+  reference <- evalme$reference
+  if(is.null(reference)){
+    warning("reference is null, so mecor assumes external validation data")
+    valdata <- "external"}
+  else valdata <- "internal"
+
+  if(valdata == "internal"){
+    if(type == "expl"){
+      pf <- update(formula, bquote(. ~ . - .(me))) #plain
+      nf <- update(pf, . ~ . + test) #naive
+      nm <- lm(nf, data)
+      if(method == rc()){
+        rc.int(formula, data, )
+        cf <- update(nf, reference ~ .) #cal
+        cm <- lm(cf, data)
+        calval <- predict(cm, data)
+        cf <- update(pf, . ~ . + calval)
+        lm(cf)
+        calval[!is.na(reference)] <- reference[!is.na(reference)]
+        lm(cf)
+      }
+    }
+    if(type = "outcome"){
+      nf <- update(formula, bquote(test ~ .))
+      nm <- lm(nf, data)
+      if(method == rc()){
+
+      }
+    }
+  }
+
+  if(valdata == "external"){
+
+  }
   if(missing(dif.var) && mefit$me.structure == "differential"){
     warning("dif.var is not specified, so dif.var specified in 'mefit' is used")
     if(!any(grepl(mefit$dif.var, formula))) stop("dif.var specified in 'mefit' does not occur in formula")
@@ -178,5 +222,8 @@ mecor <- function(formula,
               Rbtstrp = ifelse(exists("bt"), bt$R, NA))
   class(out) <- 'mecor'
   return(out)
+}
+
+rc <- function(formula, data, keep.original = TRUE){
 }
 
