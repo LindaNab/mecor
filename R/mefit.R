@@ -63,7 +63,7 @@ mefit <- function(MeasError,
                   differential,
                   model = "all",
                   robust = FALSE,
-                  plot = FALSE){
+                  plot = TRUE){
   if(missing(differential)) differential <- NULL
   if(any(class(MeasError) != c("MeasError", "data.frame")))
     stop("MeasError is not a MeasError object")
@@ -91,7 +91,8 @@ mefit <- function(MeasError,
     cme <- list(coefficients = "no coefficients", Sigma = summary(fitcme)$sigma,
                 df = summary(fitcme)$df[2], model = "classical")
     if(plot == TRUE){
-      plot(reference, fitcme$residuals, ylab = "residuals", main = "Classical")
+      plot(fitcme$model$`offset(reference)`, fitcme$residuals,
+           xlab = "reference", ylab = "residuals", main = "Classical")
       abline(a = 0, b = 0)}
     out$cme <- cme}
   #systematic measurement error
@@ -107,7 +108,8 @@ mefit <- function(MeasError,
     sme1 <- list(coefficients = coef1, Sigma = summary(fitsme1)$sigma,
                  df = summary(fitsme1)$df[2], model = "systematic zero intercept")
     if(plot == TRUE){
-      plot(reference, fitsme1$residuals, ylab = "residuals", main = "Sys zero int")
+      plot(fitsme1$model$reference, fitsme1$residuals,
+           xlab = "reference", ylab = "residuals", main = "Sys zero int")
       abline(a = 0, b = 0)}
     out$sme1 <- sme1}
   if(any(model == "sme2")){
@@ -122,7 +124,8 @@ mefit <- function(MeasError,
     sme2 <- list(coefficients = coef2, Sigma = summary(fitsme2)$sigma,
                  df = summary(fitsme2)$df[2], model = "systematic non-zero intercept")
     if(plot == TRUE){
-      plot(reference, fitsme2$residuals, ylab = "residuals", main = "Sys non-zero int")
+      plot(fitsme2$model$reference, fitsme2$residuals,
+           xlab = "reference", ylab = "residuals", main = "Sys non-zero int")
       abline(a = 0 , b = 0)}
     out$sme2 <- sme2}
   if(exists("fitcme")){
@@ -152,7 +155,8 @@ mefit <- function(MeasError,
       dme <- list(coefficients = coef, Sigma = summary(fitdme)$sigma,
                 df = summary(fitdme)$df[2], model = paste("differential on", deparse(substitute(differential))))
       if(plot == TRUE){
-        plot(reference, fitdme$residuals, ylab = "residuals", main = "Differential")
+        plot(fitdme$model$reference, fitdme$residuals,
+             xlab = "reference", ylab = "residuals", main = "Differential")
         abline(a = 0, b = 0)}}
     else dme <- NULL
     out$dme <- dme}
@@ -160,7 +164,7 @@ mefit <- function(MeasError,
     lrtest2 <- NULL}
   out$lrtest1 <- lrtest1
   out$lrtest2 <- lrtest2
-  par(opar)
+  if(plot == TRUE) par(opar)
   attr(out, "call") <- match.call()
   attr(out, "robust") <- robust
   attr(out, "size") <- NROW(MeasError)

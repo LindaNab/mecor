@@ -5,7 +5,7 @@
 \title{Fitting Measurement Error Model}
 \usage{
 mefit(MeasError, differential, model = "all", robust = FALSE,
-  plot = FALSE)
+  plot = TRUE)
 }
 \arguments{
 \item{MeasError}{object of class MeasError}
