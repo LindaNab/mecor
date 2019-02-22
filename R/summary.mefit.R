@@ -7,7 +7,7 @@
 #'
 #' @return
 #' The function \code{summary.mefit} returns a list of summary statistics of the fitted
-#' measurement erro models given in \code{object}
+#' measurement error models given in \code{object}
 #'
 #' @seealso
 #' The measurement error model fitting function \link[mecor]{mefit}, \link[base]{summary}
@@ -30,9 +30,7 @@ print.summary.mefit <- function(x){
   cat("\nCall:\n", paste(deparse(attr(x, "call")), sep = "\n", collapse = "\n"),
       "\n", sep = "")
   if(length(coef(x$cme))){
-    cat("\nClassical Measurement Error:")
-    cat("\nCoefficients:\n")
-    print(coef(x$cme))
+    cat("\nClassical Measurement Error:\n", coef(x$cme), "\n", sep = "")
     cat("\nResidual standard error:", x$cme$Sigma, "on", x$cme$df, "degrees of freedom\n")}
   if(length(coef(x$sme1))){
     cat("\nSystematic Measurement Error (zero intercept):\n")
@@ -46,8 +44,12 @@ print.summary.mefit <- function(x){
     cat("\nDifferential Measurement Error:\n")
     print(coef(x$dme))
     cat("\nResidual standard error:", x$dme$Sigma, "on", x$dme$df, "degrees of freedom\n")}
-  cat("\nCharacteristics Calibration Data:")
-  cat("\nSize of calibration data set:", attr(x, "size"))
+  if(length(x$lrtest1)){
+    cat("\n")
+    print(x$lrtest1)}
+  if(length(x$lrtest2)){
+    cat("\n")
+    print(x$lrtest2)}
   invisible(x)
 }
 
@@ -55,20 +57,17 @@ print.summary.mefit <- function(x){
 print.mefit <- function(x){
   cat("\nCall:\n", paste(deparse(attr(x, "call")), sep = "\n", collapse = "\n"),
       "\n", sep = "")
-  if (length(coef(x$cme))) {
-    cat("\nClassical Measurement Error:\n")
-    coef <- c(coef(x$cme)[,1])
-    names(coef) <- rownames(coef(x$cme))
-    print(coef)}
-  if (length(coef(x$sme1))) {
+  if(length(coef(x$cme))) {
+    cat("\nClassical Measurement Error:\n", coef(x$cme), "\n")}
+  if(length(coef(x$sme1))) {
     cat("\nSystematic Measurement Error (zero intercept):\n")
     coef2 <- c(coef(x$sme1)[,1])
     names(coef2) <- rownames(coef(x$sme1))
     print(coef2)}
-  if (length(coef(x$sme2))) {
+  if(length(coef(x$sme2))) {
     cat("\nSystematic Measurement Error (non-zero intercept):\n")
     print(coef(x$sme2)[,1])}
-  if (length(coef(x$dme))) {
+  if(length(coef(x$dme))) {
     cat("\nDifferential Measurement Error:\n")
     print(coef(x$dme)[,1])}
   cat("\n")

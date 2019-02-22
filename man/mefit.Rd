@@ -4,48 +4,68 @@
 \alias{mefit}
 \title{Fitting Measurement Error Model}
 \usage{
-mefit(formula, data, robust = FALSE)
+mefit(MeasError, differential, model = "all", robust = FALSE,
+  plot = FALSE)
 }
 \arguments{
-\item{formula}{formula of the measurement error model}
+\item{MeasError}{object of class MeasError}
 
-\item{data}{optional data frame}
+\item{differential}{vector containing the differential measurement error variable}
+
+\item{model}{optional character string or vector of character strings indicating
+the assumed measurement error model: "all" (default), "cme" (classical measurement
+error), "sme1" (systematic measurement error with zero intercept), "sme2" (systematic
+measurement errror with non-zero intercept) and "dme" (differential measurement error).}
 
 \item{robust}{boolean indicating whether robust standard errors need to be calculated, the
 "HC3" robust standard errors from \link[sandwich]{vcovHC} are used for the
 heteroskedasticity-consistent estimation of the covariance matrix of the coefficient
 estimates.}
+
+\item{plot}{boolean indicating whether one wants plots of the residuals (one plot for each
+tested model)}
 }
 \value{
 \code{mefit} returns an object of \link[base]{class} "mefit".
 
-An object of class \code{mefit} is lm object (the fit of the measurement error model) and
-contains additionally, the following components:
-\item{call}{the matched call}
-\item{vcov}{the variance-covariance matrix of the parameters of the fitted measurement error model, in case
-\code{robust} is TRUE, the heteroskedasticity-consistent covariance matrix is returned}
-\item{me.model}{the assumed measurement error model}
+An object of class \code{mefit} is a list containing, depending on the models tested for, the following components:
+\item{cme}{a list containing the coefficients, sigma, df and model of the classical
+measurement error model}
+\item{sme1}{a list containing the coefficients, sigma, df and model of the systematic
+measurement error model with zero intercept}
+\item{sme2}{a list containing the coefficients, sigma, df and model of the systematic
+measurement error model with non-zero intercept}
+\item{dme}{a list containing the coefficients, sigma, df and model of the differential
+measurement error model}
+\item{lrtest1}{a list containing the likelihood ratio test of, depending on which models are tested, cme vs sme1 vs sme2;
+cme vs sme1; cme vs sme2; sme1 vs sme2}
+\item{lrtest2}{a list containing the likelihood ratio test of, depending on whether one tests for differential measurement
+error, sme2 vs dme}
 }
 \description{
-This function fits a linear model to model the relationship between the test
-measurement (error-prone measurement) and the reference measurement (true measurement)
-in order to extract the measurement error parameters of the measurement
-error model from a validation set.
+This function fits several measurement error models to model the relationship between the
+test measurement (error-prone measurement) and the reference measurement (true measurement)
+in a validation set.
 }
 \examples{
-##generation of external validation set
-Xval <- c(rep(0, 500), rep(1, 500))
-Yval <- Xval + rnorm(1000, 0, 1)
-Vval_cme <- Yval + rnorm(1000, 0, 3) #classical measurement error (cme)
-Vval_sme <- 1 + 2 * Yval + rnorm(1000, 0, 3) #systematic measurement error (sme)
-Vval_dme <- 2 + 2 * Xval + 3 * Yval + 2 * Xval * Yval + rnorm(1000, 0, 3 * (1 - Xval) + 2 * Xval) #differential measurement error (dme)
+##measurement error in endpoint
+X <- c(rep(0, 50), rep(1, 50))
+Y <- X + rnorm(100, 0, 1)
+Vcme <- Y + rnorm(100, 0, 3) #classical measurement error (cme)
+Vsme <- 1 + 2*Y + rnorm(100, 0, 3) #systematic measurement error (sme)
+Vdme <- 2 + 2*X + 3*Y + 2*X*Y + rnorm(10, 0, 3*(1-X) + 2*X) #systematic differential measurement error (dme)
 
-#classical
-fitCme <- mefit(MeasError(Vval_cme, Yval) ~ - 1)
-#systematic
-fitSme <- mefit(MeasError(Vval_sme, Yval) ~ 1)
-#differential
-#fitDme <- mefit(MeasError(Vval_dme, Yval) ~ Xval)
+##measurement error in exposure
+X <- rnorm(100, 0, 1)
+Y <- 1.5*X + rnorm(100, 0, 0.5)
+W1 <- X + rnorm(100, 0, 0.5)
+W2 <- X + rnorm(100, 0, 0.5)
+
+fit1 <- mefit(MeasError(Vcme, Y), plot = T)
+fit2 <- mefit(MeasError(Vsme, Y), plot = T)
+fit3 <- mefit(MeasError(Vdme, Y), X, robust = T, plot = T)
+fit4 <- mefit(MeasError(W1, X), model = "all")
+#fit5 <- mefit(MeasError(cbind(W1, W2), NA)) #not yet supported
 
 }
 \author{

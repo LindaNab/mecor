@@ -4,8 +4,8 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, method = "rc", external, original = TRUE,
-  robust = FALSE, alpha = 0.05, B = 0)
+mecor(formula, data, method = rc(), robust = FALSE, alpha = 0.05,
+  B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -62,6 +62,10 @@ mecor provides correction methods for measurement
 errors in continuous endpoints.
 }
 \examples{
+cm <- mecor(formula = Y ~ MeasError(W1, X) + Z, rc())
+X ~ W + Z
+cm <- mecor(Y ~ MeasError(W, X) + Z, mime())
+
 ##data generation
 X <- c(rep(0, 1000), rep(1, 1000))
 Y <- X + rnorm(2000, 0, 1)
@@ -69,16 +73,10 @@ V_sme <- 1 + 2 * Y + rnorm(2000, 0, 3) #systematic measurement error (sme)
 V_dme <- 2 + 2 * X + 3 * Y + 2 * X * Y + rnorm(2000, 0, 3 * (1 - X) + 2 * X) #differential measurement error (dme)
 rm <- lm(Y ~ X) #real model (rm)
 
-##generation of external calibration set
-Xcal <- c(rep(0, 500), rep(1, 500))
-Ycal <- Xcal + rnorm(1000, 0, 1)
-Vcal_sme <- 1 + 2 * Ycal + rnorm(1000, 0, 3)
-Vcal_dme <- 2 + 2 * Xcal + 3 * Ycal + 2 * Xcal * Ycal + rnorm(1000, 0, 3 * (1 - Xcal) + 2 * Xcal)
-
 ##solve systematic measurement error (sme)
 nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-#cm_sme <- mecor(formula = MeasError(test = V_sme, reference = NULL, MeasError(Vval_sme, Yval)) ~ X,
-                                         # method = "rc", B = 999) #compare with nm and rm
+cm_sme <- mecor(MeasError(Vsme, NA) ~ X, method = rc(), B = 999) #compare with nm and rm
+
 
 ##solve differential measurement error (dme)
 #nm_dme <- lm(V_dme ~ X) ##compare with rm

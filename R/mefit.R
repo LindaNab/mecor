@@ -8,15 +8,19 @@
 #' @param MeasError object of class MeasError
 #' @param differential vector containing the differential measurement error variable
 #' @param model optional character string or vector of character strings indicating
-#' the assumed measurement error model: "all" (default), "cme", "sme", "dme".
+#' the assumed measurement error model: "all" (default), "cme" (classical measurement
+#' error), "sme1" (systematic measurement error with zero intercept), "sme2" (systematic
+#' measurement errror with non-zero intercept) and "dme" (differential measurement error).
 #' @param robust boolean indicating whether robust standard errors need to be calculated, the
 #' "HC3" robust standard errors from \link[sandwich]{vcovHC} are used for the
 #' heteroskedasticity-consistent estimation of the covariance matrix of the coefficient
 #' estimates.
+#' @param plot boolean indicating whether one wants plots of the residuals (one plot for each
+#' tested model)
 #'
 #' @return \code{mefit} returns an object of \link[base]{class} "mefit".
 #'
-#' An object of class \code{mefit} is a list containing the following components:
+#' An object of class \code{mefit} is a list containing, depending on the models tested for, the following components:
 #' \item{cme}{a list containing the coefficients, sigma, df and model of the classical
 #' measurement error model}
 #' \item{sme1}{a list containing the coefficients, sigma, df and model of the systematic
@@ -25,9 +29,10 @@
 #' measurement error model with non-zero intercept}
 #' \item{dme}{a list containing the coefficients, sigma, df and model of the differential
 #' measurement error model}
-#' \item{call}{the matched call}
-#' \item{robust}{boolean indicating if robust standard errors are used}
-#' \item{size}{size of validation data set}
+#' \item{lrtest1}{a list containing the likelihood ratio test of, depending on which models are tested, cme vs sme1 vs sme2;
+#' cme vs sme1; cme vs sme2; sme1 vs sme2}
+#' \item{lrtest2}{a list containing the likelihood ratio test of, depending on whether one tests for differential measurement
+#' error, sme2 vs dme}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
@@ -45,19 +50,20 @@
 #' W1 <- X + rnorm(100, 0, 0.5)
 #' W2 <- X + rnorm(100, 0, 0.5)
 #'
-#' fit1 <- mefit(MeasError(Vcme, Y))
-#' fit2 <- mefit(MeasError(Vsme, Y))
-#' fit3 <- mefit(MeasError(Vdme, Y), X, robust = T)
-#' fit4 <- mefit(MeasError(W1, X))
+#' fit1 <- mefit(MeasError(Vcme, Y), plot = T)
+#' fit2 <- mefit(MeasError(Vsme, Y), plot = T)
+#' fit3 <- mefit(MeasError(Vdme, Y), X, robust = T, plot = T)
+#' fit4 <- mefit(MeasError(W1, X), model = "all")
 #' #fit5 <- mefit(MeasError(cbind(W1, W2), NA)) #not yet supported
 #'
 #' @importFrom sandwich vcovHC
-#' @import boot
+#' @importFrom lmtest lrtest
 #' @export
 mefit <- function(MeasError,
                   differential,
                   model = "all",
-                  robust = FALSE){
+                  robust = FALSE,
+                  plot = FALSE){
   if(missing(differential)) differential <- NULL
   if(any(class(MeasError) != c("MeasError", "data.frame")))
     stop("MeasError is not a MeasError object")
@@ -68,7 +74,7 @@ mefit <- function(MeasError,
   if(is.matrix(MeasError$test)){
     stop("replicate measurements are not yet supported in mefit")
     if(!all(is.na(reference))) stop("if test contains multiple measurements, reference should be NA")
-    else if(all(model == c("cme", "sme", "dme"))){
+    else if(all(model == c("cme", "sme1", "sme2", "dme"))){
       model = "cme"
       warning("as there are multiple measurements, the classical measurement error model is assumed")}}
   else {test <- MeasError$test}
@@ -77,57 +83,83 @@ mefit <- function(MeasError,
   out <- list()
   #classical measurement error
   if(any(model == "cme")){
-    t <- t.test(test, reference, paired = T)
-    coef <- cbind("Estimate" = unname(t$estimate),
-                  "Std. Error" = sd(test-reference)/sqrt(NROW(test)),
-                  "t value" = unname(t$statistic), "Pr(>|t|)" = t$p.value)
-    rownames(coef) <- "test-reference"
-    cme <- list(coefficients = coef, Sigma = sd(test-reference),
-                df = unname(t$parameter), model = "classical")
-    plot(reference, test-reference, main = "Classical")
+    fitcme <- stats::lm(test ~ offset(reference) -1)
+    #t <- t.test(test, reference, paired = T)
+    #coef <- cbind("Estimate" = unname(t$estimate),
+                  #"Std. Error" = sd(test-reference)/sqrt(NROW(test)),
+                  #"t value" = unname(t$statistic), "Pr(>|t|)" = t$p.value)
+    cme <- list(coefficients = "no coefficients", Sigma = summary(fitcme)$sigma,
+                df = summary(fitcme)$df[2], model = "classical")
+    if(plot == TRUE){
+      plot(reference, fitcme$residuals, ylab = "residuals", main = "Classical")
+      abline(a = 0, b = 0)}
     out$cme <- cme}
   #systematic measurement error
   if(any(model == "sme1")){
-    fitsme1 <- lm(test ~ reference - 1)
+    fitsme1 <- stats::lm(test ~ reference - 1)
     if(robust == T){
-      sandwich_se1 <- diag(vcovHC(fitsme1))^0.5
+      sandwich_se1 <- diag(sandwich::vcovHC(fitsme1))^0.5
       t_stat1 <- coef(fitsme1)/sandwich_se1
       coef1 <- cbind("Estimate" = coef(fitsme1), "Std. Error" = sandwich_se1,
-                     "t value" = t_stat1, "Pr(>|t|)" = pchisq(t_stat1^2, 1, lower.tail=FALSE) )}
+                     "t value" = t_stat1, "Pr(>|t|)" = stats::pchisq(t_stat1^2, 1, lower.tail=FALSE) )}
     else{
       coef1 <- coef(summary(fitsme1))}
     sme1 <- list(coefficients = coef1, Sigma = summary(fitsme1)$sigma,
                  df = summary(fitsme1)$df[2], model = "systematic zero intercept")
-    plot(reference, fitsme1$residuals, ylab = "residuals", main = "Sys zero int")
+    if(plot == TRUE){
+      plot(reference, fitsme1$residuals, ylab = "residuals", main = "Sys zero int")
+      abline(a = 0, b = 0)}
     out$sme1 <- sme1}
   if(any(model == "sme2")){
-    fitsme2 <- lm(test ~ reference)
+    fitsme2 <- stats::lm(test ~ reference)
     if(robust == T){
-      sandwich_se2 <- diag(vcovHC(fitsme1))^0.5
+      sandwich_se2 <- diag(sandwich::vcovHC(fitsme1))^0.5
       t_stat2 <- coef(fitsme2)/sandwich_se2
       coef2 <- cbind("Estimate" = coef(fitsme2), "Std. Error" = sandwich_se2,
-                     "t value" = t_stat2, "Pr(>|t|)" = pchisq(t_stat2^2, 1, lower.tail=FALSE) )}
+                     "t value" = t_stat2, "Pr(>|t|)" = stats::pchisq(t_stat2^2, 1, lower.tail=FALSE) )}
     else{
       coef2 <- coef(summary(fitsme2))}
     sme2 <- list(coefficients = coef2, Sigma = summary(fitsme2)$sigma,
                  df = summary(fitsme2)$df[2], model = "systematic non-zero intercept")
-    plot(reference, fitsme2$residuals, ylab = "residuals", main = "Sys non-zero int")
+    if(plot == TRUE){
+      plot(reference, fitsme2$residuals, ylab = "residuals", main = "Sys non-zero int")
+      abline(a = 0 , b = 0)}
     out$sme2 <- sme2}
+  if(exists("fitcme")){
+    if(exists("fitsme1") & exists("fitsme2")){
+      lrtest1 <- lmtest::lrtest(fitcme, fitsme1, fitsme2)}
+    else if(exists("fitsme1")){
+      lrtest1 <- lmtest::lrtest(fitcme, fitsme1)}
+    else if(exists("fitsme2")){
+      lrtest1 <- lmtest::lrtest(fitcme, fitsme2)}
+  }
+  else if(exists("fitsme1" & exists("fitsme2"))){
+    lrtest1 <- lmtest::lrtest(fitsme1, fitsme2)
+  }
+  else lrtest1 <- NULL
   #differential measurement error
   if(any(model == "dme")){
     if(!is.null(differential)){
-      fitdme <- lm(test ~ reference * differential)
+      fitdme <- stats::lm(test ~ reference * differential)
+      if(exists("fitdme") & exists("fitsme2")){
+        lrtest2 <- lmtest::lrtest(fitsme2, fitdme)}
       if(robust == T){
         sandwich_se <- diag(vcovHC(fitdme))^0.5
         t_stat <- coef(fitdme)/sandwich_se
         coef <- cbind("Estimate" = coef(fitdme), "Std. Error" = sandwich_se,
-                       "t value" = t_stat, "Pr(>|t|)" = pchisq(t_stat^2, 1, lower.tail=FALSE) )}
+                       "t value" = t_stat, "Pr(>|t|)" = stats::pchisq(t_stat^2, 1, lower.tail=FALSE) )}
       else coef <- coef(summary(fitdme))
       dme <- list(coefficients = coef, Sigma = summary(fitdme)$sigma,
                 df = summary(fitdme)$df[2], model = paste("differential on", deparse(substitute(differential))))
-      plot(reference, fitdme$residuals, ylab = "residuals", main = "Differential")}
+      if(plot == TRUE){
+        plot(reference, fitdme$residuals, ylab = "residuals", main = "Differential")
+        abline(a = 0, b = 0)}}
     else dme <- NULL
     out$dme <- dme}
+  if(!exists("lrtest2")){
+    lrtest2 <- NULL}
+  out$lrtest1 <- lrtest1
+  out$lrtest2 <- lrtest2
   par(opar)
   attr(out, "call") <- match.call()
   attr(out, "robust") <- robust

@@ -7,15 +7,16 @@
 MeasError(test, reference)
 }
 \arguments{
-\item{test}{a vector containing the error-prone measurement}
+\item{test}{a vector containing error-prone measurements or a matrix
+with replicate error-prone measurements}
 
-\item{reference}{a vector containing the reference measurement}
+\item{reference}{a vector containing reference measurements}
 }
 \value{
 \code{MeasError} returns an object of \link[base]{class} "MeasError".
 
-An object of class \code{mefit} is a formula and additionally has attributes called input
-(vectors containing the test and reference variable) and call (the matched call).
+An object of class \code{MeasError} is a data.frame and additionally has
+attributes input (the name of the test and reference variables) and call (the matched call).
 }
 \description{
 This function creates a measurement error object, usually used in a regression where one
@@ -23,16 +24,25 @@ wants to correct for the measurement error in the measured variable using a
 reference measure.
 }
 \examples{
-##generation of external validation set
-Xval <- c(rep(0, 5), rep(1, 5))
-Yval <- Xval + rnorm(10, 0, 1)
-Vval_cme <- Yval + rnorm(10, 0, 3) #classical measurement error (cme)
-Vval_sme <- 1 + 2 * Yval + rnorm(10, 0, 3) #systematic measurement error (sme)
-Vval_dme <- 2 + 2 * Xval + 3 * Yval + 2 * Xval * Yval + rnorm(10, 0, 3 * (1 - Xval) + 2 * Xval) #systematic differential measurement error (dme)
+##measurement error in endpoint
+X <- c(rep(0, 50), rep(1, 50))
+Y <- X + rnorm(100, 0, 1)
+Vcme <- Y + rnorm(100, 0, 3) #classical measurement error (cme)
+Vsme <- 1 + 2*Y + rnorm(100, 0, 3) #systematic measurement error (sme)
+Vdme <- 2 + 2*X + 3*Y + 2*X*Y + rnorm(10, 0, 3*(1-X) + 2*X) #systematic differential measurement error (dme)
 
-cme <- MeasError(test = Vval_cme, reference = Yval)
-sme <- MeasError(test = Vval_sme, reference = Yval)
-dme <- MeasError(test = Vval_dme, reference = Yval)
+##measurement error in exposure
+X <- rnorm(100, 0, 1)
+Y <- 1.5*X + rnorm(100, 0, 0.5)
+W1 <- X + rnorm(100, 0, 0.5)
+W2 <- X + rnorm(100, 0, 0.5)
+
+cme <- MeasError(Vcme, Y)
+sme <- MeasError(Vsme, Y)
+dme <- MeasError(Vdme, Y)
+cme2 <- (MeasError(W1, X))
+cme3 <- MeasError(cbind(W1, W2), NA)
+
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary.mefit.R
 \name{summary.mefit}
 \alias{summary.mefit}
-\title{Summarizing Calibration Model Fits}
+\title{Summarizing Measurement Error Model fits}
 \usage{
 \method{summary}{mefit}(object)
 }
@@ -11,24 +11,17 @@
 }
 \value{
 The function \code{summary.mefit} returns a list of summary statistics of the fitted
-calibration model given in \code{object} using the components \code{"call"}, \code{"size"},
-\code{"rdf"}, \code{"r.squared"} and \code{"sigma"} from its argument plus
-
-\item{coefficients}{a px4 matrix with columns for the estimated coefficient, its standard error,
-t-statistic and corresponding (two-sided) p-value.}
+measurement error models given in \code{object}
 }
 \description{
 \code{summary} method for class "mefit"
 }
 \examples{
 ## Continuing the mefit() example:
-#coef(fitSme)
-#summary(fitSme)
+#coef(fit1)
+#summary(fit1)
 
 }
 \seealso{
-The calibration model fitting function \link[mecor]{mefit}, \link[base]{summary}
-
-Function \link[stats]{coef} will extract the matrix of coefficients with standard errors,
-t-statistics and p-values
+The measurement error model fitting function \link[mecor]{mefit}, \link[base]{summary}
 }
