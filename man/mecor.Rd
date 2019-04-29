@@ -4,85 +4,59 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, method = rc(), robust = FALSE, alpha = 0.05,
-  B = 0)
+mecor(formula, data, method = "rc", alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
-coerced to that class): a symbolic description of the naive
-model to be fitted in an \link[stats]{lm} model.}
+coerced to that class): a symbolic description of the model containing
+a \link[mecor]{MeasError} object.}
 
-\item{data}{an optional data frame, list or environment (or
+\item{data}{a data.frame, list or environment (or
 object coercible by as.data.frame to a data frame) containing
-the variables in the model. If not found in \code{data}, the
-variables are taken from \code{environment(formula)}, typically
-the enviroment from which \code{mecor} is called.}
+the variables in the model}
 
 \item{method}{a character string indicating the method used to correct for
-measurement error, only the method "rc" (regression calibration) is implemented}
+measurement error, either "rc" (regression calibration), "rc_pooled1" (efficient
+regression calibration using delta variance for pooling) or "rc_pooled2" (efficient
+regression calibration using bootstrap variance for pooling).}
 
 \item{alpha}{alpha level used to construct confidence intervals}
 
 \item{B}{number of bootstrap samples}
-
-\item{me.var}{a non-empty character string specifying the variable
-in \code{formula} with measurement error}
-
-\item{true.var}{a non empty character string specifying the variable
-that corresponds to the correctly measured me.var. Required if data.type
-in mefit object is 'internal'.}
-
-\item{mefit}{object of class \link[mecor]{mefit}
-used to correct \code{me.var}}
-
-\item{dif.var}{an optional named vector specifying the grouping variable in \code{formula}
-that corresponds to the dif.var used in 'mefit', which is only needed if the structure
-of 'mefit' is 'differential'. If 'dif.var' is not specified and me.structure is
-'differential, mecor searches the environment for the dif.var variable specified in 'mefit'
-object.}
 }
 \value{
 \code{mecor} returns an object of \link[base]{class} "mecor"
 
 An object of class \code{mecor} is a list containing the following components:
 
-\item{coefficients}{a named vector containing the coefficients of the corrected model}
-\item{stderr}{zero variance standard errors of coefficients of the corrected model}
-\item{coefficients.nm}{a named vector containing the coefficients of the naive (uncorrected) model}
-\item{rdf}{the residual degrees of freedom of the corrected model}
-\item{call}{matched call}
-\item{ci}{a named matrix containing the confidence intervals for the effect estimate of the corrected
-model}
-\item{dif.var}{a named vector linking the grouping variable in formula to the grouping variable in
-the used mefit object (used for differential measurement error models)}
-\item{Rbtstrp}{number of bootstrap replicates used to construct Bootstrap Confidence Interval}
+\item{naivefit}{a lm.fit object of the uncorrected fit}
+\item{corfit}{a lm.fit object of the corrected fit (if method = "rc") and a
+matrix containing the corrected coefficients else}
+\item{corvar}{the corrected variance using the delta method}
+\item{ci.fieller}{fieller confidence interval (if method = "rc") else NA}
+\item{ci.b}{bootstrap confidence interval (if B != 0)}
 }
 \description{
 mecor provides correction methods for measurement
-errors in continuous endpoints.
+errors in a continuous covariate.
 }
 \examples{
-cm <- mecor(formula = Y ~ MeasError(W1, X) + Z, rc())
-X ~ W + Z
-cm <- mecor(Y ~ MeasError(W, X) + Z, mime())
-
 ##data generation
-X <- c(rep(0, 1000), rep(1, 1000))
-Y <- X + rnorm(2000, 0, 1)
-V_sme <- 1 + 2 * Y + rnorm(2000, 0, 3) #systematic measurement error (sme)
-V_dme <- 2 + 2 * X + 3 * Y + 2 * X * Y + rnorm(2000, 0, 3 * (1 - X) + 2 * X) #differential measurement error (dme)
-rm <- lm(Y ~ X) #real model (rm)
+#measurement error in exposure
+nobs <- 1e3
+Z <- rnorm(nobs, 0, 1)
+X <- Z + rnorm(nobs, 0, 1)
+Y <- 0.5 * X + 2 * Z + rnorm(nobs, 0, 1)
+W <- X + rnorm(nobs, 0, 0.5)
+X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
+data <- data.frame(Z, X, W, Y)
+W2 <- X + rnorm(nobs, 0, 0.5)
+data2 <- data.frame(Z, W, W2, Y)
 
-##solve systematic measurement error (sme)
-nm_sme <- lm(V_sme ~ X) #compare naive model (nm) with rm
-cm_sme <- mecor(MeasError(Vsme, NA) ~ X, method = rc(), B = 999) #compare with nm and rm
-
-
-##solve differential measurement error (dme)
-#nm_dme <- lm(V_dme ~ X) ##compare with rm
-#fit_dme <- mefit(formula = Vcal_dme ~ Ycal * Xcal, data = caldata, me.structure = "differential", dif.var = "Xcal", robust = TRUE)
-#cm_dme <- mecor(formula = V_dme ~ X, data = data, me.var = "V_dme", mefit = fit_dme, dif.var = c("X" = "Xcal"), method = "rc", robust = T, B = 999)
-
+mecor(Y ~ MeasError(W, X) + Z, data)
+mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")$corfit
+mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")$corfit
+mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.

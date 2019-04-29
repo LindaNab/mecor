@@ -17,25 +17,19 @@
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
 #' @examples
-#' ##measurement error in endpoint
-#' X <- c(rep(0, 50), rep(1, 50))
-#' Y <- X + rnorm(100, 0, 1)
-#' Vcme <- Y + rnorm(100, 0, 3) #classical measurement error (cme)
-#' Vsme <- 1 + 2*Y + rnorm(100, 0, 3) #systematic measurement error (sme)
-#' Vdme <- 2 + 2*X + 3*Y + 2*X*Y + rnorm(10, 0, 3*(1-X) + 2*X) #systematic differential measurement error (dme)
-#'
 #' ##measurement error in exposure
-#' X <- rnorm(100, 0, 1)
-#' Y <- 1.5*X + rnorm(100, 0, 0.5)
-#' W1 <- X + rnorm(100, 0, 0.5)
-#' W2 <- X + rnorm(100, 0, 0.5)
+#' nobs <- 1e3
+#' Z <- rnorm(nobs, 0, 1)
+#' X <- Z + rnorm(nobs, 0, 1)
+#' Y <- 0.5 * X + 2 * Z + rnorm(nobs, 0, 1)
+#' W <- X + rnorm(nobs, 0, 0.5)
+#' X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
+#' data <- data.frame(Z, X, W, Y)
+#' W2 <- X + rnorm(nobs, 0, 0.5)
+#' data2 <- data.frame(Z, W, W2, Y)
 #'
-#' cme <- MeasError(Vcme, Y)
-#' sme <- MeasError(Vsme, Y)
-#' dme <- MeasError(Vdme, Y)
-#' cme2 <- (MeasError(W1, X))
-#' cme3 <- MeasError(cbind(W1, W2), NA)
-#'
+#' MeasError(W, X)
+#' MeasError(cbind(W, W2), NA)
 #' @export
 MeasError <- function(test,
                       reference){
@@ -43,11 +37,27 @@ MeasError <- function(test,
   if(!is.vector(test) & !is.matrix(test)) stop("'test' is not a vector or matrix")
   if(missing(reference)) reference = NA
   if(all(is.na(reference)) & !is.matrix(test))
-    stop("if there is no reference, multiple test measurements need to be provided")
+    stop("if there is no reference, replicate test measurements are needed")
   if(!all(is.na(reference)) & !is.vector(reference)) stop("'reference' is not a vector")
-  out <- data.frame(test = test, reference = reference)
-  input <- c(test = as.list(match.call())$test, reference = as.list(match.call())$reference)
+  if(NCOL(test) > 2){
+    stop("it is currently not possible to have more than two test measures")}
+  if(all(is.na(reference)) & is.matrix(test)){
+    test <- data.frame(test)
+    colnames(test) <- c("test1", "test2")
+    if(any(is.na(test$test1)) == TRUE){
+      stop("the first replicate measure cannot contain missing values")
+    }
+    out <- list(test = test)
+    input <- as.list(match.call()$test)[2:3]
+    input <- list(test = input)
+    names(input$test) <- c("test1", "test2")
+    type <- "replicate"}
+  else {
+    out <- data.frame(test = test, reference = reference)
+    input <- c(test = as.list(match.call())$test, reference = as.list(match.call())$reference)
+    type <- "internal"}
   attr(out, "input") <- input
+  attr(out, "type") <- type
   attr(out, "call") <- match.call()
   class(out) <- c("MeasError", "data.frame")
   out
@@ -55,7 +65,13 @@ MeasError <- function(test,
 #' @export
 print.MeasError <- function(x){
   cat("\nCall:\n", deparse(attributes(x)$call), "\n", sep = "")
+  if(is.vector(x$test) & is.vector(x$reference)){
   cat("\nThe error-prone variable", deparse((attr(x, 'input')$test)),
-      "is correctly measured by",   deparse((attr(x, 'input')$reference)))
+      "is correctly measured by",   deparse((attr(x, 'input')$reference)))}
+  if(is.data.frame(x$test) & is.null(x$reference)){
+    cat("\n", deparse((attr(x, 'input')$test$test1)), " and ",
+              deparse((attr(x, 'input')$test$test2)),
+              " are replicate measures with classical measurement error.", sep = "")
+  }
   invisible(x)
 }

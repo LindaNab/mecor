@@ -247,7 +247,7 @@ delta.dme <- function(nm,
   return(ci)
 }
 
-fieller <- function(nm,
+fieller2 <- function(nm,
                     mefit,
                     alpha){
   t1 <- coef(mefit)[2]

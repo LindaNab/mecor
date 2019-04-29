@@ -24,25 +24,19 @@ wants to correct for the measurement error in the measured variable using a
 reference measure.
 }
 \examples{
-##measurement error in endpoint
-X <- c(rep(0, 50), rep(1, 50))
-Y <- X + rnorm(100, 0, 1)
-Vcme <- Y + rnorm(100, 0, 3) #classical measurement error (cme)
-Vsme <- 1 + 2*Y + rnorm(100, 0, 3) #systematic measurement error (sme)
-Vdme <- 2 + 2*X + 3*Y + 2*X*Y + rnorm(10, 0, 3*(1-X) + 2*X) #systematic differential measurement error (dme)
-
 ##measurement error in exposure
-X <- rnorm(100, 0, 1)
-Y <- 1.5*X + rnorm(100, 0, 0.5)
-W1 <- X + rnorm(100, 0, 0.5)
-W2 <- X + rnorm(100, 0, 0.5)
+nobs <- 1e3
+Z <- rnorm(nobs, 0, 1)
+X <- Z + rnorm(nobs, 0, 1)
+Y <- 0.5 * X + 2 * Z + rnorm(nobs, 0, 1)
+W <- X + rnorm(nobs, 0, 0.5)
+X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
+data <- data.frame(Z, X, W, Y)
+W2 <- X + rnorm(nobs, 0, 0.5)
+data2 <- data.frame(Z, W, W2, Y)
 
-cme <- MeasError(Vcme, Y)
-sme <- MeasError(Vsme, Y)
-dme <- MeasError(Vdme, Y)
-cme2 <- (MeasError(W1, X))
-cme3 <- MeasError(cbind(W1, W2), NA)
-
+MeasError(W, X)
+MeasError(cbind(W, W2), NA)
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}
