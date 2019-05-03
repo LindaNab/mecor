@@ -41,9 +41,9 @@ boot_rc_pooled <- function(data, refname, naivefit, pooled.var, alpha, B){
     intfit <- stats::lm.fit(xint[!is.na(m$ref),], m$y[!is.na(m$ref)])
     intvar <- diag(mecor:::vcovfromfit(intfit))
     if(pooled.var == "bootstrap"){
-      wrc <- 1/resrc$ci.b[,"Var"] * (1/(1/resrc$ci.b[,"Var"] + 1/intvar))}
+      wrc <- 1/resrc$corvar$bootvar * (1/(1/resrc$corvar$bootvar + 1/intvar))}
     if(pooled.var == "delta"){
-      wrc <- 1/resrc$corvar * (1/(1/resrc$corvar + 1/intvar))}
+      wrc <- 1/resrc$corvar$deltavar * (1/(1/resrc$corvar$deltavar + 1/intvar))}
     pcorfit <- wrc * resrc$corfit$coef + (1 - wrc) * intfit$coef
     return(pcorfit)
   }

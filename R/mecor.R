@@ -44,11 +44,12 @@
 #' X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
 #' data <- data.frame(Z, X, W, Y)
 #' W2 <- X + rnorm(nobs, 0, 0.5)
+#' W2 <- ifelse(rbinom(nobs, 0, 0.8) == 1, NA, W2)
 #' data2 <- data.frame(Z, W, W2, Y)
 #'
 #' mecor(Y ~ MeasError(W, X) + Z, data)
-#' mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")$corfit
-#' mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")$corfit
+#' mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")
+#' mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")
 #' mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
 #' @import boot
 #' @export
@@ -77,133 +78,38 @@ mecor <- function(formula,
   vars <- sapply(temp[-indx], cbind)
   colnames(vars) <- l[-indx]
 
-  if(mevar == "indep"){
+  if(mevar == "indep" & {vtp <- attributes(me)$type} == "internal"){
     mlist <- mecor:::rcm(vars, me)
     naivefit <- stats::lm.fit(mlist$x, mlist$y)
     if(method == "rc"){
-      resrc <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)
-      corfit <- resrc$corfit
-      corvar <- resrc$corvar
-      ci.fieller <- resrc$ci.fieller
-      if(B!=0) ci.b <- resrc$ci.b}
+      res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
     if(method == "rc_pooled1"){
-      resrc_p <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "delta", B = B, alpha = alpha)
-      corfit <- resrc_p$corfit
-      corvar <- resrc_p$var
-      if(B!=0) ci.b <- resrc_p$ci.b
-    }
-    if(method == "rc_pooled2"){
-      resrc_p <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "bootstrap", B = B, alpha = alpha)
-      corfit <- resrc_p$corfit
-      corvar <- resrc_p$var
-      if(B!=0) ci.b <- resrc_p$ci.b
+      res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "delta", B = B, alpha = alpha)}
+    if(method == "rc_pooled2"){ #uses B = 999 for the bootvar used to pool the estimates
+      res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "bootstrap", B = B, alpha = alpha)}
+  }
+  else if(mevar == "indep" && vtp == "replicate"){
+    mlist <- mecor:::rcm(vars, me)
+    naivefit <- stats::lm.fit(mlist$x, mlist$y)
+    if(method == "rc"){
+      res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
+    if(method == "rc_pooled1" | method == "rc_pooled2"){
+      stop("mecor is currently not able to do a pooled regression calibration
+           in case of replicate data")
     }
   }
-  if(mevar == "dep"){
+  else if(mevar == "dep"){
     y <- me$test
     x <- cbind(1, vars[,2:ncol(vars)]) #design matrix
     lc <- l[-indx]
-    colnames(x) <- c("(Intercept)", lc)}
-
-  if({vtp <- attributes(me)$type} == "internal"){
-    #xint <- cbind(1, me$reference)
-    #if(ncol(vars) > 1) xint <- cbind(xint, vars[,2:ncol(vars)]) #design matrix only with internal valdata
-    #if(mevar == "indep"){
-      #y <- vars[,1] #vector containing the outcomes
-      #x <- cbind(1, me$test)
-      #if(ncol(vars) > 1) x <- cbind(x, vars[,2:ncol(vars)]) #design matrix with measurement error
-      #lc <- l[-c(1,indx)]
-      #cnx <- c("(Intercept)", attributes(me)$input$test)
-      #if(length(lc)!=0) cnx <- c(cnx, lc)
-      #colnames(x) <- cnx
-      #cnxint <- c("(Intercept)", attributes(me)$input$reference)
-      #if(length(lc)!=0) cnxint <- c(cnxint, lc)
-      #colnames(xint) <- cnxint}
-    if(mevar == "dep"){
-      y <- me$test
-      x <- cbind(1, vars[,2:ncol(vars)]) #design matrix
-      lc <- l[-indx]
-      colnames(x) <- c("(Intercept)", lc)}
-  }
-
-  if(vtp == "replicate"){
-    #if(mevar == "indep"){
-      #y <- vars[,1]
-      #x <- cbind(1, me$test$test1)
-      #if(ncol(vars) > 1) x <- cbind(x, vars[,2:ncol(vars)]) #design matrix with measurement error
-      #lc <- l[-c(1,indx)]
-      #cnx <- c("(Intercept)", attributes(me)$input$test$test1)
-      #if(length(lc)!=0) cnx <- c(cnx, lc)
-      #colnames(x) <- cnx}
-    if(mevar == "dep") stop("mecor is currently not developed to correct for measurement error in
-              the dependent var using replicate measurements")
-  }
-
-  # if(vtp == "internal"){ #internal validation data
-  #   if(mevar == "indep"){ #measurement error in the independent variable
-  #     naivefit <- stats::lm.fit(mlist$x, mlist$y)
-  #     if(method == "rc" | method == "rc.pooled"){
-  #       corfit <- rc(mlist, naivefit)
-  #       calfit <- stats::lm.fit(x[!is.na(me$reference),], me$reference[!is.na(me$reference)])
-  #       corx <- x
-  #       e <- calfit$coef%*%t(x) #predicted values
-  #       corx[,2] <- e
-  #       colnames(corx)[2] <- as.character(attributes(me)$input$reference)
-  #       corfit <- stats::lm.fit(corx, y)
-  #       if(method == "rc"){
-  #         deltavar <- mecor:::vardelta(naivefit, calfit, names(corfit$coef))
-  #         corvar <- list(deltavar = deltavar)
-  #         #ci.fieller <- mecor:::fieller(naivefit, calfit, alpha)
-  #         if(B != 0){
-  #           bd <- data.frame(y, me$reference, x)
-  #           colnames(bd) <- c("Y", as.character(attributes(me)$input$reference), colnames(x))
-  #           ci.b <- mecor:::boot_rc(bd, me, alpha, B)
-  #         }
-  #       }
-  #       if(method == "rc.pooled"){
-  #         intfit <- stats::lm.fit(xint[!is.na(me$reference),], y[!is.na(me$reference)])
-  #         intvar <- diag(mecor:::vcovfromfit(intfit))
-  #         wrc <- 1/deltavar * (1/(1/deltavar + 1/intvar))
-  #         corfit.rcp <- wrc * corfit$coef + (1 - wrc) * intfit$coef
-  #         if(B != 0){
-  #         }
-  #       }
-  #     }
-  #   }
-  #   if(mevar == "dep"){
-  #     if(method == "rc"){
-  #     }
-  #   }
-  # }
-
-  # #replicate validation data
-  # if(vtp == "replicate"){
-  #   if(mevar == "indep"){
-  #     naivefit <- stats::lm.fit(x, y)
-  #     if(method == "rc"){
-  #       calfit <- stats::lm.fit(x[!is.na(me$test$test2),], me$test$test2[!is.na(me$test$test2)])
-  #       corx <- x
-  #       e <- calfit$coef%*%t(x) #predicted values
-  #       corx[,2] <- e
-  #       colnames(corx)[2] <- "cor"
-  #       corfit <- stats::lm.fit(corx, y)
-  #       deltavar <- mecor:::vardelta(naivefit, calfit, names(corfit$coef))
-  #       corvar <- list(deltavar = deltavar)
-  #       if(B != 0){
-  #         bd <- data.frame(y, me$test$test2, x)
-  #         colnames(bd) <- c("Y", as.character(attributes(me)$input$test$test2), colnames(x))
-  #         ci.b <- mecor:::boot_rep_rc(bd, me, alpha, B)
-  #       }
-  #     }
-  #   }
-  # }
+    colnames(x) <- c("(Intercept)", lc)
+    stop("mecor cannot correct for measurment error in the dependent variable")}
 
   #MECORS output
   out <- list(naivefit = naivefit,
-              corfit = corfit,
-              corvar = {if(exists("corvar")) corvar else NA},
-              ci.fieller = {if(exists("ci.fieller")) ci.fieller else NA},
-              ci.b = {if(B != 0) ci.b[,1:2] else NA}
+              corfit = res$corfit,
+              corvar = res$corvar,
+              ci = res$ci
               )
   class(out) <- 'mecor'
   attr(out, "call") <- match.call()

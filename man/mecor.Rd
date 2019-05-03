@@ -51,11 +51,12 @@ W <- X + rnorm(nobs, 0, 0.5)
 X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
 data <- data.frame(Z, X, W, Y)
 W2 <- X + rnorm(nobs, 0, 0.5)
+W2 <- ifelse(rbinom(nobs, 0, 0.8) == 1, NA, W2)
 data2 <- data.frame(Z, W, W2, Y)
 
 mecor(Y ~ MeasError(W, X) + Z, data)
-mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")$corfit
-mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")$corfit
+mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")
+mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")
 mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
 }
 \references{

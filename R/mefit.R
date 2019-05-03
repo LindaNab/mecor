@@ -130,14 +130,14 @@ mefit <- function(MeasError,
     out$sme2 <- sme2}
   if(exists("fitcme")){
     if(exists("fitsme1") & exists("fitsme2")){
-      lrtest1 <- lmtest::lrtest(fitcme, fitsme1, fitsme2)}
+      lrtest1 <- lmtest:::lrtest(fitcme, fitsme1, fitsme2)}
     else if(exists("fitsme1")){
-      lrtest1 <- lmtest::lrtest(fitcme, fitsme1)}
+      lrtest1 <- lmtest:::lrtest(fitcme, fitsme1)}
     else if(exists("fitsme2")){
-      lrtest1 <- lmtest::lrtest(fitcme, fitsme2)}
+      lrtest1 <- lmtest:::lrtest(fitcme, fitsme2)}
   }
   else if(exists("fitsme1" & exists("fitsme2"))){
-    lrtest1 <- lmtest::lrtest(fitsme1, fitsme2)
+    lrtest1 <- lmtest:::lrtest(fitsme1, fitsme2)
   }
   else lrtest1 <- NULL
   #differential measurement error

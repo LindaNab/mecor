@@ -46,27 +46,41 @@ summary.mecor <- function(object){
                  'Upper CI' = coef1 + tq * se1)
   uc$ci <- round(uc$ci, 6)
   #corrected
-  rdf2 <- z2$df.residual
-  rss2 <- sum(z2$residuals^2)
-  c <- list(residuals = z2$residuals, rdf = rdf2, sigma = sqrt(rss2/rdf2))
-  c$coefficients <- cbind(Estimate    = (coef2 <- z2$coef),
+  if(length({q <- attributes(z2)$type}) == 0){
+    coefficients <- cbind(Estimate = (coef2 <- z2$coefficients),
+              SE = (se2 <- sqrt(z$corvar$var)),
+              't value' = (t2 <- coef2/se2),
+              'Pr(>|t|)' = 2 * pt(abs(t2), rdf1, lower.tail = FALSE)) #rdf unknown?
+    c <- list(coefficients = round(coefficients, 6))
+    c$ci <- cbind(Estimate = coef2,
+                  'LCI' = coef2 - tq * se2,
+                  'UCI' = coef2 + tq * se2,
+                  'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z$ci$bootci[,1] else NA),
+                  'UCI (btstr)'= (if(B != 0) z$ci$bootci[,2] else NA))
+    c$ci <- round(c$ci, 6)
+  }
+  else if(q == "lm.fit"){
+    rdf2 <- z2$df.residual
+    rss2 <- sum(z2$residuals^2)
+    c <- list(residuals = z2$residuals, rdf = rdf2, sigma = sqrt(rss2/rdf2))
+    c$coefficients <- cbind(Estimate    = (coef2 <- z2$coef),
                            'SE (uncor.)'    = (se2 <- sqrt(diag(mecor:::vcovfromfit(z2)))),
                            't value'  = (t2 <- coef2/se2),
                            'Pr(>|t|)' = 2 * pt(abs(t2), rdf2, lower.tail = FALSE),
-                           'SE (delta)' = dse <- sqrt(z$corvar),
+                           'SE (delta)' = dse <- sqrt(z$corvar$deltavar),
                            't value'  = dt <- coef2/dse,
                            'Pr(>|t|)' = 2 * pt(abs(dt), rdf2, lower.tail = FALSE))
-  c$coefficients <- round(c$coefficients, 6)
-  c$ci <- cbind(Estimate = coef2,
+    c$coefficients <- round(c$coefficients, 6)
+    c$ci <- cbind(Estimate = coef2,
                  'LCI (uncor)' = coef2 - tq * se2,
                  'UCI (uncor)' = coef2 + tq * se2,
                  'LCI (delta)' = coef2 - tq * dse,
                  'UCI (delta)' = coef2 + tq * dse,
-                 'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z$ci.b[,1] else NA),
-                 'UCI (btstr)'= (if(B != 0) z$ci.b[,2] else NA),
-                 'LCI (fllr)' = z$ci.fieller[,1],
-                 'UCI (fllr)' = z$ci.fieller[,2])
-  c$ci <- round(c$ci, 6)
+                 'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z$ci$bootci[,1] else NA),
+                 'UCI (btstr)'= (if(B != 0) z$ci$bootci[,2] else NA),
+                 'LCI (fllr)' = z$ci$fiellerci[,1],
+                 'UCI (fllr)' = z$ci$fiellerci[,2])
+    c$ci <- round(c$ci, 6)}
   out <- list(call = attr(z, "call"), B = B)
   out$uc <- uc
   out$c <- c
@@ -85,7 +99,10 @@ print.summary.mecor <- function(x){
   print(x$c$ci)
   if(x$B != 0){
     cat("Bootstrap Confidence Intervals are based on", x$B, "bootstrap replicates using percentiles \n")  }
-  cat("\nResidual standard error:", x$c$sigma, "on", x$c$rdf, "degrees of freedom\n")
+  if(length(x$c$sigma) == 0 && length(x$c$rdf) == 0){
+  cat("\nResidual standard error: unknown\n")}
+  else{
+    cat("\nResidual standard error:", x$c$sigma, "on", x$c$rdf, "degrees of freedom\n")}
   cat("\nCoefficients Uncorrected Model:\n")
   printCoefmat(x$uc$coefficients, signif.stars = F)
   cat("\n", paste((1-x$alpha)*100, "%", sep =""), " Confidence Intervals:\n", sep = "")
