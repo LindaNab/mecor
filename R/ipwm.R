@@ -111,19 +111,20 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
                                               do.call(c,split(ind_var[i],factor(seq_len(4L)>j,c(TRUE,FALSE)))[[1L]])))
   )))
   if(!length(wh_fo)) stop("invalid factorisation of conditional joint model for (outcome_true, exposure_true, outcome_mis, exposure_mis) given covariates.")
+  S <- 1L+is.na(data[,dep_var[1L]])*2L+is.na(data[,dep_var[2L]])
+  tS <- table(factor(S,levels=1:4))
   opt <- force_optim
   if(!opt){
     if(nullB) w <- which(wh_fo%in%1:6)
     else if(nullZ) w <- which(wh_fo%in%7:12)
-    else w <- which(wh_fo%in%c(1,2,7,8))
+    else w <- which(wh_fo%in%c(1L,2L,7L,8L)[tS[c(2L,2L,3L,3L)==0L]])
     if(length(w)) fo <- fact_order[[wh_fo[w[1L]]]]
     else{
       fo <- fact_order[[wh_fo[1L]]]
       opt <- TRUE
     }
   } else fo <- fact_order[[wh_fo[1L]]]
-  S <- 1L+is.na(data[,dep_var[1L]])*2L+is.na(data[,dep_var[2L]])
-  if(print )it <- 0L
+  if(print) it <- 0L
   stat <- function(data){
     S <- 1L+is.na(data[,dep_var[1L]])*2L+is.na(data[,dep_var[2L]])
     par <- get_par(data,S)
