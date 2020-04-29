@@ -1,11 +1,14 @@
-boot_rc <- function(data, refname, alpha, B){
-  statrc <- function(data, refname, indices){
+boot_rc <- function(data, refname, alpha, B, continuous = T){
+  statrc <- function(data, refname, indices, continuous = T){
     d <- data[indices,]
     ref <- d[, refname]
-    x <- as.matrix(d[,!names(data) %in% c(refname, "Y")])
-    calfit <- stats::lm.fit(x[!is.na(ref),], ref[!is.na(ref)])
+    x <- as.matrix(d[,!names(d) %in% c(refname, "Y")])
     corx <- x
-    e <- calfit$coef%*%t(x)
+    if(continuous){
+      calfit <- stats::lm.fit(x[!is.na(ref),], ref[!is.na(ref)])
+      e <- calfit$coef%*%t(x)}
+    else {calfit <- stats::glm.fit(m$x[!is.na(m$ref),], m$ref[!is.na(m$ref)], family = binomial(link = "logit"))
+          e <- exp(calfit$coef%*%t(m$x)) / (1 + exp(calfit$coef%*%t(m$x)))}
     corx[,2] <- e
     colnames(corx)[2] <- refname
     corfit <- stats::lm.fit(corx, d[,"Y"])
@@ -14,6 +17,38 @@ boot_rc <- function(data, refname, alpha, B){
   strata <- !is.na(data[, refname])
   meboot <- boot(data = data, statistic = statrc,
                  strata = strata, refname = refname, R = B)
+  out <- matrix(nrow = {ids <- NROW(meboot$t0)}, ncol = 3,
+                dimnames = list(names(meboot$t0), c("Lower", "Upper", "Var")))
+  var <- diag(var(meboot$t))
+  for(i in 1:ids){
+    ci <- boot.ci(boot.out = meboot, conf = (1 - alpha), type = "perc", index = i)
+    out[i,] <- c(ci$percent[,4], ci$percent[,5], var[i])
+  }
+  return(out)
+}
+
+boot_rc2 <- function(bdata, testnames, alpha, B){
+  statrc2 <- function(bdata, testnames, indices){
+    d <- bdata[indices,]
+    test <- d[, testnames]
+    x <- as.matrix(d[,!names(d) %in% c(testnames, "Y")])
+    naivefit <- stats::lm.fit(x, d$Y)
+    coefs <- naivefit$coef[-1]
+    m2 <- cov(x[,-1, drop = F])
+    v <- (test$test1 - x[,"repmean"])^2 + (test$test2 - x[,"repmean"])^2 #within individual variance
+    varme <- mean(v)/2 #variance of measurement error term
+    m1 <- m2
+    m1[1,1] <- m1[1,1] - varme
+    corfit <- t(solve(m1)%*%m2%*%coefs)[1,]
+    ncorfit <- c("Corrected", names(corfit)[-1])
+    names(corfit) <- ncorfit
+    m3 <- apply(x[,-1, drop = F], 2, mean) #mean of variables
+    int <- unname(mean(d$Y) - m3%*%corfit) #corrected intercept
+    corfit <- c("(Intercept)" = int, corfit)
+    return(corfit)
+  }
+  meboot <- boot(data = bdata, statistic = statrc2,
+                 testnames = testnames, R = B)
   out <- matrix(nrow = {ids <- NROW(meboot$t0)}, ncol = 3,
                 dimnames = list(names(meboot$t0), c("Lower", "Upper", "Var")))
   var <- diag(var(meboot$t))

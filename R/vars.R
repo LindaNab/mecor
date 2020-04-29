@@ -27,3 +27,17 @@ vcovfromfit <- function(fit){
   dimnames(vcov) <- list(names(fit$coefficients), names(fit$coefficients))
   vcov
 }
+
+change_order_vcov <- function(vcov){
+  #save upper 2x2 matrix
+  temp <- vcov[1:2, 1:2]
+  #rearrange diagonal
+  diag(temp) <- c(temp[2,2], temp[1,1])
+  #swap first row and second row
+  vcov[1:2,] <- rbind(vcov[2,], vcov[1,])
+  #swap first column and second column
+  vcov[,1:2] <- cbind(vcov[,2], vcov[,1])
+  #replace upper 2x2 matrix
+  vcov[1:2, 1:2] <- temp
+  vcov
+}

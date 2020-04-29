@@ -1,7 +1,7 @@
 #' mecor: a measurement error correction package
 #'
 #' mecor provides correction methods for measurement
-#' errors in a continuous covariate.
+#' error in a continuous covariate.
 #'
 #' @param formula an object of class \link[stats]{formula} (or one that is
 #' coerced to that class): a symbolic description of the model containing
@@ -61,7 +61,7 @@ mecor <- function(formula,
   if(missing(data)) stop("data not found") #data = NULL
   else if(!is.data.frame(data)) data <- as.data.frame(data)
   if(missing(formula)) stop("formula not found")
-  if(! method %in% c("rc", "rc_pooled1", "rc_pooled2")) stop("this method is not implemented")
+  if(! method %in% c("rc", "rc2", "rc_pooled1", "rc_pooled2")) stop("this method is not implemented")
 
   #Create MeasError object
   l <- as.list(attr(terms(formula), "variables"))[-1]
@@ -82,20 +82,28 @@ mecor <- function(formula,
     mlist <- mecor:::rcm(vars, me)
     naivefit <- stats::lm.fit(mlist$x, mlist$y)
     if(method == "rc"){
-      res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
+      res <- mecor:::regcal(mlist, naivefit, B = B,
+                            alpha = alpha, continuous = {cont<- attributes(me)$cont})}
     if(method == "rc_pooled1"){
       res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "delta", B = B, alpha = alpha)}
     if(method == "rc_pooled2"){ #uses B = 999 for the bootvar used to pool the estimates
       res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "bootstrap", B = B, alpha = alpha)}
   }
-  else if(mevar == "indep" && vtp == "replicate"){
-    mlist <- mecor:::rcm(vars, me)
-    naivefit <- stats::lm.fit(mlist$x, mlist$y)
-    if(method == "rc"){
-      res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
-    if(method == "rc_pooled1" | method == "rc_pooled2"){
-      stop("mecor is currently not able to do a pooled regression calibration
-           in case of replicate data")
+  else if(mevar == "indep" & vtp == "replicate"){
+    if(method %in% c("rc", "rc_pooled1", "rc_pooled2")){
+      mlist <- mecor:::rcm(vars, me)
+      naivefit <- stats::lm.fit(mlist$x, mlist$y)
+      if(method == "rc"){
+        res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
+      if(method == "rc_pooled1" | method == "rc_pooled2"){
+        stop("mecor is currently not able to do a pooled regression calibration
+             in case of replicate data")
+      }
+    }
+    else if(method == "rc2"){
+      mlist <- mecor:::rcm2(vars, me)
+      naivefit <- stats::lm.fit(mlist$x, mlist$y)
+      res <- mecor:::regcal2(mlist, naivefit, B = B, alpha = alpha)
     }
   }
   else if(mevar == "dep"){
