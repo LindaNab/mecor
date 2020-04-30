@@ -5,15 +5,15 @@
 #' independent or dependent variable in a regression if one wants to correct for
 #' the measurement error in that variable using a reference variable.
 #'
-#' @param test a vector containing error-prone measurements or a matrix with
+#' @param substitute a vector containing error-prone measurements or a matrix with
 #' replicate error-prone measurements
 #' @param reference a vector containing reference measurements
 #'
 #' @return \code{MeasError} returns an object of \link[base]{class} "MeasError".
 #'
-#' An object of class \code{MeasError} is a list containing the test (and
+#' An object of class \code{MeasError} is a list containing the substitute (and
 #' reference) variables and additionally has attributes input (the name of the
-#' test and reference variables), type (the study type that provides
+#' substitute and reference variables), type (the study type that provides
 #' information to correct for the measurement error) and call (the matched
 #' call).
 #'
@@ -26,37 +26,37 @@
 #' with (ivs, MeasError(W, X))
 #' # replicates study
 #' data(rs)
-#' with (rs, MeasError(test = cbind(W, W2), reference = NA))
+#' with (rs, MeasError(substitute = cbind(W, W2), reference = NA))
 #' @export
-MeasError <- function(test,
+MeasError <- function(substitute,
                       reference){
   print(match.call())
-  if(missing(test))
-    stop("'test' is missing in the MeasError object")
-  if(!is.vector(test) & !is.matrix(test))
-    stop("'test' is not a vector or matrix")
+  if(missing(substitute))
+    stop("'substitute' is missing in the MeasError object")
+  if(!is.vector(substitute) & !is.matrix(substitute))
+    stop("'substitute' is not a vector or matrix")
   if(missing(reference))
     reference = NA
-  if(all(is.na(reference)) & !is.matrix(test))
-    stop("if there is no reference, replicate test measurements are needed")
+  if(all(is.na(reference)) & !is.matrix(substitute))
+    stop("if there is no reference, replicate substitute measurements are needed")
   if(!all(is.na(reference)) & !is.vector(reference))
     stop("'reference' is not a vector")
-  if(all(is.na(reference)) & is.matrix(test)){
-    test <- data.frame(test)
-    nrep <- ncol(test)
+  if(all(is.na(reference)) & is.matrix(substitute)){
+    substitute <- data.frame(substitute)
+    nrep <- ncol(substitute)
     nrep_range <- 1:nrep
-    colnames(test) <- sapply(nrep_range, FUN = function(x) paste0("test", x))
-    if(any(is.na(test$test1)) == TRUE){
+    colnames(substitute) <- sapply(nrep_range, FUN = function(x) paste0("substitute", x))
+    if(any(is.na(substitute$substitute1)) == TRUE){
       stop("the first replicate measure cannot contain missing values")}
-    out <- list(test = test)
-    input <- as.list(match.call()$test)[-1]
-    input <- list(test = input)
-    names(input$test) <- colnames(test)
+    out <- list(substitute = substitute)
+    input <- as.list(match.call()$substitute)[-1]
+    input <- list(substitute = input)
+    names(input$substitute) <- colnames(substitute)
     type <- "replicate"}
   else {
-    out <- data.frame(test = test, reference = reference)
+    out <- data.frame(substitute = substitute, reference = reference)
     attr(out, "row.names") <- NULL
-    input <- c(test = as.list(match.call())$test,
+    input <- c(substitute = as.list(match.call())$substitute,
                reference = as.list(match.call())$reference)
     type <- "internal"
   }
@@ -70,12 +70,12 @@ MeasError <- function(test,
 print.MeasError <- function(x){
   cat("\nCall:\n", deparse(attributes(x)$call), "\n", sep = "")
   if(attr(x, "type") == "internal"){
-    cat("\nThe error-prone variable", deparse((attr(x, 'input')$test)),
+    cat("\nThe error-prone variable", deparse((attr(x, 'input')$substitute)),
         "is correctly measured by",   deparse((attr(x, 'input')$reference)))
   }
   if(attr(x, "type") == "replicate"){
-    cat("\n", deparse((attr(x, 'input')$test$test1)), " and ",
-              deparse((attr(x, 'input')$test$test2)),
+    cat("\n", deparse((attr(x, 'input')$substitute$substitute1)), " and ",
+              deparse((attr(x, 'input')$substitute$substitute2)),
               " are replicate measures with classical measurement error", sep = "")
   }
   invisible(x)
