@@ -34,22 +34,12 @@
 #' Measurement error in continuous endpoints in randomised trials: an exploration of problems and solutions
 #'
 #' @examples
-#' ##data generation
-#' #measurement error in exposure
-#' nobs <- 1e3
-#' Z <- rnorm(nobs, 0, 1)
-#' X <- Z + rnorm(nobs, 0, 1)
-#' Y <- 0.5 * X + 2 * Z + rnorm(nobs, 0, 1)
-#' W <- X + rnorm(nobs, 0, 0.5)
-#' X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
-#' data <- data.frame(Z, X, W, Y)
-#' W2 <- X + rnorm(nobs, 0, 0.5)
-#' W2 <- ifelse(rbinom(nobs, 0, 0.8) == 1, NA, W2)
-#' data2 <- data.frame(Z, W, W2, Y)
-#'
-#' mecor(Y ~ MeasError(W, X) + Z, data)
-#' mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")
-#' mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")
+#' # measurement error in exposure
+#' data(ivs)
+#' mecor(Y ~ MeasError(W, X) + Z, data = bla)
+#' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
+#' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
+#' data(rs)
 #' mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
 #' @import boot
 #' @export
@@ -58,10 +48,23 @@ mecor <- function(formula,
                   method = "rc",
                   alpha = 0.05,
                   B = 0){
-  if(missing(data)) stop("data not found") #data = NULL
-  else if(!is.data.frame(data)) data <- as.data.frame(data)
-  if(missing(formula)) stop("formula not found")
-  if(! method %in% c("rc", "rc2", "rc_pooled1", "rc_pooled2")) stop("this method is not implemented")
+  if (missing(data))
+    stop("data is missing without a default")
+  if ((exists(deparse(substitute(data))) && is.function(data)) |
+       !exists(deparse(substitute(data))))
+    stop(paste0("data argument ", deparse(substitute(data)), " not found"))
+  if (!is.data.frame(data))
+    tryCatch({
+      data <- as.data.frame(data)
+      },
+      error = function(e){
+        message(e)
+        stop(paste0("data argument ", data, " cannot be coerced to a data.frame"))
+      }
+    )
+  if (missing(formula)) stop("formula not found")
+  if (! method %in% c("rc", "rc2", "rc_pooled1", "rc_pooled2"))
+    stop("this method is not implemented")
 
   #Create MeasError object
   l <- as.list(attr(terms(formula), "variables"))[-1]
