@@ -39,6 +39,8 @@
 #' mecor(Y ~ MeasError(X_star, reference = X) + Z, data = ivs)
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z, data = rs)
+#' data(cs)
+#' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
 #' data(rs)

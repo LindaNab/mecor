@@ -102,7 +102,11 @@ MeasError <- function(substitute,
   out
 }
 get_ref_from_rep <- function(replicate){
-  reference <- rowMeans(replicate)
+  if (is.null(ncol(replicate))){ # only one replicate measure provided
+    reference <- replicate
+  } else {
+    reference <- rowMeans(replicate)
+  }
   reference
 }
 #' @export
