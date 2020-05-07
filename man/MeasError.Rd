@@ -4,39 +4,50 @@
 \alias{MeasError}
 \title{Create a Measurement Error Object}
 \usage{
-MeasError(test, reference)
+MeasError(substitute, reference, replicate, type)
 }
 \arguments{
-\item{test}{a vector containing error-prone measurements or a matrix
-with replicate error-prone measurements}
+\item{substitute}{a vector containing the error-prone measure}
 
-\item{reference}{a vector containing reference measurements}
+\item{reference}{a vector containing the reference measure assumed without
+measurement error}
+
+\item{replicate}{a vector or matrix with replicates of the error-prone
+measure with classical measurement error. This can either be
+replicates obtained by using the same measurement method as the substitute
+measure (replicates study) or replicates using a different measurement method
+than the substitute measure (calibration study).}
+
+\item{type}{a character string with the study type: 'ivs' for internal
+validation study (default if reference not null), 'rs' for replicates study
+(default if replicate not null), 'cs' for calibration study and 'evs' for
+external validation study}
 }
 \value{
 \code{MeasError} returns an object of \link[base]{class} "MeasError".
 
-An object of class \code{MeasError} is a data.frame and additionally has
-attributes input (the name of the test and reference variables) and call (the matched call).
+An object of class \code{MeasError} is a list containing the substitute (and
+reference) variables and additionally has attributes input (the name of the
+substitute and reference variables), type (the study type that provides
+information to correct for the measurement error) and call (the matched
+call).
 }
 \description{
-This function creates a measurement error object, usually used in a regression where one
-wants to correct for the measurement error in the measured variable using a
-reference measure.
+This function creates a measurement error object, usually used as the
+independent or dependent variable in a regression if one wants to correct for
+the measurement error in that variable using a reference variable.
 }
 \examples{
-##measurement error in exposure
-nobs <- 1e3
-Z <- rnorm(nobs, 0, 1)
-X <- Z + rnorm(nobs, 0, 1)
-Y <- 0.5 * X + 2 * Z + rnorm(nobs, 0, 1)
-W <- X + rnorm(nobs, 0, 0.5)
-X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
-data <- data.frame(Z, X, W, Y)
-W2 <- X + rnorm(nobs, 0, 0.5)
-data2 <- data.frame(Z, W, W2, Y)
-
-MeasError(W, X)
-MeasError(cbind(W, W2), NA)
+## measurement error in exposure
+# internal validation study
+data(ivs)
+me <- with (ivs, MeasError(substitute = X_star, reference = X))
+# replicates study
+data(rs)
+me <- with (rs, MeasError(substitute = X1_star, replicate = cbind(X2_star, X3_star)))
+# calibration study
+data(cs)
+me <- with(cs, MeasError(X_star, cbind(X1_star, X2_star), type = "cs"))
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}
