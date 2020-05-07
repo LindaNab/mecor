@@ -38,25 +38,17 @@ matrix containing the corrected coefficients else}
 }
 \description{
 mecor provides correction methods for measurement
-errors in a continuous covariate.
+error in a continuous covariate.
 }
 \examples{
-##data generation
-#measurement error in exposure
-nobs <- 1e3
-Z <- rnorm(nobs, 0, 1)
-X <- Z + rnorm(nobs, 0, 1)
-Y <- 0.5 * X + 2 * Z + rnorm(nobs, 0, 1)
-W <- X + rnorm(nobs, 0, 0.5)
-X <- ifelse(rbinom(nobs, 0, 0.9) == 1, NA, X)
-data <- data.frame(Z, X, W, Y)
-W2 <- X + rnorm(nobs, 0, 0.5)
-W2 <- ifelse(rbinom(nobs, 0, 0.8) == 1, NA, W2)
-data2 <- data.frame(Z, W, W2, Y)
-
-mecor(Y ~ MeasError(W, X) + Z, data)
-mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled1")
-mecor(Y ~ MeasError(W, X) + Z, data, method = "rc_pooled2")
+# measurement error in exposure
+data(ivs)
+mecor(Y ~ MeasError(X_star, reference = X) + Z, data = ivs)
+data(rs)
+mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z, data = rs)
+mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
+mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
+data(rs)
 mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
 }
 \references{

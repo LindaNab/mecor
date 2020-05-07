@@ -102,8 +102,7 @@ MeasError <- function(substitute,
   out
 }
 get_ref_from_rep <- function(replicate){
-  cc <- complete.cases(replicate)
-  reference <- ifelse(cc == F, NA, rowMeans(replicate[cc, ]))
+  reference <- rowMeans(replicate)
   reference
 }
 #' @export

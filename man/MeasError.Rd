@@ -41,13 +41,13 @@ the measurement error in that variable using a reference variable.
 ## measurement error in exposure
 # internal validation study
 data(ivs)
-me <- with (ivs, MeasError(substitute = X_star, reference = X))
+me <- with (ivs, MeasError(X_star, reference = X))
 # replicates study
 data(rs)
-me <- with (rs, MeasError(substitute = X1_star, replicate = cbind(X2_star, X3_star)))
+me <- with (rs, MeasError(X1_star, replicate = cbind(X2_star, X3_star)))
 # calibration study
 data(cs)
-me <- with(cs, MeasError(X_star, cbind(X1_star, X2_star), type = "cs"))
+me <- with(cs, MeasError(X_star, replicate = cbind(X1_star, X2_star), type = "cs"))
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

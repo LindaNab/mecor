@@ -1,92 +1,236 @@
-regcal <- function(mlist, B, alpha, continuous = T){ #regression calibration
-  m <- mlist
-  # make vector containing correct names -----------------------------------
-  names <- colnames(m$x)
-  names[2] <- colnames(m$ref)
-  # estimate lambdas -------------------------------------------------------
-  calfit <- stats::lm.fit(m$x[!is.na(m$ref),], m$ref[!is.na(m$ref)])
-  lambda <- unname(calfit$coefficients)
-  lambda[1:2] <- rev(lambda[1:2]) #reverse order
-  vcov_lambda <- unname(mecor:::vcovfromfit(calfit))
-  vcov_lambda <- mecor:::change_order_vcov(vcov_lambda) #reverse order
-  # create covariate-error matrix Lambda -----------------------------------
+reg_cal <- function(response, covars, me){
+  # measurement error contaminated fit
+  naive_fit <- mecor:::naive(response, covars, me)
+  # estimate beta_star
+  beta_star <- mecor:::get_coefs(naive_fit)
+  vcov_beta_star <- mecor:::get_vcov(naive_fit)
+  # estimate calibration model
+  # get design matrix of calibration model
+  dm_cm <- mecor:::get_dm_cm(covars, me) # design matrix calibration model
+  dm_cm <- dm_cm[!is.na(me$reference), ] # select complete cases
+  reference <- me$reference[!is.na(me$reference)]
+  if (attributes(me)$type == "ivs"){
+    name_reference <- as.character(attributes(me)$input$reference)
+  } else {
+    name_reference <- paste0("cor_", attributes(me)$input$substitute)
+  }
+  # fit calibration model
+  calmod_fit <- stats::lm.fit(dm_cm, reference)
+  lambda <- mecor:::get_coefs(calmod_fit)
+  vcov_lambda <- mecor:::get_vcov(calmod_fit)
+  # estimate beta and its vcov
+  beta <- mecor:::reg_cal_coefs(beta_star, lambda)
+  names(beta)[1] <- name_reference
+  vcov_beta <- mecor:::reg_cal_vcov(beta_star, lambda,
+                                    vcov_beta_star, vcov_lambda)
+  colnames(vcov_beta) <- names(beta)
+  rownames(vcov_beta) <- names(beta)
+  out <- list(beta_star = beta_star,
+              vcov_beta_star = vcov_beta_star,
+              beta = beta,
+              vcov_beta = vcov_beta)
+}
+# corrected coefs using regression calibration
+reg_cal_coefs <- function(beta_star, lambda){
+  Lambda <- get_Lambda(lambda)
+  A <- solve(Lambda)
+  beta <- as.numeric(beta_star %*% A)
+  names(beta) <- names(beta_star)
+  beta
+}
+# covariance matrix of the corrected beta
+reg_cal_vcov <- function(beta_star, lambda, vcov_beta_star, vcov_lambda){
+  # take vec = (beta_star, c(A))
+  # = (phi_star, alpha_star, .., gamma_k_star, 1/lambda_1, 0, 0, ..)
+  # vec is of size (2+k)+(2+k)^2
+  # k = number of covariates
+  Lambda <- mecor:::get_Lambda(lambda)
+  vec_Lambda <- c(Lambda)
+  vec_A <- mecor:::get_vec_A(vec_Lambda)
+  vec <- c(beta_star, vec_A)
+  # The covariance matrix of vec is of size (2+k)+(2+k)^2 x (2+k)+(2+k)^2
+  # We assume that there is no covariance between beta_star and vec_Lambda
+  # Thus, vcov(vec) = (vcov(beta_star), 0
+  #                   0,               vcov(vec_A)) # see step 2
+  vcov_vec_A <- mecor:::get_vcov_vec_A(lambda, vcov_lambda)
+  vcov_vec <- mecor:::get_vcov_vec(vcov_beta_star, vcov_vec_A)
+  # We assume that vec is multivariate normal with mean vec and cov vcov_vec
+  # Now, there is a function f: R^{(2+k)+(2+k)^2} -> R^(2+k) so that
+  # f(vec) = beta
+  # Then, using the delta method vcov(beta) = Jf %*% vcov_vec %*% t(Jf)
+  f <- function(vec){
+    # nb = number of elements in beta_star
+    nb <- floor(sqrt(NROW(vec)))
+    beta <- numeric(nb)
+    for(i in 1:nb){
+      beta[i] <- sum(vec[1:nb]*vec[(i*nb+1):((i+1)*nb)])
+    }
+    beta
+  }
+  jf <- numDeriv::jacobian(f, vec)
+  vcov_beta <- jf %*% vcov_vec %*% t(jf)
+  colnames(vcov_beta) <- names(beta_star)
+  rownames(vcov_beta) <- names(beta_star)
+  vcov_beta
+}
+# create measurement error matrix
+get_Lambda <- function(lambda){
   Lambda <- diag({ncoef <- NROW(lambda)})
   Lambda[1,] <- lambda
-  # create covariate-error correction matrix -------------------------------
-  A <- solve(Lambda)
-  # estimate beta_star -----------------------------------------------------
-  misfit <- stats::lm.fit(m$x, m$y)
-  beta_star <- unname(misfit$coefficients)
-  beta_star[1:2] <- rev(beta_star[1:2]) #reverse order
-  vcov_beta_star <- unname(mecor:::vcovfromfit(misfit))
-  vcov_beta_star <- mecor:::change_order_vcov(vcov_beta_star) #reverse order
-  # estimate beta ----------------------------------------------------------
-  beta <- beta_star%*%A
-  # estimate cov(Lambda_rs, Lambda_tu) for all r, s, t, u = 1...ncoef ------
-  # and put these element together in a matrix called vcov_Lambda ----------
-  vcov_Lambda <- diag(ncoef*ncoef)
-  diag(vcov_Lambda) <- 0
-  vcov_Lambda[1:ncoef, 1:ncoef] <- vcov_lambda
-  # S_kl is a ncoefxncoef matrix whose (i,j)th element is ------------------
-  # cov(Lambda_ki, Lambda_lj) ----------------------------------------------
-  S <- function(k, l) {
-    vcov_Lambda[(k*ncoef-(ncoef-1)):(k*ncoef),
-                (l*ncoef-(ncoef-1)):(l*ncoef)]}
-  # estimate cov_A_i1j1i2j2 (formula A7) -----------------------------------
-  cov_A <- function(i_1, j_1, i_2, j_2){
-    out <- numeric(1)
-    for(r in 1:ncoef){
-      for(s in 1:ncoef){
-        for(t in 1:ncoef){
-          for(u in 1:ncoef){
-            out <- out +
-              A[i_1, r]*A[s, j_1]*A[i_2, t]*A[u, j_2]*S(r, t)[s,u]}}}}
-    out
-  }
-  # vcov_A_mn is a ncoefxncoef matrix whose (i,j)th element is -------------
-  # cov(A_im, A_jn) --------------------------------------------------------
-  vcov_A <- function(m, n){
-    out <- matrix(nrow = ncoef, ncol = ncoef)
-    for(i_1 in 1:ncoef){
-      for(i_2 in 1:ncoef){
-        out[i_1, i_2] <- cov_A(i_1, m, i_2, n) } }
-    out
-  }
-  # estimate zerovar vcov matrix of beta -----------------------------------
-  zerovcov_beta <- t(A)%*%vcov_beta_star%*%A
-  zerovcov_beta <- mecor:::change_order_vcov(zerovcov_beta)
-  # estimate vcov_beta (formula A4) ----------------------------------------
-  deltavcov_beta <- function(){
-    out <- matrix(nrow = ncoef, ncol = ncoef)
-    vcov_beta <- function(j_1, j_2) {
-      zerovcov_beta[j_1, j_2] + t(beta_star)%*%vcov_A(j_1, j_2)%*%beta_star}
-    for(j_1 in 1:ncoef){
-      for(j_2 in 1:ncoef){
-        out[j_1,j_2] <- vcov_beta(j_1, j_2) } }
-    mecor:::change_order_vcov(out)
-  }
-  vcov_beta <- deltavcov_beta()
-  # change names -----------------------------------------------------------
-  rownames(zerovcov_beta) <- names
-  colnames(zerovcov_beta) <- names
-  rownames(vcov_beta) <- names
-  colnames(vcov_beta) <- names
-  beta[1:2] <- rev(beta[1:2]) #reverse order
-  colnames(beta) <- names
-  # estimate fieller ci for corrected covariate ---------------------------
-  ci.fieller <- mecor:::fiellerci(misfit, calfit, alpha)
-  # estimate bootstrap ci for all coefficients ----------------------------
-  if(B != 0){
-    bd <- data.frame(m$y, m$ref, m$x)
-    colnames(bd) <- c("Y", colnames(m$ref), colnames(m$x))
-    ci.b <- mecor:::boot_rc(data = bd, refname = colnames(m$ref), alpha, B)}
-  out <- list(beta = beta,
-              corvar = list(deltavar = {if(c) deltavar else NA},
-                            bootvar = {if(B!=0) ci.b[,3] else NA}),
-              ci = list(fiellerci = {if(c) ci.fieller else NA},
-                        bootci = {if(B!=0) ci.b[,1:2] else NA}))
-  out
+  Lambda
 }
+# create vec(A) is the vectorised calibration matrix
+get_vec_A <- function(vec_Lambda){
+  Lambda <- matrix(vec_Lambda, nrow = sqrt(NROW(vec_Lambda)))
+  A <- solve(Lambda)
+  vec_A <- c(A)
+  vec_A
+}
+# vcov matrix of vec = (beta, vec_A) is a block diagonal matrix
+get_vcov_vec <- function(vcov_beta_star, vcov_vec_A){
+  # block diagonal matrix
+  vcov_vec <- rbind(
+    cbind(vcov_beta_star,
+          matrix(0, nrow = nrow(vcov_beta_star), ncol = nrow(vcov_vec_A))),
+    cbind(matrix(0, nrow = nrow(vcov_vec_A), ncol = nrow(vcov_beta_star)),
+          vcov_vec_A)
+  )
+  vcov_vec
+}
+# vcov matrix of vec_A = vec(A) using the Delta method
+get_vcov_vec_A <- function(lambda, vcov_lambda){
+  # vcov(vec_A): cov matrix of the vectorised inverse of Lambda
+  # Lambda = (lambda_1  lambda_0  lambda_2 ..
+  #           0         1         0        ..
+  #           ..        ..        ..       ..)
+  # lambda = (lambda_1, lambda_0, lambda_2, ..., lambda_k)
+  # vcov_lambda = (var(lambda_1), cov(lambda_1, lambda_0), ..
+  #                cov(lambda_0, lambda_1), var(lambda_0), ..
+  #                ..                                        )
+  # vec_Lambda is the vectorised measurement error matrix
+  # vec_Lambda = (lambda_1, 0, 0, 0, .., lambda_0, 1, 0, 0, 0, ....)
+  Lambda <- get_Lambda(lambda)
+  vec_Lambda <- c(Lambda)
+  # the vcov matrix of vec_Lambda is known:
+  # it is a (2+k)^2 x (2+k)^2 matrix
+  # vcov(vec_Lambda) = (var(lambda_1), cov(lambda_1, 0), ...,
+  #                     cov(lambda_1, lambda_0), .. (row#1)
+  #                     cov(0, lambda_1), var(0), ...,
+  #                     cov(0, lambda_0), .. (row #2)
+  #                     ..                                    )
+  vcov_vec_Lambda <- matrix(0, nrow = NROW(lambda)^2,
+                            ncol = NROW(lambda)^2)
+  for(i in 1:{n <- nrow(vcov_lambda)}){
+    for(j in 1:n)
+      vcov_vec_Lambda[(1 + n * (i - 1)),
+                      (1 + n * (j - 1))] <- vcov_lambda[i, j]
+  }
+  # Upon applying the delta method, we use that vec_Lambda is multivariate
+  # normal with mean (lambda_1, 0, .., 0, lambda_0, 1, 0, .., 0, ....) and
+  # variance vcov(vec_Lambda). There is a function g: R^{(2+k)x(2+k)} ->
+  # R^{(2+k)x(2+k)} so that g(vec_Lambda) = vec_A.
+  # Then, vcov(vec_A) = Jg %*% vcov(vec_Lambda) %*% t(Jg)
+  # A is the calibration matrix, wich is the inverse of Lambda
+  # get_vec_A vectorizes A, using the vectorised vec_Lambda
+  # Jacobian of the vectorised calibration matrix
+  J_vec_A <- numDeriv::jacobian(get_vec_A, vec_Lambda)
+  # Thus, using the Delta method, vcov(vec_A) is:
+  vcov_vec_A <- J_vec_A %*% vcov_vec_Lambda %*% t(J_vec_A)
+  vcov_vec_A
+}
+
+
+
+#
+# regcal <- function(mlist, B, alpha, continuous = T){ #regression calibration
+#   m <- mlist
+#   # make vector containing correct names -----------------------------------
+#   names <- colnames(m$x)
+#   names[2] <- colnames(m$ref)
+#   # estimate lambdas -------------------------------------------------------
+#   calfit <- stats::lm.fit(m$x[!is.na(m$ref),], m$ref[!is.na(m$ref)])
+#   lambda <- unname(calfit$coefficients)
+#   lambda[1:2] <- rev(lambda[1:2]) #reverse order
+#   vcov_lambda <- unname(mecor:::vcovfromfit(calfit))
+#   vcov_lambda <- mecor:::change_order_vcov(vcov_lambda) #reverse order
+#   # create covariate-error matrix Lambda -----------------------------------
+#   Lambda <- diag({ncoef <- NROW(lambda)})
+#   Lambda[1,] <- lambda
+#   # create covariate-error correction matrix -------------------------------
+#   A <- solve(Lambda)
+#   # estimate beta_star -----------------------------------------------------
+#   misfit <- stats::lm.fit(m$x, m$y)
+#   beta_star <- unname(misfit$coefficients)
+#   beta_star[1:2] <- rev(beta_star[1:2]) #reverse order
+#   vcov_beta_star <- unname(mecor:::vcovfromfit(misfit))
+#   vcov_beta_star <- mecor:::change_order_vcov(vcov_beta_star) #reverse order
+#   # estimate beta ----------------------------------------------------------
+#   beta <- beta_star%*%A
+#   # estimate cov(Lambda_rs, Lambda_tu) for all r, s, t, u = 1...ncoef ------
+#   # and put these element together in a matrix called vcov_Lambda ----------
+#   vcov_Lambda <- diag(ncoef*ncoef)
+#   diag(vcov_Lambda) <- 0
+#   vcov_Lambda[1:ncoef, 1:ncoef] <- vcov_lambda
+#   # S_kl is a ncoefxncoef matrix whose (i,j)th element is ------------------
+#   # cov(Lambda_ki, Lambda_lj) ----------------------------------------------
+#   S <- function(k, l) {
+#     vcov_Lambda[(k*ncoef-(ncoef-1)):(k*ncoef),
+#                 (l*ncoef-(ncoef-1)):(l*ncoef)]}
+#   # estimate cov_A_i1j1i2j2 (formula A7) -----------------------------------
+#   cov_A <- function(i_1, j_1, i_2, j_2){
+#     out <- numeric(1)
+#     for(r in 1:ncoef){
+#       for(s in 1:ncoef){
+#         for(t in 1:ncoef){
+#           for(u in 1:ncoef){
+#             out <- out +
+#               A[i_1, r]*A[s, j_1]*A[i_2, t]*A[u, j_2]*S(r, t)[s,u]}}}}
+#     out
+#   }
+#   # vcov_A_mn is a ncoefxncoef matrix whose (i,j)th element is -------------
+#   # cov(A_im, A_jn) --------------------------------------------------------
+#   vcov_A <- function(m, n){
+#     out <- matrix(nrow = ncoef, ncol = ncoef)
+#     for(i_1 in 1:ncoef){
+#       for(i_2 in 1:ncoef){
+#         out[i_1, i_2] <- cov_A(i_1, m, i_2, n) } }
+#     out
+#   }
+#   # estimate zerovar vcov matrix of beta -----------------------------------
+#   zerovcov_beta <- t(A)%*%vcov_beta_star%*%A
+#   zerovcov_beta <- mecor:::change_order_vcov(zerovcov_beta)
+#   # estimate vcov_beta (formula A4) ----------------------------------------
+#   deltavcov_beta <- function(){
+#     out <- matrix(nrow = ncoef, ncol = ncoef)
+#     vcov_beta <- function(j_1, j_2) {
+#       zerovcov_beta[j_1, j_2] + t(beta_star)%*%vcov_A(j_1, j_2)%*%beta_star}
+#     for(j_1 in 1:ncoef){
+#       for(j_2 in 1:ncoef){
+#         out[j_1,j_2] <- vcov_beta(j_1, j_2) } }
+#     mecor:::change_order_vcov(out)
+#   }
+#   vcov_beta <- deltavcov_beta()
+#   # change names -----------------------------------------------------------
+#   rownames(zerovcov_beta) <- names
+#   colnames(zerovcov_beta) <- names
+#   rownames(vcov_beta) <- names
+#   colnames(vcov_beta) <- names
+#   beta[1:2] <- rev(beta[1:2]) #reverse order
+#   colnames(beta) <- names
+#   # estimate fieller ci for corrected covariate ---------------------------
+#   ci.fieller <- mecor:::fiellerci(misfit, calfit, alpha)
+#   # estimate bootstrap ci for all coefficients ----------------------------
+#   if(B != 0){
+#     bd <- data.frame(m$y, m$ref, m$x)
+#     colnames(bd) <- c("Y", colnames(m$ref), colnames(m$x))
+#     ci.b <- mecor:::boot_rc(data = bd, refname = colnames(m$ref), alpha, B)}
+#   out <- list(beta = beta,
+#               corvar = list(deltavar = {if(c) deltavar else NA},
+#                             bootvar = {if(B!=0) ci.b[,3] else NA}),
+#               ci = list(fiellerci = {if(c) ci.fieller else NA},
+#                         bootci = {if(B!=0) ci.b[,1:2] else NA}))
+#   out
+# }
 
 regcal2 <- function(mlist, naivefit, B, alpha){ #regression calibration
   if(B==0){
@@ -95,7 +239,7 @@ regcal2 <- function(mlist, naivefit, B, alpha){ #regression calibration
   m <- mlist
   coefs <- naivefit$coef[-1] #coefficients naivefit (excluding intercept)
   m2 <- cov(m$x[,-1, drop = F]) #m2 matrix
-  v <- (m$test$test1 - m$x[,"repmean"])^2 + (m$test$test2 - m$x[,"repmean"])^2 #within individual variance
+  v <- (m$substitute$substitute1 - m$x[,"repmean"])^2 + (m$substitute$substitute2 - m$x[,"repmean"])^2 #within individual variance
   varme <- mean(v)/2 #variance of measurement error term
   m1 <- m2
   m1[1,1] <- m1[1,1] - varme
@@ -108,9 +252,9 @@ regcal2 <- function(mlist, naivefit, B, alpha){ #regression calibration
   #deltavar <- mecor:::vardelta(naivefit, calfit, names(corfit$coef))
   #ci.fieller <- mecor:::fiellerci(naivefit, calfit, alpha)
   if(B != 0){
-    bd <- data.frame(m$y, m$test, m$x)
-    colnames(bd) <- c("Y", colnames(m$test), colnames(m$x))
-    ci.b <- mecor:::boot_rc2(bdata = bd, testnames = colnames(m$test), alpha, B)}
+    bd <- data.frame(m$y, m$substitute, m$x)
+    colnames(bd) <- c("Y", colnames(m$substitute), colnames(m$x))
+    ci.b <- mecor:::boot_rc2(bdata = bd, substitutenames = colnames(m$substitute), alpha, B)}
   out <- list(corfit = list(coefficients = corfit),
               corvar = list(var = {if(B!=0) ci.b[,3] else NA}),
               ci = list(bootci = {if(B!=0) ci.b[,1:2] else NA}))
@@ -147,37 +291,40 @@ regcal_pooled <- function(mlist, naivefit, pooled.var = "delta", B, alpha){
 }
 
 # this function creates a list containing y (a vector with the outcomes),
-# x (a designmatrix containing an intercept, the test variable and other covariates) and
+# x (a designmatrix containing an intercept, the substitute variable and
+# the other covariates) and
 # ref (a matrix with the reference used in the calibration model)
 rcm <- function(vars, me){
-  y <- vars[,1] #vector containing the outcomes
-  if({vtp <- attributes(me)$type} == "internal"){
-    x <- cbind(1, me$test) #test var is the second entry of the x matrix
-    cnx <- c("(Intercept)", attributes(me)$input$test) #colnames x
+  y <- vars[, 1] #vector containing the outcomes
+  if ({vtp <- attributes(me)$type} == "internal"){
+    x <- cbind(1, me$substitute)
+    colnames_x <- c("(Intercept)", attributes(me)$input$substitute) #colnames x
     ref <- as.matrix(me$reference) #reference measure as ref
-    colnames(ref) <- as.character(attributes(me)$input$reference)}
-  else if(vtp == "replicate"){
-    x <- cbind(1, me$test$test1) #the first test measure is the second entry of the x matrix
-    cnx <- c("(Intercept)", attributes(me)$input$test$test1) #colnames x
-    ref <- as.matrix(me$test$test2) #replicate measure as ref
+    colnames(ref) <- as.character(attributes(me)$input$reference)
+    }
+  else if (vtp == "replicate"){
+    x <- cbind(1, me$substitute$substitute1)
+    colnames_x <- c("(Intercept)", attributes(me)$input$substitute$substitute1)
+    ref <- as.matrix(me$substitute$substitute2) #replicate measure as ref
     colnames(ref) <- "Corrected"}
-  if(ncol(vars) > 1){ #if there are more covariates, add them to the design matrix
-    x <- cbind(x, vars[,2:ncol(vars)]) #design matrix with measurement error
-    cnx <- c(cnx, colnames(vars)[-1])}
-  colnames(x) <- cnx
+  if (ncol(vars) > 1){ #if there are more covariates, add them to the design matrix
+    x <- cbind(x, vars[, 2:ncol(vars)]) #design matrix with measurement error
+    colnames_x <- c(colnames_x, colnames(vars)[-1])
+  }
+  colnames(x) <- colnames_x
   out <- list(y = y, x = x, ref = ref)
 }
 
 # this function creates a list containing y (a vector with the outcomes)
-# x (a design matrix containing the intercept, the mean of the rep test variables and the other covariates)
-# test (a matrix containing the rep measures)
+# x (a design matrix containing the intercept, the mean of the rep substitute variables and the other covariates)
+# substitute (a matrix containing the rep measures)
 rcm2 <- function(vars, me){
   y <- vars[,1] #vector containing the outcomes
-  x <- cbind(1, {m <- (me$test$test1 + me$test$test2)/2}) #mean of the two replicate measures
+  x <- cbind(1, {m <- (me$substitute$substitute1 + me$substitute$substitute2)/2}) #mean of the two replicate measures
   cnx <- c("(Intercept)", "repmean") #colnames x
   if(ncol(vars) > 1){ #if there are more covariates, add them to the design matrix
     x <- cbind(x, vars[,2:ncol(vars)]) #design matrix with measurement error
     cnx <- c(cnx, colnames(vars)[-1])}
   colnames(x) <- cnx
-  out <- list(y = y, x = x, test = me$test)
+  out <- list(y = y, x = x, substitute = me$substitute)
 }

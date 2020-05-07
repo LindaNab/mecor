@@ -36,7 +36,9 @@
 #' @examples
 #' # measurement error in exposure
 #' data(ivs)
-#' mecor(Y ~ MeasError(W, X) + Z, data = bla)
+#' mecor(Y ~ MeasError(X_star, reference = X) + Z, data = ivs)
+#' data(rs)
+#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z, data = rs)
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
 #' data(rs)
@@ -62,65 +64,74 @@ mecor <- function(formula,
         stop(paste0("data argument ", data, " cannot be coerced to a data.frame"))
       }
     )
-  if (missing(formula)) stop("formula not found")
+  if (missing(formula))
+    stop("formula not found")
   if (! method %in% c("rc", "rc2", "rc_pooled1", "rc_pooled2"))
     stop("this method is not implemented")
 
-  #Create MeasError object
-  l <- as.list(attr(terms(formula), "variables"))[-1]
-  indx <- grep("MeasError", l)
-  if(length(indx) == 0){
-    stop("formula should contain a MeasError object")}
-  else if(length(indx) != 1){
-    stop("formula can only contain one MeasError object")}
-  if(indx == 1) mevar <- "dep"
-  else mevar <- "indep"
-
-  temp <- sapply(l, eval, envir = data)
-  me <- temp[[indx]]
-  vars <- sapply(temp[-indx], cbind)
-  colnames(vars) <- l[-indx]
-
-  if(mevar == "indep" & {vtp <- attributes(me)$type} == "internal"){
-    mlist <- mecor:::rcm(vars, me)
-    naivefit <- stats::lm.fit(mlist$x, mlist$y)
-    if(method == "rc"){
-      res <- mecor:::regcal(mlist, naivefit, B = B,
-                            alpha = alpha, continuous = {cont<- attributes(me)$cont})}
-    if(method == "rc_pooled1"){
-      res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "delta", B = B, alpha = alpha)}
-    if(method == "rc_pooled2"){ #uses B = 999 for the bootvar used to pool the estimates
-      res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "bootstrap", B = B, alpha = alpha)}
-  }
-  else if(mevar == "indep" & vtp == "replicate"){
-    if(method %in% c("rc", "rc_pooled1", "rc_pooled2")){
-      mlist <- mecor:::rcm(vars, me)
-      naivefit <- stats::lm.fit(mlist$x, mlist$y)
-      if(method == "rc"){
-        res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
-      if(method == "rc_pooled1" | method == "rc_pooled2"){
-        stop("mecor is currently not able to do a pooled regression calibration
-             in case of replicate data")
-      }
+  # Create response, covars and me (= MeasError object)
+  vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
+  ind_me <- grep("MeasError", vars_formula) # index of MeasError in list of variables
+  ind_response <- attributes(terms(formula))$response
+  if (length(ind_me) == 0){
+    stop("formula should contain a MeasError object")
+    } else if (length(ind_me) != 1){
+    stop("formula can only contain one MeasError object")
     }
-    else if(method == "rc2"){
-      mlist <- mecor:::rcm2(vars, me)
-      naivefit <- stats::lm.fit(mlist$x, mlist$y)
-      res <- mecor:::regcal2(mlist, naivefit, B = B, alpha = alpha)
-    }
+  if (ind_me == 1){
+    type_me_var <- "dep"
+  } else type_me_var <- "indep"
+  vars_formula_eval <- sapply(vars_formula, eval, envir = data)
+  me <- vars_formula_eval[[ind_me]]
+  response <- as.matrix(vars_formula_eval[[ind_response]])
+  colnames(response) <- vars_formula[ind_response]
+  if (!length(vars_formula_eval[-c(ind_me, ind_response)]) == 0){
+    covars <- sapply(vars_formula_eval[-c(ind_me, ind_response)], cbind)
+    colnames(covars) <- vars_formula[-c(ind_me, ind_response)]
+  } else covars <- NULL
+  naivefit <- mecor:::naive(response, covars, me)
+  if(type_me_var == "indep" & method == "rc"){
+    corfit <- mecor:::reg_cal(response, covars, me)
   }
-  else if(mevar == "dep"){
-    y <- me$test
-    x <- cbind(1, vars[,2:ncol(vars)]) #design matrix
-    lc <- l[-indx]
-    colnames(x) <- c("(Intercept)", lc)
-    stop("mecor cannot correct for measurment error in the dependent variable")}
+  # if(type_me_var == "indep" & {vtp <- attributes(me)$type} == "internal"){
+  #   dm_naive <- mecor:::get_dm_naive(vars, me)
+  #   naive_fit <- stats::lm.fit(dm_naive$x, dm_naive$y)
+  #   if(method == "rc"){
+  #     res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
+  #   if(method == "rc_pooled1"){
+  #     res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "delta", B = B, alpha = alpha)}
+  #   if(method == "rc_pooled2"){ #uses B = 999 for the bootvar used to pool the estimates
+  #     res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "bootstrap", B = B, alpha = alpha)}
+  # }
+  # else if(mevar == "indep" & vtp == "replicates"){
+  #   if(method %in% c("rc", "rc_pooled1", "rc_pooled2")){
+  #     mlist <- mecor:::rcm(vars, me)
+  #     naivefit <- stats::lm.fit(mlist$x, mlist$y)
+  #     if(method == "rc"){
+  #       res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)
+  #     }
+  #     if(method == "rc_pooled1" | method == "rc_pooled2"){
+  #       stop("mecor is currently not able to do a pooled regression calibration
+  #            in case of replicate data")
+  #     }
+  #   }
+  #   else if(method == "rc2"){
+  #     mlist <- mecor:::rcm2(vars, me)
+  #     naivefit <- stats::lm.fit(mlist$x, mlist$y)
+  #     res <- mecor:::regcal2(mlist, naivefit, B = B, alpha = alpha)
+  #   }
+  # }
+  # else if(mevar == "dep"){
+  #   y <- me$test
+  #   x <- cbind(1, vars[,2:ncol(vars)]) #design matrix
+  #   lc <- l[-indx]
+  #   colnames(x) <- c("(Intercept)", lc)
+  #   stop("mecor cannot correct for measurment error in the dependent variable")}
 
   #MECORS output
   out <- list(naivefit = naivefit,
-              corfit = res$corfit,
-              corvar = res$corvar,
-              ci = res$ci
+              corfit = corfit
+              #ci = res$ci
               )
   class(out) <- 'mecor'
   attr(out, "call") <- match.call()
@@ -128,5 +139,3 @@ mecor <- function(formula,
   attr(out, "alpha") <- alpha
   return(out)
 }
-
-
