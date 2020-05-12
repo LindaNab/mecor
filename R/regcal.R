@@ -138,6 +138,44 @@ get_vcov_vec_A <- function(lambda, vcov_lambda){
   vcov_vec_A <- J_vec_A %*% vcov_vec_Lambda %*% t(J_vec_A)
   vcov_vec_A
 }
+boot_regcal <- function(response, covars, me, B, alpha){
+  strat_samples <- replicate(
+    B,
+    mecor:::get_strat_sample(response, covars, me),
+    simplify = F
+  )
+  betas <- sapply(
+    strat_samples,
+    FUN = function(x) do.call(mecor:::reg_cal, x)$beta
+  )
+  CI_perc <- apply(betas,
+                   1,
+                   FUN = quantile,
+                   probs = c(alpha / 2, 1 - alpha / 2))
+  out <- list(CI = CI_perc,
+              vcov = cov(t(betas)))
+}
+get_strat_sample <- function(response, covars, me){
+  rownum_filled <- which (!is.na(me$reference))
+  rownum_empty <- which (is.na(me$reference))
+  new_rownum_filled <- sample(rownum_filled,
+                              size = NROW(rownum_filled),
+                              replace = T)
+  new_rownum_empty <- sample(rownum_empty,
+                             size = NROW(rownum_empty),
+                             replace = T)
+  new_rownums <- c(new_rownum_filled, new_rownum_empty)
+  new_response <- response[new_rownums, , drop = F]
+  new_covars <- covars[new_rownums, , drop = F]
+  new_me <- me
+  new_me$reference <- new_me$reference[new_rownums]
+  new_me$substitute <- new_me$substitute[new_rownums]
+  out <- list(response = new_response,
+              covars = new_covars,
+              me = new_me)
+  out
+}
+
 
 
 

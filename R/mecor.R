@@ -36,7 +36,7 @@
 #' @examples
 #' # measurement error in exposure
 #' data(ivs)
-#' mecor(Y ~ MeasError(X_star, reference = X) + Z, data = ivs)
+#' fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, B = 666)
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z, data = rs)
 #' data(cs)
@@ -94,6 +94,11 @@ mecor <- function(formula,
   naivefit <- mecor:::naive(response, covars, me)
   if(type_me_var == "indep" & method == "rc"){
     corfit <- mecor:::reg_cal(response, covars, me)
+    if (B != 0){
+      out_boot <- mecor:::boot_regcal(response, covars, me, B = B, alpha = alpha)
+      corfit$CI_beta_boot <- out_boot$CI
+      corfit$vcov_beta_boot <- out_boot$vcov
+    }
   }
   # if(type_me_var == "indep" & {vtp <- attributes(me)$type} == "internal"){
   #   dm_naive <- mecor:::get_dm_naive(vars, me)
@@ -133,7 +138,6 @@ mecor <- function(formula,
   #MECORS output
   out <- list(naivefit = naivefit,
               corfit = corfit
-              #ci = res$ci
               )
   class(out) <- 'mecor'
   attr(out, "call") <- match.call()
