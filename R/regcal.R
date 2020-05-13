@@ -1,4 +1,4 @@
-reg_cal <- function(response, covars, me){
+regcal <- function(response, covars, me, B = 0 , alpha = 0.05){
   # measurement error contaminated fit
   naive_fit <- mecor:::naive(response, covars, me)
   # estimate beta_star
@@ -19,19 +19,23 @@ reg_cal <- function(response, covars, me){
   lambda <- mecor:::get_coefs(calmod_fit)
   vcov_lambda <- mecor:::get_vcov(calmod_fit)
   # estimate beta and its vcov
-  beta <- mecor:::reg_cal_coefs(beta_star, lambda)
+  beta <- mecor:::regcal_coefs(beta_star, lambda)
   names(beta)[1] <- name_reference
-  vcov_beta <- mecor:::reg_cal_vcov(beta_star, lambda,
+  vcov_beta <- mecor:::regcal_vcov(beta_star, lambda,
                                     vcov_beta_star, vcov_lambda)
   colnames(vcov_beta) <- names(beta)
   rownames(vcov_beta) <- names(beta)
-  out <- list(beta_star = beta_star,
-              vcov_beta_star = vcov_beta_star,
-              beta = beta,
-              vcov_beta = vcov_beta)
+  out <- list(coef = beta,
+              vcov = vcov_beta)
+  if (B != 0){
+    boot <- mecor:::boot_regcal(response, covars, me, B = B, alpha = alpha)
+    out$boot <- list(ci = boot$ci,
+                     vcov = boot$vcov)
+  }
+  out
 }
 # corrected coefs using regression calibration
-reg_cal_coefs <- function(beta_star, lambda){
+regcal_coefs <- function(beta_star, lambda){
   Lambda <- get_Lambda(lambda)
   A <- solve(Lambda)
   beta <- as.numeric(beta_star %*% A)
@@ -39,7 +43,7 @@ reg_cal_coefs <- function(beta_star, lambda){
   beta
 }
 # covariance matrix of the corrected beta
-reg_cal_vcov <- function(beta_star, lambda, vcov_beta_star, vcov_lambda){
+regcal_vcov <- function(beta_star, lambda, vcov_beta_star, vcov_lambda){
   # take vec = (beta_star, c(A))
   # = (phi_star, alpha_star, .., gamma_k_star, 1/lambda_1, 0, 0, ..)
   # vec is of size (2+k)+(2+k)^2
@@ -144,16 +148,16 @@ boot_regcal <- function(response, covars, me, B, alpha){
     mecor:::get_strat_sample(response, covars, me),
     simplify = F
   )
-  betas <- sapply(
+  coef <- sapply(
     strat_samples,
-    FUN = function(x) do.call(mecor:::reg_cal, x)$beta
+    FUN = function(x) do.call(mecor:::regcal, x)$coef
   )
-  CI_perc <- apply(betas,
+  ci_perc <- apply(coef,
                    1,
                    FUN = quantile,
                    probs = c(alpha / 2, 1 - alpha / 2))
-  out <- list(CI = CI_perc,
-              vcov = cov(t(betas)))
+  out <- list(ci = ci_perc,
+              vcov = cov(t(coef)))
 }
 get_strat_sample <- function(response, covars, me){
   rownum_filled <- which (!is.na(me$reference))
@@ -172,7 +176,8 @@ get_strat_sample <- function(response, covars, me){
   new_me$substitute <- new_me$substitute[new_rownums]
   out <- list(response = new_response,
               covars = new_covars,
-              me = new_me)
+              me = new_me,
+              B = 0) # no bootstrapping within bootstrap
   out
 }
 

@@ -36,10 +36,12 @@
 #' @examples
 #' # measurement error in exposure
 #' data(ivs)
-#' fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, B = 666)
+#' fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, method = "erc")
 #' data(rs)
-#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z, data = rs)
-#' data(cs)
+#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
+#' data = rs,
+#' B = 999)
+ #' data(cs)
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
@@ -51,7 +53,8 @@ mecor <- function(formula,
                   data,
                   method = "rc",
                   alpha = 0.05,
-                  B = 0){
+                  B = 0,
+                  use_vcov = "default"){
   if (missing(data))
     stop("data is missing without a default")
   if ((exists(deparse(substitute(data))) && is.function(data)) |
@@ -68,7 +71,7 @@ mecor <- function(formula,
     )
   if (missing(formula))
     stop("formula not found")
-  if (! method %in% c("rc", "rc2", "rc_pooled1", "rc_pooled2"))
+  if (! method %in% c("rc", "erc"))
     stop("this method is not implemented")
 
   # Create response, covars and me (= MeasError object)
@@ -93,12 +96,10 @@ mecor <- function(formula,
   } else covars <- NULL
   naivefit <- mecor:::naive(response, covars, me)
   if(type_me_var == "indep" & method == "rc"){
-    corfit <- mecor:::reg_cal(response, covars, me)
-    if (B != 0){
-      out_boot <- mecor:::boot_regcal(response, covars, me, B = B, alpha = alpha)
-      corfit$CI_beta_boot <- out_boot$CI
-      corfit$vcov_beta_boot <- out_boot$vcov
-    }
+    corfit <- mecor:::regcal(response, covars, me, B, alpha)
+  }
+  if(type_me_var == "indep" & method == "erc"){
+    corfit <- mecor:::efficient_regcal(response, covars, me, B, alpha, use_vcov)
   }
   # if(type_me_var == "indep" & {vtp <- attributes(me)$type} == "internal"){
   #   dm_naive <- mecor:::get_dm_naive(vars, me)

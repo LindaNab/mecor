@@ -47,9 +47,9 @@ summary.mecor <- function(object){
   uc$ci <- round(uc$ci, 6)
   # corrected
   #if(length({q <- attributes(z2)$type}) == 0){
-    coefficients <- cbind(Estimate = (coef2 <- z2$beta),
-              SE = (se2 <- sqrt(diag(z2$vcov_beta))),
-              'SE (btstr)' = se2_boot <- sqrt(diag(z2$vcov_beta_boot))#,
+    coefficients <- cbind(Estimate = (coef2 <- z2$coef),
+              SE = (se2 <- sqrt(diag(z2$vcov))),
+              'SE (btstr)' = (if((B <- attr(z, "B")) != 0) sqrt(diag(z2$boot$vcov)) else NA)#,
               # 't value' = (t2 <- coef2/se2),
               # 'Pr(>|t|)' = 2 * pt(abs(t2), rdf1, lower.tail = FALSE) #rdf unknown?
               )
@@ -57,8 +57,8 @@ summary.mecor <- function(object){
     c$ci <- cbind(Estimate = coef2,
                   'LCI' = coef2 - tq * se2,
                   'UCI' = coef2 + tq * se2,
-                  'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z2$CI_beta_boot[1, ] else NA),
-                  'UCI (btstr)'= (if(B != 0) z2$CI_beta_boot[2, ] else NA))
+                  'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z2$boot$ci[1, ] else NA),
+                  'UCI (btstr)'= (if(B != 0) z2$boot$ci[2, ] else NA))
     c$ci <- round(c$ci, 6)
   #}
   # else if(q == "lm.fit"){
@@ -113,9 +113,9 @@ print.summary.mecor <- function(x){
 print.mecor <- function(x){
   cat("\nCall:\n", paste(deparse(attr(x, "call")), sep = "\n", collapse = "\n"),
       "\n", sep = "")
-  if(length(x$corfit$beta)) {
+  if(length(x$corfit$coef)) {
     cat("\nCoefficients Corrected Model:\n")
-    print(x$corfit$beta)
+    print(x$corfit$coef)
   }
   if(length(x$naivefit$coef)) {
     cat("\nCoefficients Uncorrected Model:\n")

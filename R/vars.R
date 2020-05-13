@@ -38,5 +38,7 @@ change_order_vcov <- function(vcov){
   vcov[,1:2] <- cbind(vcov[,2], vcov[,1])
   #replace upper 2x2 matrix
   vcov[1:2, 1:2] <- temp
+  colnames(vcov)[1:2] <- rev(colnames(vcov)[1:2])
+  rownames(vcov)[1:2] <- rev(rownames(vcov)[1:2])
   vcov
 }
