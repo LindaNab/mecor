@@ -10,8 +10,9 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/LindaNab/mecor.git
-Imports: sandwich, boot
+Imports: sandwich, 
+         boot
 Suggests: knitr,
-    rmarkdown
+          rmarkdown
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0

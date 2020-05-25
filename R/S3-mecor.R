@@ -29,7 +29,7 @@
 #'
 summary.mecor <- function(object){
   z <- object
-  z1 <- z$naivefit
+  z1 <- z$uncorfit
   z2 <- z$corfit
   alpha <- attr(z, "alpha")
   # uncorrected
@@ -117,9 +117,9 @@ print.mecor <- function(x){
     cat("\nCoefficients Corrected Model:\n")
     print(x$corfit$coef)
   }
-  if(length(x$naivefit$coef)) {
+  if(length(x$uncorfit$coef)) {
     cat("\nCoefficients Uncorrected Model:\n")
-    print(x$naivefit$coef)
+    print(x$uncorfit$coef)
   }
   cat("\n")
   invisible(x)

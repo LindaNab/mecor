@@ -4,7 +4,7 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, method = "rc", alpha = 0.05, B = 0)
+mecor(formula, data, method = "rc", alpha = 0.05, B = 0, use_vcov = "default")
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -43,7 +43,7 @@ error in a continuous covariate.
 \examples{
 # measurement error in exposure
 data(ivs)
-fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, B = 666)
+fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, method = "rc", B = 666)
 data(rs)
 mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
 data = rs,
@@ -52,8 +52,6 @@ data(cs)
 mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
 mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
 mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
-data(rs)
-mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.

@@ -20,7 +20,7 @@
 #'
 #' An object of class \code{mecor} is a list containing the following components:
 #'
-#' \item{naivefit}{a lm.fit object of the uncorrected fit}
+#' \item{uncorfit}{a lm.fit object of the uncorrected fit}
 #' \item{corfit}{a lm.fit object of the corrected fit (if method = "rc") and a
 #' matrix containing the corrected coefficients else}
 #' \item{corvar}{the corrected variance using the delta method}
@@ -36,18 +36,15 @@
 #' @examples
 #' # measurement error in exposure
 #' data(ivs)
-#' fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, method = "erc")
+#' fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, method = "rc", B = 666)
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
 #' data = rs,
 #' B = 999)
- #' data(cs)
+#' data(cs)
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
 #' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
-#' data(rs)
-#' mecor(Y ~ MeasError(cbind(W, W2), NA) + Z, data2)
-#' @import boot
 #' @export
 mecor <- function(formula,
                   data,
@@ -71,6 +68,8 @@ mecor <- function(formula,
     )
   if (missing(formula))
     stop("formula not found")
+  if (class(formula) != "formula")
+    stop("formula is not of class 'formula'")
   if (! method %in% c("rc", "erc"))
     stop("this method is not implemented")
 
@@ -83,61 +82,37 @@ mecor <- function(formula,
     } else if (length(ind_me) != 1){
     stop("formula can only contain one MeasError object")
     }
-  if (ind_me == 1){
-    type_me_var <- "dep"
-  } else type_me_var <- "indep"
+  if (ind_me == ind_response){
+    type <- "dep"
+  } else type <- "indep"
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
-  response <- as.matrix(vars_formula_eval[[ind_response]])
-  colnames(response) <- vars_formula[ind_response]
-  if (!length(vars_formula_eval[-c(ind_me, ind_response)]) == 0){
-    covars <- sapply(vars_formula_eval[-c(ind_me, ind_response)], cbind)
-    colnames(covars) <- vars_formula[-c(ind_me, ind_response)]
-  } else covars <- NULL
-  naivefit <- mecor:::naive(response, covars, me)
-  if(type_me_var == "indep" & method == "rc"){
-    corfit <- mecor:::regcal(response, covars, me, B, alpha)
+  if (type == "indep"){
+    response <- as.matrix(vars_formula_eval[[ind_response]])
+    colnames(response) <- vars_formula[ind_response]
+    if (!length(vars_formula_eval[-c(ind_me, ind_response)]) == 0){
+      covars <- sapply(vars_formula_eval[-c(ind_me, ind_response)], cbind)
+      colnames(covars) <- vars_formula[-c(ind_me, ind_response)]
+    } else covars <- NULL
+    uncorfit <- mecor:::uncorrected(response, covars, me, type)
+    if(method == "rc"){
+      corfit <- mecor:::regcal(response, covars, me, B, alpha)
+    }
+    if(method == "erc"){
+      corfit <- mecor:::efficient_regcal(response, covars, me, B, alpha, use_vcov)
+    }
+  } else if (type == "dep"){
+    covars <- sapply(vars_formula_eval[-ind_me], cbind)
+    colnames(covars) <- vars_formula[-ind_me]
+    uncorfit <- mecor:::uncorrected(response = NULL, covars, me, type)
+    if(method == "rc"){
+      corfit <- mecor:::regcal_o(covars, me, B, alpha)
+    }
   }
-  if(type_me_var == "indep" & method == "erc"){
-    corfit <- mecor:::efficient_regcal(response, covars, me, B, alpha, use_vcov)
-  }
-  # if(type_me_var == "indep" & {vtp <- attributes(me)$type} == "internal"){
-  #   dm_naive <- mecor:::get_dm_naive(vars, me)
-  #   naive_fit <- stats::lm.fit(dm_naive$x, dm_naive$y)
-  #   if(method == "rc"){
-  #     res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)}
-  #   if(method == "rc_pooled1"){
-  #     res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "delta", B = B, alpha = alpha)}
-  #   if(method == "rc_pooled2"){ #uses B = 999 for the bootvar used to pool the estimates
-  #     res <- mecor:::regcal_pooled(mlist, naivefit, pooled.var = "bootstrap", B = B, alpha = alpha)}
-  # }
-  # else if(mevar == "indep" & vtp == "replicates"){
-  #   if(method %in% c("rc", "rc_pooled1", "rc_pooled2")){
-  #     mlist <- mecor:::rcm(vars, me)
-  #     naivefit <- stats::lm.fit(mlist$x, mlist$y)
-  #     if(method == "rc"){
-  #       res <- mecor:::regcal(mlist, naivefit, B = B, alpha = alpha)
-  #     }
-  #     if(method == "rc_pooled1" | method == "rc_pooled2"){
-  #       stop("mecor is currently not able to do a pooled regression calibration
-  #            in case of replicate data")
-  #     }
-  #   }
-  #   else if(method == "rc2"){
-  #     mlist <- mecor:::rcm2(vars, me)
-  #     naivefit <- stats::lm.fit(mlist$x, mlist$y)
-  #     res <- mecor:::regcal2(mlist, naivefit, B = B, alpha = alpha)
-  #   }
-  # }
-  # else if(mevar == "dep"){
-  #   y <- me$test
-  #   x <- cbind(1, vars[,2:ncol(vars)]) #design matrix
-  #   lc <- l[-indx]
-  #   colnames(x) <- c("(Intercept)", lc)
-  #   stop("mecor cannot correct for measurment error in the dependent variable")}
 
-  #MECORS output
-  out <- list(naivefit = naivefit,
+
+  # output
+  out <- list(uncorfit = uncorfit,
               corfit = corfit
               )
   class(out) <- 'mecor'

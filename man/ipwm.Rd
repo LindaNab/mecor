@@ -4,10 +4,22 @@
 \alias{ipwm}
 \title{Weighting for Confounding and Joint Misclassification of Exposure and Outcome}
 \usage{
-ipwm(formulas, data, outcome_true, outcome_mis = NULL, exposure_true,
-  exposure_mis = NULL, nboot = 1000, conf_level = 0.95,
-  fix_nNAs = FALSE, semiparametric = FALSE, optim_args = list(method
-  = "BFGS"), force_optim = FALSE, sp = Inf, print = TRUE)
+ipwm(
+  formulas,
+  data,
+  outcome_true,
+  outcome_mis = NULL,
+  exposure_true,
+  exposure_mis = NULL,
+  nboot = 1000,
+  conf_level = 0.95,
+  fix_nNAs = FALSE,
+  semiparametric = FALSE,
+  optim_args = list(method = "BFGS"),
+  force_optim = FALSE,
+  sp = Inf,
+  print = TRUE
+)
 }
 \arguments{
 \item{formulas}{a list of objects of \link[base]{class} \code{\link[stats]{formula}} specifying the probability models for the terms of some factorisation of the joint conditional probability function of \code{exposure_true}, \code{exposure_mis}, \code{outcome_true} and \code{outcome_mis}, given covariates}

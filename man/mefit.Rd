@@ -4,8 +4,7 @@
 \alias{mefit}
 \title{Fitting Measurement Error Model}
 \usage{
-mefit(MeasError, differential, model = "all", robust = FALSE,
-  plot = TRUE)
+mefit(MeasError, differential, model = "all", robust = FALSE, plot = TRUE)
 }
 \arguments{
 \item{MeasError}{object of class MeasError}
