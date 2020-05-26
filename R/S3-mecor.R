@@ -42,8 +42,8 @@ summary.mecor <- function(object){
                  't value' = (t1 <- coef1/se1),
                  'Pr(>|t|)' = 2 * pt(abs(t1), rdf1, lower.tail = FALSE))
   uc$ci <- cbind(Estimate = coef1,
-                 'Lower CI' = coef1 - tq * se1,
-                 'Upper CI' = coef1 + tq * se1)
+                 'LCI' = coef1 - tq * se1,
+                 'UCI' = coef1 + tq * se1)
   uc$ci <- round(uc$ci, 6)
   # corrected
   #if(length({q <- attributes(z2)$type}) == 0){
@@ -60,29 +60,6 @@ summary.mecor <- function(object){
                   'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z2$boot$ci[1, ] else NA),
                   'UCI (btstr)'= (if(B != 0) z2$boot$ci[2, ] else NA))
     c$ci <- round(c$ci, 6)
-  #}
-  # else if(q == "lm.fit"){
-  #   rdf2 <- z2$df.residual
-  #   rss2 <- sum(z2$residuals^2)
-  #   c <- list(residuals = z2$residuals, rdf = rdf2, sigma = sqrt(rss2/rdf2))
-  #   c$coefficients <- cbind(Estimate    = (coef2 <- z2$coef),
-  #                          'SE (uncor.)'    = (se2 <- sqrt(diag(mecor:::vcovfromfit(z2)))),
-  #                          't value'  = (t2 <- coef2/se2),
-  #                          'Pr(>|t|)' = 2 * pt(abs(t2), rdf2, lower.tail = FALSE),
-  #                          'SE (delta)' = if(dv <- any(!is.na(z$corvar$deltavar))) dse <- sqrt(z$corvar$deltavar) else NA,
-  #                          't value'  = if(dv) dt <- coef2/dse else NA,
-  #                          'Pr(>|t|)' = if(dv) 2 * pt(abs(dt), rdf2, lower.tail = FALSE) else NA)
-  #   c$coefficients <- round(c$coefficients, 6)
-  #   c$ci <- cbind(Estimate = coef2,
-  #                'LCI (uncor)' = coef2 - tq * se2,
-  #                'UCI (uncor)' = coef2 + tq * se2,
-  #                'LCI (delta)' = if(dv) coef2 - tq * dse else NA,
-  #                'UCI (delta)' = if(dv) coef2 + tq * dse else NA,
-  #                'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z$ci$bootci[,1] else NA),
-  #                'UCI (btstr)'= (if(B != 0) z$ci$bootci[,2] else NA),
-  #                'LCI (fllr)' = (if(f <- any(!is.na(z$ci$fiellerci))) z$ci$fiellerci[,1] else NA),
-  #                'UCI (fllr)' = (if(f) z$ci$fiellerci[,2] else NA))
-  #   c$ci <- round(c$ci, 6)}
   out <- list(call = attr(z, "call"), B = B)
   out$uc <- uc
   out$c <- c
