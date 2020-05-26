@@ -10,11 +10,13 @@
 #' object coercible by as.data.frame to a data frame) containing
 #' the variables in the model
 #' @param method a character string indicating the method used to correct for
-#' measurement error, either "rc" (regression calibration), "rc_pooled1" (efficient
-#' regression calibration using delta variance for pooling) or "rc_pooled2" (efficient
-#' regression calibration using bootstrap variance for pooling).
+#' measurement error, either "rc" (regression calibration), "erc" (efficient
+#' regression calibration using delta variance for pooling), "irc" (inadmissible
+#' regression calibration)
 #' @param alpha alpha level used to construct confidence intervals
 #' @param B number of bootstrap samples
+#' @param erc_B number of bootstrap samples used by efficient regression
+#' calibration to estimate the bootstrap vcov, used for pooling
 #'
 #' @return \code{mecor} returns an object of \link[base]{class} "mecor"
 #'
@@ -39,26 +41,29 @@
 #' fit <-
 #'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'          data = ivs,
-#'          method = "rc",
-#'          B = 666)
+#'          method = "erc",
+#'          B = 999,
+#'          erc_B = 0)
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
 #'       data = rs,
 #'       B = 999)
 #' data(cs)
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
+#' # measurement error in the outcome
 #' data(ivs_o)
-#' fit <- mecor(MeasError(Y_star, reference = Y) ~ X + Z,
-#'              data = ivs_o,
-#'              method = "rc",
-#'              B = 999)
+#' fit <-
+#'   mecor(MeasError(Y_star, reference = Y) ~ X + Z,
+#'         data = ivs_o,
+#'         method = "rc",
+#'         B = 999)
 #' @export
 mecor <- function(formula,
                   data,
                   method = "rc",
                   alpha = 0.05,
                   B = 0,
-                  use_vcov = "default"){
+                  erc_B = 0){
   if (missing(data))
     stop("data is missing without a default")
   if ((exists(deparse(substitute(data))) && is.function(data)) |
@@ -110,8 +115,12 @@ mecor <- function(formula,
       corfit <-
         mecor:::regcal(response, covars, me, B, alpha, type)
     } else if (method == "erc"){
+      if (B != 0 & erc_B != 0){
+        menu(c("yes", "no"),
+             title = "You're about to bootstrap the vcov used by efficient regression calibration and bootstrap the variance of that estimator. This may take a while. Do you want to proceed?")
+      }
       corfit <-
-        mecor:::efficient_regcal(response, covars, me, B, alpha, type, use_vcov)
+        mecor:::efficient_regcal(response, covars, me, B, alpha, type, erc_B)
     }
   # output
   out <- list(uncorfit = uncorfit,

@@ -19,8 +19,8 @@ get_dm_cc <- function(covars, me, type){
     dm <- get_dm_uncor(covars, me, type)
   } else if (type == "indep"){
     dm <- cbind(1, me$reference)
-    colnames_dm <- c("(Intercept)", attributes(me)$input$reference)
-    dm <- bind_covars(dm, covars)
+    colnames(dm) <- c("(Intercept)", attributes(me)$input$reference)
+    dm <- mecor:::bind_covars(dm, covars)
   }
   dm
 }

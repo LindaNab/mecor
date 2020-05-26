@@ -22,7 +22,8 @@ regcal <- function(response, covars, me, B = 0 , alpha = 0.05, type){
   # bootstrap functionality
   if (B != 0){
     boot <-
-      mecor:::regcal_boot(response, covars, me, B = B, alpha = alpha, type = type)
+      mecor:::analysis_boot(response, covars, me,
+                            B = B, alpha = alpha, type = type, method = "rc")
     out$boot <- list(ci = boot$ci,
                      vcov = boot$vcov)
   }
