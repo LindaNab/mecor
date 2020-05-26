@@ -5,39 +5,28 @@ regcal <- function(response, covars, me, B = 0 , alpha = 0.05, type){
   vcov_beta_star <- mecor:::get_vcov(uncor_fit)
   # estimate calibration model
   calmod_fit <- mecor:::regcal_get_calmod(response, covars, me, type)
-  calmod_coefs <- mecor:::get_coefs(calmod_fit, type == "indep")
+  coef_calmod <- mecor:::get_coefs(calmod_fit, type == "indep")
   vcov_calmod <- mecor:::get_vcov(calmod_fit, type == "indep")
   # estimate beta (cor) and its vcov
-  beta <- mecor:::regcal_get_coef(beta_star, calmod_coefs, type)
-  vcov_beta <- mecor:::regcal_get_vcov(beta_star, calmod_coefs,
+  beta <- mecor:::regcal_get_coef(beta_star, coef_calmod, type)
+  vcov_beta <- mecor:::regcal_get_vcov(beta_star, coef_calmod,
                                        vcov_beta_star, vcov_calmod, type)
   # change names of beta and its vcov
-  beta <- mecor:::change_names(beta, me)
-  vcov_beta <- mecor:::change_names(vcov_beta, me)
+  if (type == "indep"){
+    beta <- mecor:::change_names(beta, me)
+    vcov_beta <- mecor:::change_names(vcov_beta, me)
+  }
   # change order of coef and vcov matrix
   out <- list(coef = mecor:::change_order_coefs(beta),
               vcov = mecor:::change_order_vcov(vcov_beta))
   # bootstrap functionality
   if (B != 0){
-    boot <- mecor:::regcal_boot(response, covars, me, B = B, alpha = alpha)
+    boot <-
+      mecor:::regcal_boot(response, covars, me, B = B, alpha = alpha, type = type)
     out$boot <- list(ci = boot$ci,
                      vcov = boot$vcov)
   }
   out
-}
-# corrected coefs using regression calibration
-regcal_get_coef <- function(beta_star, calmod_coefs, type){
-  n <- NROW(beta_star)
-  calmod_matrix <- mecor:::regcal_get_calmod_matrix(calmod_coefs, n, type)
-  # estimate beta (cor)
-  if (type == "dep"){
-    beta_star <- c(beta_star, 1)
-  }
-  beta <- as.numeric(beta_star %*% solve(calmod_matrix))
-  # add names
-  names(beta) <- names(beta_star)
-  # output
-  beta[1:n]
 }
 # estimate calibration model
 regcal_get_calmod <- function(response, covars, me, type){
@@ -54,16 +43,30 @@ regcal_get_calmod <- function(response, covars, me, type){
   # output
   calmod_fit
 }
+# corrected coefs using regression calibration
+regcal_get_coef <- function(beta_star, coef_calmod, type){
+  n <- NROW(beta_star)
+  calmod_matrix <- mecor:::regcal_get_calmod_matrix(coef_calmod, n, type)
+  # estimate beta (cor)
+  if (type == "dep"){
+    beta_star <- c(beta_star, 1)
+  }
+  beta <- as.numeric(beta_star %*% solve(calmod_matrix))
+  # add names
+  names(beta) <- names(beta_star)
+  # output
+  beta[1:n]
+}
 # create measurement error matrix
-regcal_get_calmod_matrix <- function(calmod_coefs, n, type){
+regcal_get_calmod_matrix <- function(coef_calmod, n, type){
   if (type == "dep"){
     calmod_matrix <- matrix(0, nrow = n + 1, ncol = n + 1)
-    diag(calmod_matrix) <- calmod_coefs[2]
-    calmod_matrix[n + 1, 2] <- calmod_coefs[1]
+    diag(calmod_matrix) <- coef_calmod[2]
+    calmod_matrix[n + 1, 2] <- coef_calmod[1]
     calmod_matrix[n + 1, n + 1] <- 1
   } else if (type == "indep"){
     calmod_matrix <- diag(n)
-    calmod_matrix[1,] <- calmod_coefs
+    calmod_matrix[1,] <- coef_calmod
   }
   calmod_matrix
 }

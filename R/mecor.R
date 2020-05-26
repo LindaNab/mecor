@@ -36,15 +36,22 @@
 #' @examples
 #' # measurement error in exposure
 #' data(ivs)
-#' fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, method = "rc", B = 666)
+#' fit <-
+#'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
+#'          data = ivs,
+#'          method = "rc",
+#'          B = 666)
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
-#' data = rs,
-#' B = 999)
+#'       data = rs,
+#'       B = 999)
 #' data(cs)
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
-#' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
-#' mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
+#' data(ivs_o)
+#' fit <- mecor(MeasError(Y_star, reference = Y) ~ X + Z,
+#'              data = ivs_o,
+#'              method = "rc",
+#'              B = 999)
 #' @export
 mecor <- function(formula,
                   data,
@@ -94,23 +101,18 @@ mecor <- function(formula,
       covars <- sapply(vars_formula_eval[-c(ind_me, ind_response)], cbind)
       colnames(covars) <- vars_formula[-c(ind_me, ind_response)]
     } else covars <- NULL
-    uncorfit <- mecor:::uncorrected(response, covars, me, type)
-    if(method == "rc"){
-      corfit <- mecor:::regcal(response, covars, me, B, alpha)
-    }
-    if(method == "erc"){
-      corfit <- mecor:::efficient_regcal(response, covars, me, B, alpha, use_vcov)
-    }
   } else if (type == "dep"){
     covars <- sapply(vars_formula_eval[-ind_me], cbind)
     colnames(covars) <- vars_formula[-ind_me]
-    uncorfit <- mecor:::uncorrected(response = NULL, covars, me, type)
-    if(method == "rc"){
-      corfit <- mecor:::regcal_o(covars, me, B, alpha)
-    }
   }
-
-
+  uncorfit <- mecor:::uncorrected(response, covars, me, type)
+    if (method == "rc"){
+      corfit <-
+        mecor:::regcal(response, covars, me, B, alpha, type)
+    } else if (method == "erc"){
+      corfit <-
+        mecor:::efficient_regcal(response, covars, me, B, alpha, type, use_vcov)
+    }
   # output
   out <- list(uncorfit = uncorfit,
               corfit = corfit
