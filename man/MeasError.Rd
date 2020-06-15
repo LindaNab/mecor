@@ -4,7 +4,7 @@
 \alias{MeasError}
 \title{Create a Measurement Error Object}
 \usage{
-MeasError(substitute, reference, replicate)
+MeasError(substitute, reference, replicate, differential)
 }
 \arguments{
 \item{substitute}{a vector containing the error-prone measure}
@@ -17,13 +17,17 @@ measure with classical measurement error. This can either be
 replicates obtained by using the same measurement method as the substitute
 measure (replicates study) or replicates using a different measurement method
 than the substitute measure (calibration study).}
+
+\item{differential}{a vector with the variable on which the measurement error
+is differential.}
 }
 \value{
 \code{MeasError} returns an object of \link[base]{class} "MeasError".
 
 An object of class \code{MeasError} is a list containing the substitute and
-reference (and replicate) variables and has attributes input (the name of
-the substitute and reference variables) and call (the matched call).
+reference (and replicate or differential if applicable) variables and has
+attributes input (the name of the substitute and reference or replicate
+and differential (if applicable) variables) and call (the matched call).
 }
 \description{
 This function creates a measurement error object, usually used as the
@@ -34,13 +38,25 @@ the measurement error in that variable using a reference variable.
 ## measurement error in exposure
 # internal validation study
 data(ivs)
-me <- with (ivs, MeasError(X_star, reference = X))
+me <- with (ivs, MeasError(substitute = X_star,
+                           reference = X))
 # replicates study
 data(rs)
-me <- with (rs, MeasError(X1_star, replicate = cbind(X2_star, X3_star)))
+me <- with (rs, MeasError(substitute = X1_star,
+                          replicate = cbind(X2_star, X3_star)))
 # calibration study
 data(cs)
 me <- with(cs, MeasError(X_star, replicate = cbind(X1_star, X2_star)))
+## measurement error in outcome
+# internal validation study
+data(ivs_o)
+me <- with(ivs_o, MeasError(substitute = Y_star,
+                            reference = Y))
+# internal validation study with differential measurement error in outcome
+data(ivs_diff_o)
+me <- with(ivs_diff_o, MeasError(substitute = Y_star,
+                                 reference = Y,
+                                 differential = X))
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

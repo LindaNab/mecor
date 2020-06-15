@@ -4,7 +4,7 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, method = "rc", alpha = 0.05, B = 0, use_vcov = "default")
+mecor(formula, data, method = "rc", alpha = 0.05, B = 0, erc_B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -16,20 +16,23 @@ object coercible by as.data.frame to a data frame) containing
 the variables in the model}
 
 \item{method}{a character string indicating the method used to correct for
-measurement error, either "rc" (regression calibration), "rc_pooled1" (efficient
-regression calibration using delta variance for pooling) or "rc_pooled2" (efficient
-regression calibration using bootstrap variance for pooling).}
+measurement error, either "rc" (regression calibration), "erc" (efficient
+regression calibration using delta variance for pooling), "irc" (inadmissible
+regression calibration)}
 
 \item{alpha}{alpha level used to construct confidence intervals}
 
 \item{B}{number of bootstrap samples}
+
+\item{erc_B}{number of bootstrap samples used by efficient regression
+calibration to estimate the bootstrap vcov, used for pooling}
 }
 \value{
 \code{mecor} returns an object of \link[base]{class} "mecor"
 
 An object of class \code{mecor} is a list containing the following components:
 
-\item{naivefit}{a lm.fit object of the uncorrected fit}
+\item{uncorfit}{a lm.fit object of the uncorrected fit}
 \item{corfit}{a lm.fit object of the corrected fit (if method = "rc") and a
 matrix containing the corrected coefficients else}
 \item{corvar}{the corrected variance using the delta method}
@@ -43,15 +46,29 @@ error in a continuous covariate.
 \examples{
 # measurement error in exposure
 data(ivs)
-fit <- mecor(Y ~ MeasError(X_star, X) + Z, data = ivs, method = "rc", B = 666)
+fit <-
+  mecor(Y ~ MeasError(X_star, reference = X) + Z,
+         data = ivs,
+         method = "rc",
+         B = 999,
+         erc_B = 0)
 data(rs)
 mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
-data = rs,
-B = 999)
+      data = rs,
+      method = "rc",
+      B = 999)
 data(cs)
-mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
-mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled1")
-mecor(Y ~ MeasError(W, X) + Z, ivs, method = "rc_pooled2")
+fit <-
+mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
+      data = cs,
+      method = "erc")
+# measurement error in the outcome
+data(ivs_o)
+fit <-
+  mecor(MeasError(Y_star, reference = Y) ~ X + Z,
+        data = ivs_o,
+        method = "erc",
+        B = 999)
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.

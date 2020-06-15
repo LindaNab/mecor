@@ -13,12 +13,15 @@
 #' replicates obtained by using the same measurement method as the substitute
 #' measure (replicates study) or replicates using a different measurement method
 #' than the substitute measure (calibration study).
+#' @param differential a vector with the variable on which the measurement error
+#' is differential.
 #'
 #' @return \code{MeasError} returns an object of \link[base]{class} "MeasError".
 #'
 #' An object of class \code{MeasError} is a list containing the substitute and
-#' reference (and replicate) variables and has attributes input (the name of
-#' the substitute and reference variables) and call (the matched call).
+#' reference (and replicate or differential if applicable) variables and has
+#' attributes input (the name of the substitute and reference or replicate
+#' and differential (if applicable) variables) and call (the matched call).
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
@@ -26,17 +29,30 @@
 #' ## measurement error in exposure
 #' # internal validation study
 #' data(ivs)
-#' me <- with (ivs, MeasError(X_star, reference = X))
+#' me <- with (ivs, MeasError(substitute = X_star,
+#'                            reference = X))
 #' # replicates study
 #' data(rs)
-#' me <- with (rs, MeasError(X1_star, replicate = cbind(X2_star, X3_star)))
+#' me <- with (rs, MeasError(substitute = X1_star,
+#'                           replicate = cbind(X2_star, X3_star)))
 #' # calibration study
 #' data(cs)
 #' me <- with(cs, MeasError(X_star, replicate = cbind(X1_star, X2_star)))
+#' ## measurement error in outcome
+#' # internal validation study
+#' data(ivs_o)
+#' me <- with(ivs_o, MeasError(substitute = Y_star,
+#'                             reference = Y))
+#' # internal validation study with differential measurement error in outcome
+#' data(ivs_diff_o)
+#' me <- with(ivs_diff_o, MeasError(substitute = Y_star,
+#'                                  reference = Y,
+#'                                  differential = X))
 #' @export
 MeasError <- function(substitute,
                       reference,
-                      replicate){
+                      replicate,
+                      differential){
   # checks for substitute
   if (missing(substitute))
     stop("'substitute' in the MeasError object is missing")
@@ -56,6 +72,9 @@ MeasError <- function(substitute,
   }
   # checks for replicate (replicates study/ calibration study)
   if (!missing(replicate)){
+    if (!missing(differential)){ # differential should be missing
+      stop('differential measurement error cannot be resolved with replicate data')
+    }
     if (!is.vector(replicate) & !is.matrix(replicate)){
       stop("'replicate' is not a vector or matrix in the MeasError object")
     }
@@ -64,10 +83,12 @@ MeasError <- function(substitute,
   }
   out <- list(substitute = substitute,
               reference = reference)
-  if(!missing(replicate)) out$replicate <- replicate
+  if (!missing(replicate)) out$replicate <- replicate
+  if (!missing(differential)) out$differential = differential
   input <- c(substitute = as.list(match.call())$substitute,
              reference = as.list(match.call())$reference,
-             replicate = as.list(match.call())$replicate)
+             replicate = as.list(match.call())$replicate,
+             differential = as.list(match.call())$differential)
   attr(out, "input") <- input
   attr(out, "call") <- match.call()
   class(out) <- c("MeasError", "list")
