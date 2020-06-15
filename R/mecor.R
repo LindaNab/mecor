@@ -41,21 +41,25 @@
 #' fit <-
 #'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'          data = ivs,
-#'          method = "erc",
+#'          method = "rc",
 #'          B = 999,
 #'          erc_B = 0)
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
 #'       data = rs,
+#'       method = "rc",
 #'       B = 999)
 #' data(cs)
-#' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z, data = cs)
+#' fit <-
+#' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
+#'       data = cs,
+#'       method = "erc")
 #' # measurement error in the outcome
 #' data(ivs_o)
 #' fit <-
 #'   mecor(MeasError(Y_star, reference = Y) ~ X + Z,
 #'         data = ivs_o,
-#'         method = "rc",
+#'         method = "erc",
 #'         B = 999)
 #' @export
 mecor <- function(formula,
@@ -82,7 +86,7 @@ mecor <- function(formula,
     stop("formula not found")
   if (class(formula) != "formula")
     stop("formula is not of class 'formula'")
-  if (! method %in% c("rc", "erc"))
+  if (! method %in% c("rc", "erc", "irc"))
     stop("this method is not implemented")
 
   # Create response, covars and me (= MeasError object)
@@ -121,6 +125,15 @@ mecor <- function(formula,
       }
       corfit <-
         mecor:::efficient_regcal(response, covars, me, B, alpha, type, erc_B)
+    } else if (method == "irc"){
+      if (type != "indep"){
+        stop("Inadmissible regression calibration cannot be used if the measurement error is in the independent variable.")
+      }
+      if (!is.null(me$replicate)){
+        stop("Inadmissible regression calibration is not suitable for a design with replicates")
+      }
+      corfit <-
+        mecor:::inadmissible_regcal(response, covars, me, B, alpha)
     }
   # output
   out <- list(uncorfit = uncorfit,

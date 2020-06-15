@@ -4,7 +4,7 @@ regcal <- function(response, covars, me, B = 0 , alpha = 0.05, type){
   beta_star <- mecor:::get_coefs(uncor_fit)
   vcov_beta_star <- mecor:::get_vcov(uncor_fit)
   # estimate calibration model
-  calmod_fit <- mecor:::regcal_get_calmod(response, covars, me, type)
+  calmod_fit <- mecor:::regcal_get_calmod(covars, me, type)
   coef_calmod <- mecor:::get_coefs(calmod_fit, type == "indep")
   vcov_calmod <- mecor:::get_vcov(calmod_fit, type == "indep")
   # estimate beta (cor) and its vcov
@@ -30,7 +30,7 @@ regcal <- function(response, covars, me, B = 0 , alpha = 0.05, type){
   out
 }
 # estimate calibration model
-regcal_get_calmod <- function(response, covars, me, type){
+regcal_get_calmod <- function(covars, me, type){
   # get design matrix of calibration model
   dm_cm <- mecor:::get_dm_cm(covars, me, type) # design matrix calibration model
   if (type == "dep"){

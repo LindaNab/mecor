@@ -22,6 +22,11 @@ analysis_boot <- function(response,
       strat_samples,
       FUN = function(x) do.call(mecor:::efficient_regcal, x)$coef
     )
+  } else if (method == "irc"){
+    coef <- sapply(
+      strat_samples,
+      FUN = function(x) do.call(mecor:::inadmissible_regcal, x)$coef
+    )
   }
   ci_perc <- apply(coef,
                    1,
@@ -50,12 +55,14 @@ get_strat_sample <- function(response, covars, me, type, method, erc_B){
   new_sample <- list(
     covars = new_covars,
     me = new_me,
-    B = 0,
-    type = type
+    B = 0
   ) # no bootstrapping within bootstrap
   if (exists("new_response")){
     new_sample$response = new_response
-    new_sample <- new_sample[c("response", "covars", "me", "B", "type")]
+    new_sample <- new_sample[c("response", "covars", "me", "B")]
+  }
+  if (method == "rc" | method == "erc"){
+    new_sample$type <- type
   }
   if (method == "erc"){
     new_sample$erc_B <- erc_B

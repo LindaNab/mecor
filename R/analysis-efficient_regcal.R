@@ -9,13 +9,17 @@ efficient_regcal <- function(response, covars, me, B, alpha, type, erc_B){
   inv_vcov_cc_fit <- solve(vcov_cc_fit)
   if (erc_B == 0){
     inv_vcov_rc_fit <- solve(rc_fit$vcov)
-  } else if (erc_B != 0){
+  } else {
     inv_vcov_rc_fit <- solve(rc_fit$boot$vcov)
   }
   beta <- solve(inv_vcov_cc_fit + inv_vcov_rc_fit) %*%
     (inv_vcov_cc_fit %*% cc_fit_coef +
        inv_vcov_rc_fit %*% rc_fit$coef)
   vcov_beta <- solve(inv_vcov_rc_fit + inv_vcov_cc_fit)
+  # if (type == "indep"){
+  #   beta <- mecor:::change_names(beta, me)
+  #   vcov_beta <- mecor:::change_names(vcov_beta, me)
+  # }
   out <- list(coef = t(beta)[1, ],
               vcov = vcov_beta)
   if (B != 0){
