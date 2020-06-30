@@ -49,7 +49,7 @@ data(ivs)
 fit <-
   mecor(Y ~ MeasError(X_star, reference = X) + Z,
          data = ivs,
-         method = "rc",
+         method = "erc",
          B = 999,
          erc_B = 0)
 data(rs)
@@ -61,7 +61,8 @@ data(cs)
 fit <-
 mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
       data = cs,
-      method = "erc")
+      method = "erc",
+      B = 999)
 # measurement error in the outcome
 data(ivs_o)
 fit <-
@@ -73,16 +74,24 @@ fit <-
 fit <-
   mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
         data = ivs_diff_o,
-        method = "erc",
+        method = "rc",
         B = 999)
 # external information
 calmod_fit <- lm(X ~ X_star + Z, data = ivs)
 fit <-
   mecor(Y ~ MeasErrorExt(X_star, model = calmod_fit) + Z,
-        data = ivs)
- fit <-
+        data = ivs,
+        B = 999)
+me_fit <- lm(Y_star ~ Y, data = ivs_o)
+fit <-
+  mecor(MeasErrorExt(Y_star, model = me_fit) ~ X + Z,
+        data = ivs_o,
+        B = 999)
+fit <-
   mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
-        data = ivs_o)
+        data = ivs_o,
+        B = 999)
+
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.
