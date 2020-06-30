@@ -72,7 +72,7 @@ get_strat_sample <- function(response, covars, me, type, method, erc_B){
     new_sample$response = new_response
     new_sample <- new_sample[c("response", "covars", "me", "B")]
   }
-  if (method == "rc" | method == "erc"){
+  if (method == "rc" | method == "erc" | method == "irc"){
     new_sample$type <- type
   }
   if (method == "erc"){

@@ -44,8 +44,8 @@ get_dm_cm <- function(covars, me, type){
   dm
 }
 
-get_dm_inadm <- function(covars, me){
-  dm <- mecor:::get_dm_uncor(covars, me, type = "indep")
+get_dm_inadm <- function(covars, me, type){
+  dm <- mecor:::get_dm_uncor(covars, me, type)
   calmod_fit <- mecor:::regcal_get_calmod(covars, me, type)
   fitted_values <- dm %*% coef(calmod_fit)
   x <- fitted_values

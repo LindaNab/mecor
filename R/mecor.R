@@ -41,7 +41,7 @@
 #' fit <-
 #'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'          data = ivs,
-#'          method = "erc",
+#'          method = "irc",
 #'          B = 999,
 #'          erc_B = 0)
 #' data(rs)
@@ -60,7 +60,7 @@
 #' fit <-
 #'   mecor(MeasError(Y_star, reference = Y) ~ X + Z,
 #'         data = ivs_o,
-#'         method = "erc",
+#'         method = "rc",
 #'         B = 999)
 #' # differential measurement error in the outcome
 #' fit <-
@@ -81,8 +81,7 @@
 #'         B = 999)
 #' fit <-
 #'   mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
-#'         data = ivs_o,
-#'         B = 999)
+#'         data = ivs_o)
 #'
 #' @export
 mecor <- function(formula,
@@ -154,14 +153,16 @@ mecor <- function(formula,
       corfit <-
         mecor:::efficient_regcal(response, covars, me, B, alpha, type, erc_B)
     } else if (method == "irc"){
-      if (type != "indep"){
-        stop("Inadmissible regression calibration cannot be used if the measurement error is in the independent variable.")
+      if (startsWith(type, "dep")){
+        stop("Inadmissible regression calibration is not suitable for measurement error in the dependent variable")
       }
-      if (!is.null(me$replicate)){
+      if (class(me)[1] == "MeasErrorExt"){
+        stop("Inaddmissible regression calbration is not suitable for external designs")
+      } else if (class(me)[1] == "MeasError" && (type == "indep" & !is.null(me$replicate))){
         stop("Inadmissible regression calibration is not suitable for a design with replicates")
       }
       corfit <-
-        mecor:::inadmissible_regcal(response, covars, me, B, alpha)
+        mecor:::inadmissible_regcal(response, covars, me, B, alpha, type)
     }
   # output
   out <- list(uncorfit = uncorfit,

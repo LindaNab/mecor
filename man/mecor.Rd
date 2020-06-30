@@ -49,7 +49,7 @@ data(ivs)
 fit <-
   mecor(Y ~ MeasError(X_star, reference = X) + Z,
          data = ivs,
-         method = "erc",
+         method = "irc",
          B = 999,
          erc_B = 0)
 data(rs)
