@@ -45,7 +45,7 @@
 #'          B = 999,
 #'          erc_B = 0)
 #' data(rs)
-#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
+#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
 #'       data = rs,
 #'       method = "rc",
 #'       B = 999)
@@ -82,7 +82,13 @@
 #' fit <-
 #'   mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
 #'         data = ivs_o)
-#'
+#' # mle
+#' data(rs)
+#' fit <-
+#'   mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+#'         data = rs,
+#'         method = "mle",
+#'         B = 999)
 #' @export
 mecor <- function(formula,
                   data,
@@ -108,7 +114,7 @@ mecor <- function(formula,
     stop("formula not found")
   if (class(formula) != "formula")
     stop("formula is not of class 'formula'")
-  if (! method %in% c("rc", "erc", "irc"))
+  if (! method %in% c("rc", "erc", "irc", "mle"))
     stop("this method is not implemented")
 
   # Create response, covars and me (= MeasError object)
@@ -163,6 +169,12 @@ mecor <- function(formula,
       }
       corfit <-
         mecor:::inadmissible_regcal(response, covars, me, B, alpha, type)
+    } else if (method == "mle"){
+      if (startsWith(type, "dep")){
+        stop("The maximum likelihood estimator is not suitabel for measurement error in the dependent variable")
+      }
+      corfit <-
+        mecor:::mle(response, covars, me, B, alpha)
     }
   # output
   out <- list(uncorfit = uncorfit,

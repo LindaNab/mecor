@@ -53,7 +53,7 @@ fit <-
          B = 999,
          erc_B = 0)
 data(rs)
-mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z,
+mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
       data = rs,
       method = "rc",
       B = 999)
@@ -68,7 +68,7 @@ data(ivs_o)
 fit <-
   mecor(MeasError(Y_star, reference = Y) ~ X + Z,
         data = ivs_o,
-        method = "erc",
+        method = "rc",
         B = 999)
 # differential measurement error in the outcome
 fit <-
@@ -89,9 +89,14 @@ fit <-
         B = 999)
 fit <-
   mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
-        data = ivs_o,
-        B = 999)
-
+        data = ivs_o)
+# mle
+data(rs)
+fit <-
+  mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+        data = rs,
+        method = "mle",
+        B = 0)
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.

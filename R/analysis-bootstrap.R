@@ -35,6 +35,11 @@ analysis_boot <- function(response,
       strat_samples,
       FUN = function(x) do.call(mecor:::inadmissible_regcal, x)$coef
     )
+  } else if (method == "mle"){
+    coef <- sapply(
+      strat_samples,
+      FUN = function(x) do.call(mecor:::mle, x)$coef
+    )
   }
   ci_perc <- apply(coef,
                    1,
@@ -58,10 +63,13 @@ get_strat_sample <- function(response, covars, me, type, method, erc_B){
   }
   new_covars <- covars[new_rownums, , drop = F]
   new_me <- me
-  new_me$reference <- new_me$reference[new_rownums]
-  new_me$substitute <- new_me$substitute[new_rownums]
+  new_me$reference <- me$reference[new_rownums]
+  new_me$substitute <- me$substitute[new_rownums]
   if (type == "dep_diff"){
-    new_me$differential <- new_me$differential[new_rownums]
+    new_me$differential <- me$differential[new_rownums]
+  }
+  if (method == "mle"){
+    new_me$replicate <- me$replicate[new_rownums, ]
   }
   new_sample <- list(
     covars = new_covars,
@@ -72,7 +80,7 @@ get_strat_sample <- function(response, covars, me, type, method, erc_B){
     new_sample$response = new_response
     new_sample <- new_sample[c("response", "covars", "me", "B")]
   }
-  if (method == "rc" | method == "erc" | method == "irc"){
+  if (method %in% c("rc", "erc", "irc")){
     new_sample$type <- type
   }
   if (method == "erc"){
