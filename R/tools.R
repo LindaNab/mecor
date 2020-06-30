@@ -1,13 +1,20 @@
 ## tools
 get_coefs <- function(fit, rev = TRUE){
-  coefs <- fit$coefficients
+  coefs <- fit$coef
   if (rev == TRUE){ # reverse coefficients
-    coefs <- mecor:::change_order_coefs(fit$coefficients)
+    coefs <- mecor:::change_order_coefs(fit$coef)
   }
   coefs
 }
 get_vcov <- function(fit, rev = TRUE){
   vcov <- mecor:::vcovfromfit(fit)
+  if (rev == TRUE){ # reverse coefficients
+    vcov <- mecor:::change_order_vcov(vcov)
+  }
+  vcov
+}
+get_vcovHC3 <- function(fit, dm, rev = TRUE){
+  vcov <- mecor:::vcovHC3fromfit(fit,dm)
   if (rev == TRUE){ # reverse coefficients
     vcov <- mecor:::change_order_vcov(vcov)
   }
@@ -26,6 +33,23 @@ vcovfromfit <- function(fit){
   vcov <- sigma^2 * R
   dimnames(vcov) <- list(names(fit$coefficients), names(fit$coefficients))
   vcov
+}
+vcovHC3fromfit <- function(fit, dm){
+  n <- NROW(dm)
+  hat <- dm %*% solve( t(dm) %*% dm ) %*% t(dm)
+  diaghat <- diag(hat)
+  df <- fit$df.residual
+  res <- residuals(fit)
+  omega <- res^2 / (1 - diaghat)^2
+  rval <- sqrt(omega) * dm
+  rval <- crossprod(rval) / n
+  meat <- rval
+  p <- fit$rank
+  p1 <- 1L:p
+  R <- chol2inv(fit$qr$qr[p1, p1, drop = FALSE])
+  bread <- R * n
+  vcovHC3 <- (1 / n) * (bread %*% meat %*% bread)
+  vcovHC3
 }
 # order coefficients
 change_order_coefs <- function(coefs){

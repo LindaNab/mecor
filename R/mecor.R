@@ -41,7 +41,7 @@
 #' fit <-
 #'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'          data = ivs,
-#'          method = "rc",
+#'          method = "erc",
 #'          B = 999,
 #'          erc_B = 0)
 #' data(rs)
@@ -53,7 +53,8 @@
 #' fit <-
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
 #'       data = cs,
-#'       method = "erc")
+#'       method = "erc",
+#'       B = 999)
 #' # measurement error in the outcome
 #' data(ivs_o)
 #' fit <-
@@ -61,6 +62,28 @@
 #'         data = ivs_o,
 #'         method = "erc",
 #'         B = 999)
+#' # differential measurement error in the outcome
+#' fit <-
+#'   mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
+#'         data = ivs_diff_o,
+#'         method = "rc",
+#'         B = 999)
+#' # external information
+#' calmod_fit <- lm(X ~ X_star + Z, data = ivs)
+#' fit <-
+#'   mecor(Y ~ MeasErrorExt(X_star, model = calmod_fit) + Z,
+#'         data = ivs,
+#'         B = 999)
+#' me_fit <- lm(Y_star ~ Y, data = ivs_o)
+#' fit <-
+#'   mecor(MeasErrorExt(Y_star, model = me_fit) ~ X + Z,
+#'         data = ivs_o,
+#'         B = 999)
+#' fit <-
+#'   mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
+#'         data = ivs_o,
+#'         B = 999)
+#'
 #' @export
 mecor <- function(formula,
                   data,
@@ -91,18 +114,23 @@ mecor <- function(formula,
 
   # Create response, covars and me (= MeasError object)
   vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
-  ind_me <- grep("MeasError", vars_formula) # index of MeasError in list of variables
-  ind_response <- attributes(terms(formula))$response
+  ind_me <- grep("MeasError", vars_formula) # index of MeasError(Ext) in list of variables
   if (length(ind_me) == 0){
-    stop("formula should contain a MeasError object")
-    } else if (length(ind_me) != 1){
-    stop("formula can only contain one MeasError object")
-    }
+    stop("formula should contain a MeasError or MeasErrorExt object")
+  } else if (length(ind_me) != 1){
+    stop("formula can only contain one MeasError or MeasErrorExt object")
+  }
+  ind_response <- attributes(terms(formula))$response
   if (ind_me == ind_response){
-    type <- "dep"
+      type <- "dep"
   } else type <- "indep"
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
+  if (type == "indep" & !is.null(me$differential)){
+    stop("Differential measurement error is only supported in the dependent variable")
+  } else if (type == "dep" & (!is.null(me$differential) | length(me$coef) == 4 | length(me$model$coef) == 4)){
+    type <- "dep_diff"
+  }
   if (type == "indep"){
     response <- as.matrix(vars_formula_eval[[ind_response]])
     colnames(response) <- vars_formula[ind_response]
@@ -110,7 +138,7 @@ mecor <- function(formula,
       covars <- sapply(vars_formula_eval[-c(ind_me, ind_response)], cbind)
       colnames(covars) <- vars_formula[-c(ind_me, ind_response)]
     } else covars <- NULL
-  } else if (type == "dep"){
+  } else if (startsWith(type, "dep")){
     covars <- sapply(vars_formula_eval[-ind_me], cbind)
     colnames(covars) <- vars_formula[-ind_me]
   }

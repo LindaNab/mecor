@@ -6,7 +6,7 @@ deltamethod <- function(func, vec, vcov_vec){
 # delta method
 regcal_get_vcov <- function(beta_star, coef_calmod, vcov_beta_star, vcov_calmod, type){
   n <- NROW(beta_star)
-  if (type == "dep"){
+  if (startsWith(type, "dep")){
     beta_star <- c(beta_star, 1)
     vcov_temp <- matrix(0, nrow = (n + 1), ncol = (n + 1))
     vcov_temp[1:n, 1:n] <- vcov_beta_star
@@ -101,6 +101,17 @@ get_vcov_vec_measerr_matrix <- function(vec_calmod_matrix, vcov_calmod, n, type)
           vcov_calmod[1, 1]
       }
     }
+  } else if (type == "dep_diff"){
+    vcov_vec_calmod_matrix <- matrix(0, nrow = (n + 1)^2,
+                                     ncol = (n + 1)^2)
+    reflectn_vcov_calmod <- mecor:::reflect_vcov_2nd_diagonal(vcov_calmod)
+    vcov_vec_calmod_matrix[2:3, 2:3] <- reflectn_vcov_calmod[1:2, 1:2]
+    vcov_vec_calmod_matrix[2:3, 5:6] <- reflectn_vcov_calmod[1:2, 3:4]
+    vcov_vec_calmod_matrix[5:6, 2:3] <- reflectn_vcov_calmod[3:4, 1:2]
+    vcov_vec_calmod_matrix[5:6, 5:6] <- reflectn_vcov_calmod[3:4, 3:4]
+    vcov_vec_calmod_matrix[1, ] <-
+      mecor:::get_1st_row_vcov_vec_calmod_matrix_diff_outme(vcov_calmod)
+    vcov_vec_calmod_matrix[, 1] <- vcov_vec_calmod_matrix[1, ]
   } else if (type == "indep"){
     vcov_vec_calmod_matrix <- matrix(0, nrow = n^2,
                             ncol = n^2)
@@ -123,4 +134,27 @@ get_vcov_vec_measerr_matrix <- function(vec_calmod_matrix, vcov_calmod, n, type)
     mecor:::deltamethod(mecor:::get_vec_measerr_matrix,
                         vec_calmod_matrix,
                         vcov_vec_calmod_matrix)
+}
+reflect_vcov_2nd_diagonal <- function(vcov){
+  n <- nrow(vcov)
+  for (i in 1:n){
+    j <- 1
+    while(j < (n + 1 - i)){
+      temp <- vcov[i, j]
+      vcov[i, j] <- vcov[n + 1 - j, n + 1 - i]
+      vcov[n + 1 - j, n + 1 - i] <- temp
+      j <- j + 1
+    }
+  }
+  dimnames(vcov) <- list(rev(colnames(vcov)), rev(rownames(vcov)))
+  vcov
+}
+get_1st_row_vcov_vec_calmod_matrix_diff_outme <- function(vcov_calmod){
+  row <- numeric(9)
+  row[1] <- vcov_calmod[4, 4] + vcov_calmod[2, 2] + 2 * vcov_calmod[4, 2]
+  row[2] <- vcov_calmod[4, 4] + vcov_calmod[2, 4]
+  row[3] <- vcov_calmod[4, 3] + vcov_calmod[2, 3]
+  row[5] <- vcov_calmod[4, 2] + vcov_calmod[2, 2]
+  row[6] <- vcov_calmod[4, 1] + vcov_calmod[2, 1]
+  row
 }

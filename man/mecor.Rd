@@ -69,6 +69,20 @@ fit <-
         data = ivs_o,
         method = "erc",
         B = 999)
+# differential measurement error in the outcome
+fit <-
+  mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
+        data = ivs_diff_o,
+        method = "erc",
+        B = 999)
+# external information
+calmod_fit <- lm(X ~ X_star + Z, data = ivs)
+fit <-
+  mecor(Y ~ MeasErrorExt(X_star, model = calmod_fit) + Z,
+        data = ivs)
+ fit <-
+  mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
+        data = ivs_o)
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.

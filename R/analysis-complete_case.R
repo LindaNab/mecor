@@ -1,6 +1,6 @@
 complete_case <- function(response, covars, me, type){
   dm_cc <- mecor:::get_dm_cc(covars, me, type)
-  if (type == "dep"){
+  if (startsWith(type, "dep")){
     y <- me$reference
   } else if (type == "indep"){
     y <- as.numeric(response)

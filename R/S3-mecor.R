@@ -60,6 +60,9 @@ summary.mecor <- function(object){
                   'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z2$boot$ci[1, ] else NA),
                   'UCI (btstr)'= (if(B != 0) z2$boot$ci[2, ] else NA))
     c$ci <- round(c$ci, 6)
+    if (!is.null(z2$matrix)){
+      c$matrix <- z2$matrix
+    }
   out <- list(call = attr(z, "call"), B = B)
   out$uc <- uc
   out$c <- c
@@ -76,8 +79,12 @@ print.summary.mecor <- function(x){
   print(x$c$coefficients)
   cat("\n", paste((1-x$alpha)*100, "%", sep =""), " Confidence Intervals:\n", sep = "")
   print(x$c$ci)
-  if(x$B != 0){
+  if (x$B != 0){
     cat("Bootstrap Confidence Intervals are based on", x$B, "bootstrap replicates using percentiles \n")  }
+  if (!is.null(x$c$matrix)){
+    cat("\nModel Matrix:\n")
+    print(x$c$matrix)
+  }
   cat("\nCoefficients Uncorrected Model:\n")
   printCoefmat(x$uc$coefficients, signif.stars = F)
   cat("\n", paste((1-x$alpha)*100, "%", sep =""), " Confidence Intervals:\n", sep = "")

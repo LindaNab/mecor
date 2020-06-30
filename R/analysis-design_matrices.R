@@ -2,7 +2,7 @@
 
 # design matrix for uncor analysis
 get_dm_uncor <- function(covars, me, type){
-  if (type == "dep"){
+  if (startsWith(type, "dep")){
     dm <- cbind(1, covars)
     colnames(dm)[1] <- "(Intercept)"
   } else if (type == "indep"){
@@ -15,7 +15,7 @@ get_dm_uncor <- function(covars, me, type){
 
 # design matrix for complete case analysis
 get_dm_cc <- function(covars, me, type){
-  if (type == "dep"){
+  if (startsWith(type, "dep")){
     dm <- get_dm_uncor(covars, me, type)
   } else if (type == "indep"){
     dm <- cbind(1, me$reference)
@@ -30,9 +30,14 @@ get_dm_cc <- function(covars, me, type){
 
 # design matrix for calibration model
 get_dm_cm <- function(covars, me, type){
-  if (type == "dep"){
+  if (startsWith(type, "dep")){
     dm <- cbind(1, me$reference)
     colnames(dm) <- c("(Intercept)", attributes(me)$input$reference)
+    if(type == "dep_diff"){
+      dm <- cbind(dm, me$differential, me$reference * me$differential)
+      colnames(dm)[3] <- as.character(attributes(me)$input$differential)
+      colnames(dm)[4] <- paste0(colnames(dm)[2], ":", colnames(dm)[3])
+    }
   } else if (type == "indep"){
     dm <- get_dm_uncor(covars, me, type)
   }
