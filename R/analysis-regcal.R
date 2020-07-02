@@ -1,48 +1,39 @@
-regcal <- function(response, covars, me, B = 0 , alpha = 0.05, type, formula_type){
+regcal <- function(response,
+                   covars,
+                   me,
+                   B = 0 ,
+                   alpha = 0.05,
+                   type,
+                   calc_vcov = T){
   # estimate beta_star (uncor) and its vcov
   uncor_fit <- mecor:::uncorrected(response, covars, me, type)
   beta_star <- mecor:::get_coefs(uncor_fit)
-  if (type == "dep_diff"){
+  if (calc_vcov && type == "dep_diff"){
     dm_uncor <- mecor:::get_dm_uncor(covars, me, type)
     vcov_beta_star <- mecor:::get_vcovHC3(uncor_fit, dm_uncor)
-  } else vcov_beta_star <- mecor:::get_vcov(uncor_fit)
+  } else if (calc_vcov) vcov_beta_star <- mecor:::get_vcov(uncor_fit)
   # estimate calibration model
-  if (class(me)[1] == "MeasError"){
-    calmod_fit <- mecor:::regcal_get_calmod(covars, me, type)
-    coef_calmod <- mecor:::get_coefs(calmod_fit, type == "indep")
-    vcov_calmod <- mecor:::get_vcov(calmod_fit, type == "indep")
-  } else if (class(me)[1] == "MeasErrorExt"){
-      coef_calmod <- mecor:::get_coefs(me$model, type == "indep")
-      if(length(grep("MeasErrorExt.lm", attributes(me)$call)) != 0){
-        vcov_calmod <- mecor:::get_vcov(me$model, type == "indep")
-      } else if(length(grep("MeasErrorExt.list", attributes(me)$call)) != 0){
-        if (!is.null(me$model$vcov)){
-          if (type == "indep") {
-            vcov_calmod <- mecor:::change_order_vcov(me$vcov)
-          } else vcov_calmod <- me$vcov
-        }
-        if (B != 0){
-          B <- 0
-          warning("B set to 0 since bootstrap cannot be used if the class of 'model' in the MeasErrorExt object is list")
-        }
-      }
+  calmod <- mecor:::calmod(response, covars, me, type, calc_vcov)
+  coef_calmod <- calmod$coef
+  if (!is.null(calmod$vcov)){
+    vcov_calmod <- calmod$vcov
   }
   # estimate beta (cor) and its vcov
   beta <- mecor:::regcal_get_coef(beta_star, coef_calmod, type)
-  if (exists("vcov_calmod")){
+  if (calc_vcov && exists("vcov_calmod")){
     vcov_beta <- mecor:::regcal_get_vcov(beta_star, coef_calmod,
                                          vcov_beta_star, vcov_calmod, type)
   }
   # change names of beta and its vcov
   if (type == "indep"){
     beta <- mecor:::change_names(beta, me)
-    if (exists("vcov_beta")){
+    if (calc_vcov && exists("vcov_beta")){
       vcov_beta <- mecor:::change_names(vcov_beta, me)
     }
   }
   # change order of coef and vcov matrix
   out <- list(coef = mecor:::change_order_coefs(beta))
-  if (exists("vcov_beta")){
+  if (calc_vcov && exists("vcov_beta")){
     out$vcov <- mecor:::change_order_vcov(vcov_beta)
   }
   n <- NROW(beta_star)
@@ -55,6 +46,49 @@ regcal <- function(response, covars, me, B = 0 , alpha = 0.05, type, formula_typ
                             B = B, alpha = alpha, type = type, method = "rc")
     out$boot <- list(ci = boot$ci,
                      vcov = boot$vcov)
+  }
+  out
+}
+calmod <- function(response,
+                   covars,
+                   me,
+                   type,
+                   calc_vcov = T){
+  UseMethod("calmod", me)
+}
+calmod.MeasError <- function(response,
+                             covars,
+                             me,
+                             type,
+                             calc_vcov = T){
+  calmod_fit <- mecor:::regcal_get_calmod(covars, me, type)
+  coef_calmod <- mecor:::get_coefs(calmod_fit, type == "indep")
+  out <- list(coef = coef_calmod)
+  if (calc_vcov){
+    vcov_calmod <- mecor:::get_vcov(calmod_fit, type == "indep")
+    out$vcov <- vcov_calmod
+  }
+  out
+}
+calmod.MeasErrorExt <- function(response,
+                                covars,
+                                me,
+                                type,
+                                calc_vcov = T){
+  coef_calmod <- mecor:::get_coefs(me$model, type == "indep")
+  out <- list(coef = coef_calmod)
+  if (calc_vcov){
+    if(length(grep("MeasErrorExt.lm", attributes(me)$call)) != 0){
+      vcov_calmod <- mecor:::get_vcov(me$model, type == "indep")
+      out$vcov <- vcov_calmod
+    } else if(length(grep("MeasErrorExt.list", attributes(me)$call)) != 0){
+      if (!is.null(me$model$vcov)){
+        if (type == "indep"){
+          vcov_calmod <- mecor:::change_order_vcov(me$vcov)
+        } else vcov_calmod <- me$vcov
+        out$vcov <- vcov_calmod
+      }
+    }
   }
   out
 }

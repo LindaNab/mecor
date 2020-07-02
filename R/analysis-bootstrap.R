@@ -5,42 +5,31 @@ analysis_boot <- function(response,
                           B = 999,
                           alpha = 0.05,
                           type,
-                          method,
-                          erc_B = 0){
-  if (class(me)[1] == "MeasError"){
-    strat_samples <- replicate(
-      B,
-      mecor:::get_strat_sample(response, covars, me, type, method, erc_B),
-      simplify = F
-   )
-  } else if (class(me)[1] == "MeasErrorExt"){
-    strat_samples <- replicate(
-      B,
-      mecor:::get_new_sample_ext(response, covars, me, type),
-      simplify = F
-    )
-  }
-  if (method == "rc"){
-    coef <- sapply(
-      strat_samples,
-      FUN = function(x) do.call(mecor:::regcal, x)$coef
-    )
-  } else if (method == "erc"){
-    coef <- sapply(
-      strat_samples,
-      FUN = function(x) do.call(mecor:::efficient_regcal, x)$coef
-    )
-  } else if (method == "irc"){
-    coef <- sapply(
-      strat_samples,
-      FUN = function(x) do.call(mecor:::inadmissible_regcal, x)$coef
-    )
-  } else if (method == "mle"){
-    coef <- sapply(
-      strat_samples,
-      FUN = function(x) do.call(mecor:::mle, x)$coef
-    )
-  }
+                          method){
+  samples <- replicate(
+    B,
+    mecor:::get_new_sample(response, covars, me, type, method),
+    simplify = F
+  )
+  n_coef <- ncol(covars) + 2
+  pb <- txtProgressBar(min = 0, max = B, style = 3)
+  coef <- switch(method,
+                 "rc" = vapply(seq_along(samples),
+                               FUN = function(i) {
+                                 setTxtProgressBar(pb, i)
+                                 do.call(mecor:::regcal, samples[[i]])$coef},
+                               FUN.VALUE = double(n_coef)),
+                 "erc" = vapply(seq_along(samples),
+                                FUN = function(i) {
+                                  setTxtProgressBar(pb, i)
+                                  do.call(mecor:::efficient_regcal, samples[[i]])$coef},
+                                FUN.VALUE = double(n_coef)),
+                 "irc" = sapply(samples,
+                                FUN = function(x) do.call(mecor:::inadmissible_regcal, x)$coef
+                               ),
+                 "mle" = sapply(samples,
+                                FUN = function(x) do.call(mecor:::mle, x)$coef
+                               ))
   ci_perc <- apply(coef,
                    1,
                    FUN = quantile,
@@ -48,7 +37,11 @@ analysis_boot <- function(response,
   out <- list(ci = ci_perc,
               vcov = cov(t(coef)))
 }
-get_strat_sample <- function(response, covars, me, type, method, erc_B){
+get_new_sample <- function(response, covars, me, type, method){
+  UseMethod("get_new_sample", me)
+}
+get_new_sample.MeasError <- function(response, covars, me, type, method){
+  # sample new rownums
   rownum_filled <- which (!is.na(me$reference))
   rownum_empty <- which (is.na(me$reference))
   new_rownum_filled <- sample(rownum_filled,
@@ -58,9 +51,7 @@ get_strat_sample <- function(response, covars, me, type, method, erc_B){
                              size = NROW(rownum_empty),
                              replace = T)
   new_rownums <- c(new_rownum_filled, new_rownum_empty)
-  if (type == "indep"){
-    new_response <- response[new_rownums, , drop = F]
-  }
+  # sample new variables
   new_covars <- covars[new_rownums, , drop = F]
   new_me <- me
   new_me$reference <- me$reference[new_rownums]
@@ -68,33 +59,28 @@ get_strat_sample <- function(response, covars, me, type, method, erc_B){
   if (type == "dep_diff"){
     new_me$differential <- me$differential[new_rownums]
   }
-  if (method == "mle"){
+  if (!is.null(me$replicate)){
     new_me$replicate <- me$replicate[new_rownums, ]
   }
   new_sample <- list(
     covars = new_covars,
     me = new_me,
-    B = 0
-  ) # no bootstrapping within bootstrap
-  if (exists("new_response")){
-    new_sample$response = new_response
-    new_sample <- new_sample[c("response", "covars", "me", "B")]
-  }
-  if (method %in% c("rc", "erc", "irc")){
-    new_sample$type <- type
-  }
-  if (method == "erc"){
-    new_sample$erc_B <- erc_B
-  }
-  new_sample
-}
-get_new_sample_ext <- function(response, covars, me, type){
-  new_rownums <- sample(1:NROW(me$substitute),
-                       size = NROW(me$substitute),
-                       replace = T)
+    B = 0, # no bootstrapping within bootstrap
+    type = type
+  )
   if (type == "indep"){
     new_response <- response[new_rownums, , drop = F]
+    new_sample$response = new_response
+    new_sample <- new_sample[c("response", "covars", "me", "B", "type")]
   }
+  if (method %in% c("rc", "erc"))
+    new_sample$calc_vcov = F
+  new_sample
+}
+get_new_sample.MeasErrorExt <- function(response, covars, me, type){
+  new_rownums <- sample(1:NROW(me$substitute),
+                        size = NROW(me$substitute),
+                        replace = T)
   new_covars <- covars[new_rownums, , drop = F]
   new_me <- me
   new_me$substitute <- new_me$substitute[new_rownums]
@@ -106,12 +92,15 @@ get_new_sample_ext <- function(response, covars, me, type){
   new_sample <- list(
     covars = new_covars,
     me = new_me,
-    B = 0,
+    B = 0, # no bootstrapping within bootstrap
     type = type
-  ) # no bootstrapping within bootstrap
-  if (exists("new_response")){
+  )
+  if (type == "indep"){
+    new_response <- response[new_rownums, , drop = F]
     new_sample$response = new_response
     new_sample <- new_sample[c("response", "covars", "me", "B", "type")]
   }
+  if (method %in% c("rc", "erc"))
+    new_sample$calc_vcov = F
   new_sample
 }

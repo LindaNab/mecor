@@ -1,7 +1,10 @@
 #' @import lme4
 #' @import lmerTest
-mle <- function(response, covars, me, B, alpha){
-  n_rep <- ncol(me$replicate)
+mle <- function(response, covars, me, B, alpha, type){
+  mecor:::check_input_mle(type)
+  if (is.vector(me$replicate)){
+    n_rep <- 1
+  } else n_rep <- ncol(me$replicate)
   data_wide <- as.data.frame(cbind(me$substitute,
                                    me$replicate,
                                    covars,
@@ -42,9 +45,14 @@ mle <- function(response, covars, me, B, alpha){
   }
   out
 }
+check_input_mle <- function(type){
+  if (startsWith(type, "dep")){
+    stop("The maximum likelihood estimator is not suitable for measurement error in the dependent variable")
+  }
+}
 mle_get_coef <- function(lm_fit, lmm_fit){
   coef_lm_fit <- coef(lm_fit)
-  fixed_ef_lmm_fit <- fixef(lmm_fit)
+  fixed_ef_lmm_fit <- lme4:::fixef(lmm_fit)
   sigma_sq <- summary(lm_fit)$sigma^2
   random_int <- attributes(VarCorr(lmm_fit)$id)$stddev^2
   beta <- mecor:::mle_coef(coef_lm_fit,

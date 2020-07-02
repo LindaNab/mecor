@@ -35,7 +35,7 @@ independent or dependent variable in a regression if one wants to correct for
 the measurement error in that variable using a reference variable.
 }
 \examples{
-## measurement error in exposure
+## measurement error in independent variable
 # internal validation study
 data(ivs)
 me <- with (ivs, MeasError(substitute = X_star,
@@ -46,13 +46,14 @@ me <- with (rs, MeasError(substitute = X1_star,
                           replicate = cbind(X2_star, X3_star)))
 # calibration study
 data(cs)
-me <- with(cs, MeasError(X_star, replicate = cbind(X1_star, X2_star)))
-## measurement error in outcome
+me <- with(cs, MeasError(substitute = X_star,
+                         replicate = cbind(X1_star, X2_star)))
+## measurement error in dependent variable
 # internal validation study
 data(ivs_o)
 me <- with(ivs_o, MeasError(substitute = Y_star,
                             reference = Y))
-# internal validation study with differential measurement error in outcome
+# internal validation study with differential measurement error in the dependent variable
 data(ivs_diff_o)
 me <- with(ivs_diff_o, MeasError(substitute = Y_star,
                                  reference = Y,

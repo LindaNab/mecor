@@ -4,7 +4,7 @@
 \alias{mecor}
 \title{mecor: a measurement error correction package}
 \usage{
-mecor(formula, data, method = "rc", alpha = 0.05, B = 0, erc_B = 0)
+mecor(formula, data, method = "rc", alpha = 0.05, B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -23,9 +23,6 @@ regression calibration)}
 \item{alpha}{alpha level used to construct confidence intervals}
 
 \item{B}{number of bootstrap samples}
-
-\item{erc_B}{number of bootstrap samples used by efficient regression
-calibration to estimate the bootstrap vcov, used for pooling}
 }
 \value{
 \code{mecor} returns an object of \link[base]{class} "mecor"
@@ -46,18 +43,24 @@ error in a continuous covariate.
 \examples{
 # measurement error in exposure
 data(ivs)
-fit <-
+system.time(fit <-
   mecor(Y ~ MeasError(X_star, reference = X) + Z,
          data = ivs,
-         method = "irc",
-         B = 999,
-         erc_B = 0)
+         method = "rc",
+         B = 999))
 data(rs)
-mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
-      data = rs,
-      method = "rc",
-      B = 999)
+fit <-
+  mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+        data = rs,
+        method = "erc",
+        B = 999)
 data(cs)
+cs_rep <- subset(cs, !is.na(X1_star) & !is.na(X2_star))
+fit <-
+mecor(Y ~ MeasError(X1_star, replicate = X2_star) + Z,
+      data = cs_rep,
+      method = "mle",
+      B = 999)
 fit <-
 mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
       data = cs,
@@ -95,8 +98,7 @@ data(rs)
 fit <-
   mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
         data = rs,
-        method = "mle",
-        B = 0)
+        method = "mle")
 }
 \references{
 L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.

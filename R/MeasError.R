@@ -26,7 +26,7 @@
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
 #' @examples
-#' ## measurement error in exposure
+#' ## measurement error in independent variable
 #' # internal validation study
 #' data(ivs)
 #' me <- with (ivs, MeasError(substitute = X_star,
@@ -37,13 +37,14 @@
 #'                           replicate = cbind(X2_star, X3_star)))
 #' # calibration study
 #' data(cs)
-#' me <- with(cs, MeasError(X_star, replicate = cbind(X1_star, X2_star)))
-#' ## measurement error in outcome
+#' me <- with(cs, MeasError(substitute = X_star,
+#'                          replicate = cbind(X1_star, X2_star)))
+#' ## measurement error in dependent variable
 #' # internal validation study
 #' data(ivs_o)
 #' me <- with(ivs_o, MeasError(substitute = Y_star,
 #'                             reference = Y))
-#' # internal validation study with differential measurement error in outcome
+#' # internal validation study with differential measurement error in the dependent variable
 #' data(ivs_diff_o)
 #' me <- with(ivs_diff_o, MeasError(substitute = Y_star,
 #'                                  reference = Y,
@@ -53,38 +54,20 @@ MeasError <- function(substitute,
                       reference,
                       replicate,
                       differential){
-  # checks for substitute
-  if (missing(substitute))
-    stop("'substitute' in the MeasError object is missing")
-  if (!is.vector(substitute))
-    stop("'substitute' in the MeasError object is not a vector")
-  if (any(is.na(substitute)) == TRUE)
-    stop("'substitute' in the MeasError object cannot contain missing values")
-  # check for reference and replicate (one of both should be non-null)
-  if (!missing(reference) & !missing(replicate))
-    stop("'reference' and 'replicate' in the MeasError object cannot be both non-null")
-  if (missing(reference) & missing(replicate))
-    stop("provide a 'reference' or 'replicate' in the MeasError object")
-  # checks for reference (internal validation study)
-  if (!missing(reference)){
-    if (!is.vector(reference))
-      stop("'reference' is not a vector in the MeasError object")
-  }
-  # checks for replicate (replicates study/ calibration study)
+  mecor:::check_input_MeasError(substitute,
+                                reference,
+                                replicate,
+                                differential)
   if (!missing(replicate)){
-    if (!missing(differential)){ # differential should be missing
-      stop('differential measurement error cannot be resolved with replicate data')
-    }
-    if (!is.vector(replicate) & !is.matrix(replicate)){
-      stop("'replicate' is not a vector or matrix in the MeasError object")
-    }
-    # get reference from replicate (its rowmeans)
+    # get reference from replicate (rowmeans of all non NA rows)
     reference <- mecor:::get_ref_from_rep(replicate)
   }
   out <- list(substitute = substitute,
               reference = reference)
-  if (!missing(replicate)) out$replicate <- replicate
-  if (!missing(differential)) out$differential = differential
+  if (!missing(replicate))
+    out$replicate <- replicate
+  if (!missing(differential))
+    out$differential = differential
   input <- c(substitute = as.list(match.call())$substitute,
              reference = as.list(match.call())$reference,
              replicate = as.list(match.call())$replicate,
@@ -94,11 +77,44 @@ MeasError <- function(substitute,
   class(out) <- c("MeasError", "list")
   out
 }
+check_input_MeasError <- function(substitute,
+                                  reference,
+                                  replicate,
+                                  differential){
+  # checks for substitute
+  if (missing(substitute))
+    stop ("'substitute' in the MeasError object is missing")
+  if (!is.vector(substitute))
+    stop ("'substitute' in the MeasError object is not a vector")
+  if (any(is.na(substitute)) == TRUE)
+    stop("'substitute' in the MeasError object cannot contain missing values")
+  # check for reference and replicate (one of both should be non-null)
+  if (!missing(reference) & !missing(replicate))
+    stop("'reference' or 'replicate' in the MeasError object should be null")
+  if (missing(reference) & missing(replicate))
+    stop("provide a 'reference' or 'replicate' variable in the MeasError object")
+  # checks for reference (internal validation study)
+  if (!missing(reference)){
+    if (!is.vector(reference))
+      stop("'reference' is not a vector in the MeasError object")
+  }
+  # checks for replicate
+  if (!missing(replicate)){
+    if (!missing(differential)){ # differential should be missing
+      stop('differential measurement error cannot be resolved with replicate data')
+    }
+    if (!is.vector(replicate) & !is.matrix(replicate)){
+      stop("'replicate' is not a vector or matrix in the MeasError object")
+    }
+  }
+}
 get_ref_from_rep <- function(replicate){
   if (is.null(ncol(replicate))){ # only one replicate measure provided
     reference <- replicate
   } else {
+    rownums_cc <- which (complete.cases(replicate))
     reference <- rowMeans(replicate)
+    reference[-rownums_cc] <- NA
   }
   reference
 }

@@ -15,8 +15,6 @@
 #' regression calibration)
 #' @param alpha alpha level used to construct confidence intervals
 #' @param B number of bootstrap samples
-#' @param erc_B number of bootstrap samples used by efficient regression
-#' calibration to estimate the bootstrap vcov, used for pooling
 #'
 #' @return \code{mecor} returns an object of \link[base]{class} "mecor"
 #'
@@ -41,15 +39,21 @@
 #' fit <-
 #'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'          data = ivs,
-#'          method = "irc",
-#'          B = 999,
-#'          erc_B = 0)
+#'          method = "erc",
+#'          B = 999)
 #' data(rs)
-#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
-#'       data = rs,
-#'       method = "rc",
-#'       B = 999)
+#' fit <-
+#'   mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+#'         data = rs,
+#'         method = "rc",
+#'         B = 999)
 #' data(cs)
+#' cs_rep <- subset(cs, !is.na(X1_star) & !is.na(X2_star))
+#' fit <-
+#' mecor(Y ~ MeasError(X1_star, replicate = X2_star) + Z,
+#'       data = cs_rep,
+#'       method = "mle",
+#'       B = 999)
 #' fit <-
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
 #'       data = cs,
@@ -87,37 +91,15 @@
 #' fit <-
 #'   mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
 #'         data = rs,
-#'         method = "mle",
-#'         B = 999)
+#'         method = "mle")
 #' @export
 mecor <- function(formula,
                   data,
                   method = "rc",
                   alpha = 0.05,
-                  B = 0,
-                  erc_B = 0){
-  if (missing(data))
-    stop("data is missing without a default")
-  if ((exists(deparse(substitute(data))) && is.function(data)) |
-       !exists(deparse(substitute(data))))
-    stop(paste0("data argument ", deparse(substitute(data)), " not found"))
-  if (!is.data.frame(data))
-    tryCatch({
-      data <- as.data.frame(data)
-      },
-      error = function(e){
-        message(e)
-        stop(paste0("data argument ", data, " cannot be coerced to a data.frame"))
-      }
-    )
-  if (missing(formula))
-    stop("formula not found")
-  if (class(formula) != "formula")
-    stop("formula is not of class 'formula'")
-  if (! method %in% c("rc", "erc", "irc", "mle"))
-    stop("this method is not implemented")
-
-  # Create response, covars and me (= MeasError object)
+                  B = 0){
+  mecor:::check_input_mecor(formula, data, method)
+  # Create response, covars and me (= MeasError(Ext) object)
   vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
   ind_me <- grep("MeasError", vars_formula) # index of MeasError(Ext) in list of variables
   if (length(ind_me) == 0){
@@ -131,11 +113,9 @@ mecor <- function(formula,
   } else type <- "indep"
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
-  if (type == "indep" & !is.null(me$differential)){
-    stop("Differential measurement error is only supported in the dependent variable")
-  } else if (type == "dep" & (!is.null(me$differential) | length(me$coef) == 4 | length(me$model$coef) == 4)){
+  mecor:::check_me(me, B, type)
+  if (type == "dep" & (!is.null(me$differential) | length(me$coef) == 4 | length(me$model$coef) == 4))
     type <- "dep_diff"
-  }
   if (type == "indep"){
     response <- as.matrix(vars_formula_eval[[ind_response]])
     colnames(response) <- vars_formula[ind_response]
@@ -148,41 +128,51 @@ mecor <- function(formula,
     colnames(covars) <- vars_formula[-ind_me]
   }
   uncorfit <- mecor:::uncorrected(response, covars, me, type)
-    if (method == "rc"){
-      corfit <-
-        mecor:::regcal(response, covars, me, B, alpha, type)
-    } else if (method == "erc"){
-      if (B != 0 & erc_B != 0){
-        menu(c("yes", "no"),
-             title = "You're about to bootstrap the vcov used by efficient regression calibration and bootstrap the variance of that estimator. This may take a while. Do you want to proceed?")
-      }
-      corfit <-
-        mecor:::efficient_regcal(response, covars, me, B, alpha, type, erc_B)
-    } else if (method == "irc"){
-      if (startsWith(type, "dep")){
-        stop("Inadmissible regression calibration is not suitable for measurement error in the dependent variable")
-      }
-      if (class(me)[1] == "MeasErrorExt"){
-        stop("Inaddmissible regression calbration is not suitable for external designs")
-      } else if (class(me)[1] == "MeasError" && (type == "indep" & !is.null(me$replicate))){
-        stop("Inadmissible regression calibration is not suitable for a design with replicates")
-      }
-      corfit <-
-        mecor:::inadmissible_regcal(response, covars, me, B, alpha, type)
-    } else if (method == "mle"){
-      if (startsWith(type, "dep")){
-        stop("The maximum likelihood estimator is not suitabel for measurement error in the dependent variable")
-      }
-      corfit <-
-        mecor:::mle(response, covars, me, B, alpha)
-    }
+  corfit <- switch(method,
+                   "rc" = mecor:::regcal(response, covars, me, B, alpha, type),
+                   "erc" = mecor:::efficient_regcal(response, covars, me, B, alpha, type),
+                   "irc" = mecor:::inadmissible_regcal(response, covars, me, B, alpha, type),
+                   "mle" = mecor:::mle(response, covars, me, B, alpha, type))
   # output
   out <- list(uncorfit = uncorfit,
-              corfit = corfit
-              )
+              corfit = corfit)
   class(out) <- 'mecor'
   attr(out, "call") <- match.call()
   attr(out, "B") <- B
   attr(out, "alpha") <- alpha
   return(out)
+}
+check_input_mecor <- function(formula,
+                              data,
+                              method){
+  if (missing(data))
+    stop("data is missing without a default")
+  if ((exists(deparse(substitute(data))) && is.function(data)) |
+      !exists(deparse(substitute(data))))
+    stop(paste0("data argument ", deparse(substitute(data)), " not found"))
+  if (!is.data.frame(data))
+    tryCatch({
+      data <- as.data.frame(data)
+    },
+    error = function(e) {
+      message(e)
+      stop(paste0("data argument ", data, " cannot be coerced to a data.frame"))
+    })
+  if (missing(formula))
+    stop("formula not found")
+  if (class(formula) != "formula")
+    stop("formula is not of class 'formula'")
+  if (!method %in% c("rc", "erc", "irc", "mle"))
+    stop("this method is not implemented"
+    )
+}
+check_me <- function(me, B, type){
+  if(class(me)[1] == "MeasErrorExt" && length(grep("MeasErrorExt.list", attributes(me)$call)) != 0){
+    if (B != 0){
+      B <- 0
+      warning("B set to 0 since bootstrap cannot be used if the class of 'model' in the MeasErrorExt object is list")
+    }
+  }
+  if (type == "indep" & !is.null(me$differential))
+    stop("Differential measurement error is only supported in the dependent variable")
 }
