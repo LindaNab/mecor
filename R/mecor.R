@@ -1,111 +1,120 @@
-#' mecor: a measurement error correction package
+#' mecor: a Measurement Error Correction Package
 #'
-#' mecor provides correction methods for measurement
-#' error in a continuous covariate.
+#' mecor provides correction methods for measurement error in a continuous
+#' covariate or outcome in linear regression models with a continuous outcome
 #'
 #' @param formula an object of class \link[stats]{formula} (or one that is
-#' coerced to that class): a symbolic description of the model containing
-#' a \link[mecor]{MeasError} object.
-#' @param data a data.frame, list or environment (or
-#' object coercible by as.data.frame to a data frame) containing
-#' the variables in the model
+#' coerced to that class): a symbolic description of the regressino model
+#' containing a \link[mecor]{MeasError}, \link[mecor]{MeasErrorExt} or
+#' \link[mecor]{MeasErrorRandom} object in one of the covariates or the outcome.
+#' @param data a data.frame, list or environment (or object coercible by
+#' as.data.frame to a data frame) containing the variables in the model
+#' specified in \code{formula}.
 #' @param method a character string indicating the method used to correct for
-#' measurement error, either "rc" (regression calibration), "erc" (efficient
-#' regression calibration using delta variance for pooling), "irc" (inadmissible
-#' regression calibration)
-#' @param alpha alpha level used to construct confidence intervals
-#' @param B number of bootstrap samples
+#' the measurement error, either "rc" (regression calibration), "erc" (efficient
+#' regression calibration), "irc" (inadmissible regression calibration) or "mle"
+#' (maximum likelihood estimation). Defaults to "rc".
+#' @param B number of bootstrap samples, defaults to 0.
+#' @param alpha probability of obtaining a Type-II error, defaults to 0.05.
 #'
-#' @return \code{mecor} returns an object of \link[base]{class} "mecor"
+#' @return \code{mecor} returns an object of \link[base]{class} "mecor".
 #'
 #' An object of class \code{mecor} is a list containing the following components:
 #'
-#' \item{uncorfit}{a lm.fit object of the uncorrected fit}
-#' \item{corfit}{a lm.fit object of the corrected fit (if method = "rc") and a
-#' matrix containing the corrected coefficients else}
-#' \item{corvar}{the corrected variance using the delta method}
-#' \item{ci.fieller}{fieller confidence interval (if method = "rc") else NA}
-#' \item{ci.b}{bootstrap confidence interval (if B != 0)}
+#' \item{corfit}{a list containing the corrected fit, including the coefficients
+#' of the corrected fit (\code{coef}) and the variance--covariance matrix of the
+#' coefficients of the corrected fit obtained by the delta method (\code{vcov}),
+#' and more depending on the method used.}
+#' \item{uncorfit}{an \link[stats]{lm.fit} object of the uncorrected fit.}
 #'
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
 #' @references
-#' L.Nab, R.H.H. Groenwold, P.M.J. Welsing, M. van Smeden.
-#' Measurement error in continuous endpoints in randomised trials: an exploration of problems and solutions
+#' L. Nab, R.H.H. Groenwold, P.M.J. Welsing, and  M. van Smeden.
+#' Measurement error in continuous endpoints in randomised trials: problems and solutions
+#'
+#' L. Nab, M. van Smeden, R.H. Keogh, and R.H.H. Groenwold.
+#' mecor: an R package for measurement error correction
 #'
 #' @examples
-#' # measurement error in exposure
-#' data(ivs)
-#' fit <-
-#'   mecor(Y ~ MeasError(X_star, reference = X) + Z,
-#'          data = ivs,
-#'          method = "erc",
-#'          B = 999)
+#' ## measurement error in a covariate:
+#' # internal covariate-validation study
+#' data(icvs)
+#' mecor(Y ~ MeasError(X_star, reference = X) + Z,
+#'       data = icvs,
+#'       method = "rc")
+#' # replicates study
 #' data(rs)
-#' fit <-
-#'   mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
-#'         data = rs,
-#'         method = "rc",
-#'         B = 999)
-#' data(cs)
-#' cs_rep <- subset(cs, !is.na(X1_star) & !is.na(X2_star))
-#' fit <-
-#' mecor(Y ~ MeasError(X1_star, replicate = X2_star) + Z,
-#'       data = cs_rep,
-#'       method = "mle",
-#'       B = 999)
-#' fit <-
+#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+#'       data = rs,
+#'       method = "mle")
+#' # covariate-calibration study
+#' data(ccs)
 #' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
-#'       data = cs,
-#'       method = "erc",
-#'       B = 999)
-#' # measurement error in the outcome
-#' data(ivs_o)
-#' fit <-
-#'   mecor(MeasError(Y_star, reference = Y) ~ X + Z,
-#'         data = ivs_o,
-#'         method = "rc",
-#'         B = 999)
-#' # differential measurement error in the outcome
-#' fit <-
-#'   mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
-#'         data = ivs_diff_o,
-#'         method = "rc",
-#'         B = 999)
-#' # external information
-#' calmod_fit <- lm(X ~ X_star + Z, data = ivs)
-#' fit <-
-#'   mecor(Y ~ MeasErrorExt(X_star, model = calmod_fit) + Z,
-#'         data = ivs,
-#'         B = 999)
-#' me_fit <- lm(Y_star ~ Y, data = ivs_o)
-#' fit <-
-#'   mecor(MeasErrorExt(Y_star, model = me_fit) ~ X + Z,
-#'         data = ivs_o,
-#'         B = 999)
-#' fit <-
-#'   mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
-#'         data = ivs_o)
-#' # mle
-#' data(rs)
-#' fit <-
-#'   mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
-#'         data = rs,
-#'         method = "mle")
+#'       data = ccs,
+#'       method = "erc")
+#' # external covariate-validation study
+#' data(ecvs)
+#' calmod_fit <- lm(X ~ X_star + Z, data = ecvs)
+#' data(icvs) # suppose reference X is not available
+#' mecor(Y ~ MeasErrorExt(X_star, model = calmod_fit) + Z,
+#'       data = icvs)
+#' # sensitivity analyses
+#' data(icvs) # suppose reference X is not available
+#' # guesstimate the coefficients of the calibration model:
+#' mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.9, 0.2))) + Z,
+#'       data = icvs)
+#' # assume random measurement error in X_star of magnitude 0.5:
+#' mecor(Y ~ MeasErrorRandom(X_star, error = 0.5) + Z,
+#'       data = icvs)
+#'
+#' ## measurement error in the outcome:
+#' # internal outcome-validation study
+#' data(iovs)
+#' mecor(MeasError(Y_star, reference = Y) ~ X + Z,
+#'       data = iovs,
+#'       method = "erc")
+#' # external outcome-validation study
+#' data(eovs)
+#' memod_fit <- lm(Y_star ~ Y, data = eovs)
+#' data(iovs) # suppose reference Y is not available
+#' mecor(MeasErrorExt(Y_star, model = memod_fit) ~ X + Z,
+#'       data = iovs,
+#'       method = "rc")
+#' # sensitivity analyses
+#' data(iovs) # suppose reference Y is not available
+#' # guesstimate the coefficients of the measurement error model:
+#' mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
+#'       data = iovs,
+#'       method = "rc")
+#'
+#' ## differential measurement error in the outcome:
+#' # internal outcome-validation study
+#' data(iovs_diff)
+#' mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
+#'       data = iovs_diff,
+#'       method = "rc")
+#' # sensitivity analysis
+#' data(iovs_diff) # suppose reference Y is not available
+#' # guesstimate the coefficients of the measurement error model:
+#' mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5, 1, 1))) ~ X,
+#'       data = iovs_diff,
+#'       method = "rc")
 #' @export
 mecor <- function(formula,
                   data,
                   method = "rc",
-                  alpha = 0.05,
-                  B = 0){
+                  B = 0,
+                  alpha = 0.05){
   mecor:::check_input_mecor(formula, data, method)
-  # Create response, covars and me (= MeasError(Ext) object)
+  # Create response, covars and me (= MeasError(Ext/Random) object)
   vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
-  ind_me <- grep("MeasError", vars_formula) # index of MeasError(Ext) in list of variables
+  ind_me <- grep("MeasError", vars_formula) # index of MeasError(Ext/Random) in
+                                            # list of variables
   if (length(ind_me) == 0){
-    stop("formula should contain a MeasError or MeasErrorExt object")
+    stop("formula should contain a MeasError(Ext/Random) object")
   } else if (length(ind_me) != 1){
-    stop("formula can only contain one MeasError or MeasErrorExt object")
+    stop("formula can only contain one MeasError(Ext/Random) object")
   }
   ind_response <- attributes(terms(formula))$response
   if (ind_me == ind_response){
@@ -113,8 +122,15 @@ mecor <- function(formula,
   } else type <- "indep"
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
-  mecor:::check_me(me, B, type)
-  if (type == "dep" & (!is.null(me$differential) | length(me$coef) == 4 | length(me$model$coef) == 4))
+  B <- mecor:::check_me(me, B, type)
+  if (class(me)[1] == "MeasErrorRandom"){ # should be moved to checks of methods
+    if (method != "rc"){
+      stop("methods different than 'rc' are not supported for MeasErrorRandom objects")
+    }
+  }
+  if (type == "dep" & (!is.null(me$differential) |
+                       length(me$coef) == 4 |
+                       length(me$model$coef) == 4))
     type <- "dep_diff"
   if (type == "indep"){
     response <- as.matrix(vars_formula_eval[[ind_response]])
@@ -134,8 +150,8 @@ mecor <- function(formula,
                    "irc" = mecor:::inadmissible_regcal(response, covars, me, B, alpha, type),
                    "mle" = mecor:::mle(response, covars, me, B, alpha, type))
   # output
-  out <- list(uncorfit = uncorfit,
-              corfit = corfit)
+  out <- list(corfit = corfit,
+              uncorfit = uncorfit)
   class(out) <- 'mecor'
   attr(out, "call") <- match.call()
   attr(out, "B") <- B
@@ -170,9 +186,13 @@ check_me <- function(me, B, type){
   if(class(me)[1] == "MeasErrorExt" && length(grep("MeasErrorExt.list", attributes(me)$call)) != 0){
     if (B != 0){
       B <- 0
-      warning("B set to 0 since bootstrap cannot be used if the class of 'model' in the MeasErrorExt object is list")
+      warning("B set to 0 since bootstrap cannot be used if the class of 'model' in the MeasErrorExt object is of type list")
     }
   }
   if (type == "indep" & !is.null(me$differential))
     stop("Differential measurement error is only supported in the dependent variable")
+  if (type == "dep" & class(me)[1] == "MeasErrorRandom"){
+    stop("Random measurement error in the dependent variable won't introduce bias in the fitted model, correction is not needed")
+  }
+  B
 }

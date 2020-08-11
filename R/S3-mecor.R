@@ -3,31 +3,38 @@
 #' @description
 #' \code{summary} method for class "mecor"
 #'
-#' @param object an object of class "mecor", a result of a call to \link[mecor]{mecor}
+#' @param object an object of class "mecor", a result of a call to
+#' \link[mecor]{mecor}.
+#' @param zerovar a boolean indicating whether standard errors and confidence
+#' intervals using the zerovariance method must be added to the summary object.
+#' @param fieller a boolean indicating whether confidence intervals using the
+#' fieller method must be added to the summary object.
 #'
 #' @return
-#' The function \code{summary.mecor} returns a list of summary statistics of the fitted
-#' calibration model given in \code{object} using the components \code{"call"}, \code{"size"},
-#' \code{"rdf"}, \code{"r.squared"} and \code{"sigma"} from its argument plus
+#' The function \code{summary.mecor} returns a list of summary statistics of the
+#' fitted corrected model and fitted uncorrected model.
 #'
-#' \item{coefficients}{a px4 matrix with columns for the estimated coefficient, its standard error,
-#' t-statistic and corresponding (two-sided) p-value.}
+#' \item{call}{the matched call}
+#' \item{c}{summary of the corrected fit}
+#' \item{uc}{summary of the uncorrected fit}
+#' \item{B}{number of bootstrap replicates used}
+#' \item{alpha}{alpha level used}
 #'
 #' @seealso
-#' The calibration model fitting function \link[mecor]{mefit}, \link[base]{summary}
-#'
-#' Function \link[stats]{coef} will extract the matrix of coefficients with standard errors,
-#' t-statistics and p-values
+#' The model fitting function \link[mecor]{mecor}, \link[base]{summary}
 #'
 #' @examples
-#' ## Continuing the mecor() example:
-#' #coef(fitSme)
-#' #summary(cm_sme)
+#' ## measurement error in a covariate:
+#' # internal covariate-validation study
+#' data(icvs)
+#' mecor_fit <- mecor(Y ~ MeasError(X_star, reference = X) + Z,
+#'                    data = icvs,
+#'                    method = "rc")
+#' summary(mecor_fit)
+#' summary(mecor_fit, zerovar = T, fieller = T)
 #'
-#' @export summary.mecor
 #' @export
-#'
-summary.mecor <- function(object){
+summary.mecor <- function(object, zerovar = F, fieller = F){
   z <- object
   z1 <- z$uncorfit
   z2 <- z$corfit
@@ -46,26 +53,48 @@ summary.mecor <- function(object){
                  'UCI' = coef1 + tq * se1)
   uc$ci <- round(uc$ci, 6)
   # corrected
-  #if(length({q <- attributes(z2)$type}) == 0){
-    coefficients <- cbind(Estimate = (coef2 <- z2$coef),
-              SE = (se2 <- sqrt(diag(z2$vcov))),
-              'SE (btstr)' = (if((B <- attr(z, "B")) != 0) sqrt(diag(z2$boot$vcov)) else NA)#,
-              # 't value' = (t2 <- coef2/se2),
-              # 'Pr(>|t|)' = 2 * pt(abs(t2), rdf1, lower.tail = FALSE) #rdf unknown?
-              )
-    c <- list(coefficients = round(coefficients, 6))
-    c$ci <- cbind(Estimate = coef2,
-                  'LCI' = coef2 - tq * se2,
-                  'UCI' = coef2 + tq * se2,
-                  'LCI (btstr)'= (if((B <- attr(z, "B")) != 0) z2$boot$ci[1, ] else NA),
-                  'UCI (btstr)'= (if(B != 0) z2$boot$ci[2, ] else NA))
-    c$ci <- round(c$ci, 6)
-    if (!is.null(z2$matrix)){
-      c$matrix <- z2$matrix
+  coefficients <- cbind(Estimate = (coef2 <- z2$coef))
+  ci <- cbind(Estimate = coef2)
+  zq <- qnorm((1 - alpha / 2))
+  if (!is.null(z2$vcov)){
+    SE <- {se2 <- sqrt(diag(z2$vcov))}
+    LCI <- coef2 - zq * se2
+    UCI <- coef2 + zq * se2
+    coefficients <- cbind(coefficients, SE)
+    ci <- cbind(ci, LCI, UCI)
+  }
+  if ({B <- attr(z, "B")} != 0){
+    SE_btstr <- sqrt(diag(z2$boot$vcov))
+    LCI_btstr <- z2$boot$ci[1, ]
+    UCI_btstr <- z2$boot$ci[2, ]
+    coefficients <- cbind(coefficients, 'SE (btstr)' = SE_btstr)
+    ci <- cbind(ci, 'LCI (btstr)' = LCI_btstr, 'UCI (btstr)' = UCI_btstr)
+  }
+  if (zerovar == T){
+    if(is.null(z2$zerovar_vcov)){
+      stop("there is no 'zerovar_vcov' object, please set zerovar to FALSE")
     }
-  out <- list(call = attr(z, "call"), B = B)
-  out$uc <- uc
+    SE_zerovar <- {se2_zv <- sqrt(diag(z2$zerovar_vcov))}
+    LCI_zerovar <- coef2 - zq * se2_zv
+    UCI_zerovar <- coef2 + zq * se2_zv
+    coefficients <- cbind(coefficients, 'SE (zerovar)' = SE_zerovar)
+    ci <- cbind(ci, 'LCI (zerovar)' = LCI_zerovar, 'UCI (zerovar)' = UCI_zerovar)
+  }
+  if (fieller == T){
+    if (is.null(z2$fieller_ci)){
+      stop("there is no 'fieller_ci' object, please set fieller to FALSE")
+    }
+    ci <- cbind(ci, 'LCI (fieller)' = z2$fieller_ci[, 1],
+                'UCI (fieller)' = z2$fieller_ci[, 2])
+  }
+  c <- list(coefficients = round(coefficients, 6))
+  if (dim(ci)[2] > 1){
+    c$ci <- round(ci, 6)
+  }
+  out <- list(call = attr(z, "call"))
   out$c <- c
+  out$uc <- uc
+  out$B <- B
   out$alpha <- alpha
   class(out) <- "summary.mecor"
   out
@@ -77,8 +106,10 @@ print.summary.mecor <- function(x){
       "\n", sep = "")
   cat("\nCoefficients Corrected Model:\n")
   print(x$c$coefficients)
-  cat("\n", paste((1-x$alpha)*100, "%", sep =""), " Confidence Intervals:\n", sep = "")
-  print(x$c$ci)
+  if (! is.null(x$c$ci)){
+    cat("\n", paste((1-x$alpha)*100, "%", sep =""), " Confidence Intervals:\n", sep = "")
+    print(x$c$ci)
+  }
   if (x$B != 0){
     cat("Bootstrap Confidence Intervals are based on", x$B, "bootstrap replicates using percentiles \n")  }
   if (!is.null(x$c$matrix)){

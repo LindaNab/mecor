@@ -4,31 +4,42 @@
 \alias{summary.mecor}
 \title{Summarizing Measurement Error Correction}
 \usage{
-\method{summary}{mecor}(object)
+\method{summary}{mecor}(object, zerovar = F, fieller = F)
 }
 \arguments{
-\item{object}{an object of class "mecor", a result of a call to \link[mecor]{mecor}}
+\item{object}{an object of class "mecor", a result of a call to
+\link[mecor]{mecor}.}
+
+\item{zerovar}{a boolean indicating whether standard errors and confidence
+intervals using the zerovariance method must be added to the summary object.}
+
+\item{fieller}{a boolean indicating whether confidence intervals using the
+fieller method must be added to the summary object.}
 }
 \value{
-The function \code{summary.mecor} returns a list of summary statistics of the fitted
-calibration model given in \code{object} using the components \code{"call"}, \code{"size"},
-\code{"rdf"}, \code{"r.squared"} and \code{"sigma"} from its argument plus
+The function \code{summary.mecor} returns a list of summary statistics of the
+fitted corrected model and fitted uncorrected model.
 
-\item{coefficients}{a px4 matrix with columns for the estimated coefficient, its standard error,
-t-statistic and corresponding (two-sided) p-value.}
+\item{call}{the matched call}
+\item{c}{summary of the corrected fit}
+\item{uc}{summary of the uncorrected fit}
+\item{B}{number of bootstrap replicates used}
+\item{alpha}{alpha level used}
 }
 \description{
 \code{summary} method for class "mecor"
 }
 \examples{
-## Continuing the mecor() example:
-#coef(fitSme)
-#summary(cm_sme)
+## measurement error in a covariate:
+# internal covariate-validation study
+data(icvs)
+mecor_fit <- mecor(Y ~ MeasError(X_star, reference = X) + Z,
+                   data = icvs,
+                   method = "rc")
+summary(mecor_fit)
+summary(mecor_fit, zerovar = T, fieller = T)
 
 }
 \seealso{
-The calibration model fitting function \link[mecor]{mefit}, \link[base]{summary}
-
-Function \link[stats]{coef} will extract the matrix of coefficients with standard errors,
-t-statistics and p-values
+The model fitting function \link[mecor]{mecor}, \link[base]{summary}
 }

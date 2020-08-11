@@ -1,9 +1,10 @@
 #' @title Create a Measurement Error Object
 #'
 #' @description
-#' This function creates a measurement error object, usually used as the
-#' independent or dependent variable in a regression if one wants to correct for
-#' the measurement error in that variable using a reference variable.
+#' This function creates a measurement error object, usually used as a covariate
+#' or the outcome in the \code{formula} argument of \link[mecor]{mecor} if one
+#' wants to correct for the measurement error in that variable using a reference
+#' variable or a replicate measure.
 #'
 #' @param substitute a vector containing the error-prone measure
 #' @param reference a vector containing the reference measure assumed without
@@ -13,8 +14,8 @@
 #' replicates obtained by using the same measurement method as the substitute
 #' measure (replicates study) or replicates using a different measurement method
 #' than the substitute measure (calibration study).
-#' @param differential a vector with the variable on which the measurement error
-#' is differential.
+#' @param differential a vector containing the variable to which the measurement
+#' error is differential.
 #'
 #' @return \code{MeasError} returns an object of \link[base]{class} "MeasError".
 #'
@@ -26,29 +27,30 @@
 #' @author Linda Nab, \email{l.nab@lumc.nl}
 #'
 #' @examples
-#' ## measurement error in independent variable
-#' # internal validation study
-#' data(ivs)
-#' me <- with (ivs, MeasError(substitute = X_star,
-#'                            reference = X))
+#' ## measurement error in a covariate:
+#' # internal covariate-validation study
+#' data(icvs)
+#' with (icvs, MeasError(substitute = X_star,
+#'                       reference = X))
 #' # replicates study
 #' data(rs)
-#' me <- with (rs, MeasError(substitute = X1_star,
-#'                           replicate = cbind(X2_star, X3_star)))
-#' # calibration study
-#' data(cs)
-#' me <- with(cs, MeasError(substitute = X_star,
-#'                          replicate = cbind(X1_star, X2_star)))
-#' ## measurement error in dependent variable
-#' # internal validation study
-#' data(ivs_o)
-#' me <- with(ivs_o, MeasError(substitute = Y_star,
-#'                             reference = Y))
-#' # internal validation study with differential measurement error in the dependent variable
-#' data(ivs_diff_o)
-#' me <- with(ivs_diff_o, MeasError(substitute = Y_star,
-#'                                  reference = Y,
-#'                                  differential = X))
+#' with (rs, MeasError(substitute = X1_star,
+#'                     replicate = cbind(X2_star, X3_star)))
+#' # covariate-calibration study
+#' data(ccs)
+#' with(ccs, MeasError(substitute = X_star,
+#'                     replicate = cbind(X1_star, X2_star)))
+#' ## measurement error in the outcome:
+#' # internal outcome-validation study
+#' data(iovs)
+#' with(iovs, MeasError(substitute = Y_star,
+#'                      reference = Y))
+#' # internal outcome- validation study with differential measurement error in
+#' # the dependent variable
+#' data(iovs_diff)
+#' with(iovs_diff, MeasError(substitute = Y_star,
+#'                           reference = Y,
+#'                           differential = X))
 #' @export
 MeasError <- function(substitute,
                       reference,
@@ -83,9 +85,9 @@ check_input_MeasError <- function(substitute,
                                   differential){
   # checks for substitute
   if (missing(substitute))
-    stop ("'substitute' in the MeasError object is missing")
+    stop("'substitute' in the MeasError object is missing")
   if (!is.vector(substitute))
-    stop ("'substitute' in the MeasError object is not a vector")
+    stop("'substitute' in the MeasError object is not a vector")
   if (any(is.na(substitute)) == TRUE)
     stop("'substitute' in the MeasError object cannot contain missing values")
   # check for reference and replicate (one of both should be non-null)
@@ -101,7 +103,7 @@ check_input_MeasError <- function(substitute,
   # checks for replicate
   if (!missing(replicate)){
     if (!missing(differential)){ # differential should be missing
-      stop('differential measurement error cannot be resolved with replicate data')
+      stop('differential measurement error cannot be corrected in a replicates study')
     }
     if (!is.vector(replicate) & !is.matrix(replicate)){
       stop("'replicate' is not a vector or matrix in the MeasError object")

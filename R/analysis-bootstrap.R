@@ -6,30 +6,30 @@ analysis_boot <- function(response,
                           alpha = 0.05,
                           type,
                           method){
-  samples <- replicate(
-    B,
-    mecor:::get_new_sample(response, covars, me, type, method),
-    simplify = F
-  )
-  n_coef <- ncol(covars) + 2
-  pb <- txtProgressBar(min = 0, max = B, style = 3)
-  coef <- switch(method,
-                 "rc" = vapply(seq_along(samples),
-                               FUN = function(i) {
-                                 setTxtProgressBar(pb, i)
-                                 do.call(mecor:::regcal, samples[[i]])$coef},
-                               FUN.VALUE = double(n_coef)),
-                 "erc" = vapply(seq_along(samples),
-                                FUN = function(i) {
-                                  setTxtProgressBar(pb, i)
-                                  do.call(mecor:::efficient_regcal, samples[[i]])$coef},
-                                FUN.VALUE = double(n_coef)),
-                 "irc" = sapply(samples,
-                                FUN = function(x) do.call(mecor:::inadmissible_regcal, x)$coef
-                               ),
-                 "mle" = sapply(samples,
-                                FUN = function(x) do.call(mecor:::mle, x)$coef
-                               ))
+  # allocate memory for samples
+  samples <- vector(mode = "list",
+                    length = B)
+  for(i in seq_along(samples)) {
+    samples[[i]] <-
+      mecor:::get_new_sample(response, covars, me, type, method)
+  }
+  n_coef <- ncol(covars) + ifelse(type == "indep", 2, 1)
+  pb <- utils::txtProgressBar(min = 0, max = B, style = 3)
+  coef <- matrix(ncol = B, nrow = n_coef)
+  switch(method,
+         "rc" = for(i in seq_along(samples)) {
+                  utils::setTxtProgressBar(pb, i)
+                  coef[, i] <- do.call(mecor:::regcal, samples[[i]])$coef},
+         "erc" = for(i in seq_along(samples)) {
+                   utils::setTxtProgressBar(pb, i)
+                   coef[, i] <- do.call(mecor:::efficient_regcal, samples[[i]])$coef},
+         "irc" = for(i in seq_along(samples)) {
+                   utils::setTxtProgressBar(pb, i)
+                   coef[, i] <- do.call(mecor:::inadmissible_regcal, samples[[i]])$coef},
+         "mle" = for(i in seq_along(samples)) {
+                   utils::setTxtProgressBar(pb, i)
+                   coef[, i] <- do.call(mecor:::mle, samples[[i]])$coef}
+        )
   ci_perc <- apply(coef,
                    1,
                    FUN = quantile,
@@ -73,11 +73,11 @@ get_new_sample.MeasError <- function(response, covars, me, type, method){
     new_sample$response = new_response
     new_sample <- new_sample[c("response", "covars", "me", "B", "type")]
   }
-  if (method %in% c("rc", "erc"))
+  if (method %in% c("rc", "erc", "mle"))
     new_sample$calc_vcov = F
   new_sample
 }
-get_new_sample.MeasErrorExt <- function(response, covars, me, type){
+get_new_sample.MeasErrorExt <- function(response, covars, me, type, method){
   new_rownums <- sample(1:NROW(me$substitute),
                         size = NROW(me$substitute),
                         replace = T)
@@ -93,14 +93,15 @@ get_new_sample.MeasErrorExt <- function(response, covars, me, type){
     covars = new_covars,
     me = new_me,
     B = 0, # no bootstrapping within bootstrap
-    type = type
+    type = type,
+    method = method
   )
   if (type == "indep"){
     new_response <- response[new_rownums, , drop = F]
     new_sample$response = new_response
     new_sample <- new_sample[c("response", "covars", "me", "B", "type")]
   }
-  if (method %in% c("rc", "erc"))
+  if (method %in% c("rc", "erc", "mle"))
     new_sample$calc_vcov = F
   new_sample
 }

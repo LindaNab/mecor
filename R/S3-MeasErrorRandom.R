@@ -1,8 +1,7 @@
 #' @export
-print.MeasErrorExt <- function(x){
+print.MeasErrorRandom <- function(x){
   cat("\nCall:\n", deparse(attributes(x)$call), "\n", sep = "")
   cat("\nThe error-prone variable", deparse((attr(x, 'input')$substitute)),
-      "will be corrected using the following model:\n")
-  print(x$model$coef)
+      "is assumed measured with random measurement error of magnitude", x$error)
   invisible(x)
 }

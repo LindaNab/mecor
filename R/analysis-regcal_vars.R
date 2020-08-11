@@ -1,5 +1,6 @@
+#' @importFrom numDeriv 'jacobian'
 deltamethod <- function(func, vec, vcov_vec){
-  j_func <- numDeriv::jacobian(func, vec)
+  j_func <- numDeriv::jacobian(func, vec, method = "simple")
   vcov <- j_func %*% vcov_vec %*% t(j_func)
 }
 
@@ -157,4 +158,68 @@ get_1st_row_vcov_vec_calmod_matrix_diff_outme <- function(vcov_calmod){
   row[5] <- vcov_calmod[4, 2] + vcov_calmod[2, 2]
   row[6] <- vcov_calmod[4, 1] + vcov_calmod[2, 1]
   row
+}
+# fieller method
+# output is a matrix ci of length(beta_star) x 2, containing LCI and UCI
+# in this order: alpha*, phi*, gamma*
+# gives lci and uci for phi* when there is measurement error in a covariate
+# gives lci and uci for phi* and gamma* when there is measrurement error in the
+# outcome
+regcal_fieller <- function(beta_star,
+                           coef_calmod,
+                           vcov_beta_star,
+                           vcov_calmod,
+                           type,
+                           alpha){
+  ci <- matrix(nrow = length(beta_star), ncol = 2)
+  colnames(ci) <- c('LCI', 'UCI')
+  if (type == "indep"){
+    lambda1 <- coef_calmod[1]
+    var_lambda1 <- vcov_calmod[1, 1]
+    phi_star <- beta_star[1]
+    var_phi_star <- vcov_beta_star[1, 1]
+  } else if (type == "dep"){
+    lambda1 <- coef_calmod[2] #theta1
+    var_lambda1 <- vcov_calmod[2,2] #var(theta1)
+    phi_star <- beta_star[-2] #(phi*, gamma*)
+    var_phi_star <- diag(vcov_beta_star)[-2] #var(phi*), var(gamma*)
+  }
+  z <- qnorm(1 - alpha / 2)
+  f0 <- z^2 * var_phi_star - phi_star^2
+  f1 <- - phi_star * lambda1
+  f2 <- z^2 * var_lambda1 - lambda1^2
+  D <- f1 ^ 2 - f0 * f2
+  if(type == "indep" && (f2 < 0 & D > 0)){
+    l1 <- unname((f1 - sqrt(D)) / f2)
+    l2 <- unname((f1 + sqrt(D)) / f2)
+    ci[2, ] <- c(min(l1, l2), max(l1, l2))
+  } else if (type == "dep"){
+    if(f2 < 0 & all(D > 0)){
+      l1 <- unname((f1 - sqrt(D)) / f2)
+      l2 <- unname((f1 + sqrt(D)) / f2)
+      ci[2:length(beta_star), ] <- c(pmin(l1, l2), pmax(l1, l2))
+    }
+  }
+  ci
+}
+
+# zerovariance ignores uncertainty in calmod_matrix
+# output is vcov matrix of coefficients of beta_star (in that order)
+# beta* = (phi*, alpha*, gamma*)
+regcal_zerovar <- function(vcov_beta_star,
+                           calmod_matrix,
+                           type){
+  n <- nrow(vcov_beta_star)
+  dimnames_coef <- dimnames(vcov_beta_star)
+  if (startsWith(type, "dep")){
+    vcov_temp <- matrix(0, nrow = (n + 1), ncol = (n + 1))
+    vcov_temp[1:n, 1:n] <- vcov_beta_star
+    vcov_beta_star <- vcov_temp
+  }
+  vcov <- t(solve(calmod_matrix)) %*%
+            vcov_beta_star %*%
+            solve(calmod_matrix)
+  vcov <- vcov[1:n, 1:n]
+  dimnames(vcov) <- dimnames_coef
+  vcov
 }

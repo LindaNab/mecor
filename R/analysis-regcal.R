@@ -20,24 +20,54 @@ regcal <- function(response,
   }
   # estimate beta (cor) and its vcov
   beta <- mecor:::regcal_get_coef(beta_star, coef_calmod, type)
-  if (calc_vcov && exists("vcov_calmod")){
-    vcov_beta <- mecor:::regcal_get_vcov(beta_star, coef_calmod,
-                                         vcov_beta_star, vcov_calmod, type)
+  n <- NROW(beta_star)
+  calmod_matrix <- mecor:::regcal_get_calmod_matrix(coef_calmod, n, type)
+  if (calc_vcov){
+    # vcov matrix obtained by ignoring uncertainty in coef_calmod
+    zerovar_vcov <- mecor:::regcal_zerovar(vcov_beta_star,
+                                           calmod_matrix,
+                                           type)
+    if(exists("vcov_calmod")){
+      vcov_beta <- mecor:::regcal_get_vcov(beta_star,
+                                           coef_calmod,
+                                           vcov_beta_star,
+                                           vcov_calmod,
+                                           type)
+      # confidence intervals obtained by fieller method
+      if (type != "dep_diff"){
+        fieller_ci <- mecor:::regcal_fieller(beta_star,
+                                             coef_calmod,
+                                             vcov_beta_star,
+                                             vcov_calmod,
+                                             type,
+                                             alpha)
+      }
+    }
   }
   # change names of beta and its vcov
   if (type == "indep"){
     beta <- mecor:::change_names(beta, me)
-    if (calc_vcov && exists("vcov_beta")){
-      vcov_beta <- mecor:::change_names(vcov_beta, me)
+    if (calc_vcov){
+      zerovar_vcov <- mecor:::change_names(zerovar_vcov, me)
+      if (exists("vcov_beta")){
+        vcov_beta <- mecor:::change_names(vcov_beta, me)
+      }
     }
   }
   # change order of coef and vcov matrix
   out <- list(coef = mecor:::change_order_coefs(beta))
-  if (calc_vcov && exists("vcov_beta")){
-    out$vcov <- mecor:::change_order_vcov(vcov_beta)
+  if (calc_vcov){
+    # zerovariance
+    out$zerovar_vcov <- mecor:::change_order_vcov(zerovar_vcov)
+    if (exists("vcov_beta")){
+      out$vcov <- mecor:::change_order_vcov(vcov_beta)
+      # confidence interval obtained by fieller method
+      if (exists("fieller_ci")){
+        rownames(fieller_ci) <- rownames(out$vcov)
+        out$fieller_ci <- fieller_ci
+      }
+    }
   }
-  n <- NROW(beta_star)
-  calmod_matrix <- mecor:::regcal_get_calmod_matrix(coef_calmod, n, type)
   out$matrix <- calmod_matrix
   # bootstrap functionality
   if (B != 0){
@@ -92,6 +122,27 @@ calmod.MeasErrorExt <- function(response,
   }
   out
 }
+calmod.MeasErrorRandom <- function(response,
+                                   covars,
+                                   me,
+                                   type,
+                                   calc_vcov = T){
+  if(length(me$substitute) != nrow(covars)){
+    stop("substitute and other covariates need to be of same length")
+  }
+  Q <- scale(cbind(me$substitute, covars), scale = F)
+  matrix <- t(Q) %*% Q / length(me$substitute)
+  matrix1 <- matrix
+  matrix1[1, 1] <- matrix1[1,1] - me$error
+  calmod_matrix <- solve(matrix1) %*% matrix
+  n_calmod_matrix <- nrow(calmod_matrix)
+  lambda1 <- 1 / calmod_matrix[1, 1]
+  lambda2 <- calmod_matrix[2:n_calmod_matrix, 1] * - lambda1
+  lambda0 <- mean(me$substitute) - lambda1 * mean(me$substitute) -
+    lambda2 %*% colMeans(covars)
+  out <- list(coef = c(lambda1, lambda0, lambda2))
+  out
+}
 # estimate calibration model
 regcal_get_calmod <- function(covars, me, type){
   # get design matrix of calibration model
@@ -127,8 +178,8 @@ regcal_get_calmod_matrix <- function(coef_calmod, n, type){
     calmod_matrix <- matrix(0, nrow = n + 1, ncol = n + 1)
     if (type == "dep"){
       diag(calmod_matrix) <- coef_calmod[2]
-      calmod_matrix[n + 1, 2] <- coef_calmod[1]}
-    else if (type == "dep_diff"){
+      calmod_matrix[n + 1, 2] <- coef_calmod[1]
+    } else if (type == "dep_diff"){
       calmod_matrix[2, 1] <- coef_calmod[4]
       calmod_matrix[3, 1] <- coef_calmod[3]
       calmod_matrix[2, 2] <- coef_calmod[2]
@@ -136,9 +187,15 @@ regcal_get_calmod_matrix <- function(coef_calmod, n, type){
       calmod_matrix[1, 1] <- coef_calmod[4] + coef_calmod[2]
     }
     calmod_matrix[n + 1, n + 1] <- 1
+    dimnames_calmod_matrix <- paste0("Theta", 1:{n + 1})
+    dimnames(calmod_matrix) <- list(dimnames_calmod_matrix,
+                                    dimnames_calmod_matrix)
   } else if (type == "indep"){
     calmod_matrix <- diag(n)
     calmod_matrix[1,] <- coef_calmod
+    dimnames_calmod_matrix <- paste0("Lambda", 1:n)
+    dimnames(calmod_matrix) <- list(dimnames_calmod_matrix,
+                                    dimnames_calmod_matrix)
   }
   calmod_matrix
 }
