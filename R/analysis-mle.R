@@ -49,11 +49,14 @@ mle <- function(response,
     out$vcov <- mecor:::change_order_vcov(vcov_beta)
   }
   if (B != 0){
-    boot <-
-      mecor:::analysis_boot(response, covars, me,
-                            B = B, alpha = alpha, type = "indep", method = "mle")
-    out$boot <- list(ci = boot$ci,
-                     vcov = boot$vcov)
+    boot <- mecor:::analysis_boot(response,
+                                  covars,
+                                  me,
+                                  B = B,
+                                  type = "indep",
+                                  method = "mle")
+    colnames(boot$coef) <- names(out$coef)
+    out$boot <- boot
   }
   out
 }

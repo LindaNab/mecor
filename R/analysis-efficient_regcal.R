@@ -28,12 +28,14 @@ efficient_regcal <- function(response, covars, me, B, alpha, type, calc_vcov = T
     out$vcov <- vcov_beta
   }
   if (B != 0){
-    boot <-
-      mecor:::analysis_boot(response, covars, me,
-                            B = B, alpha = alpha, type = type,
-                            method = "erc")
-    out$boot <- list(ci = boot$ci,
-                     vcov = boot$vcov)
+    boot <- mecor:::analysis_boot(response,
+                                  covars,
+                                  me,
+                                  B = B,
+                                  type = type,
+                                  method = "erc")
+    colnames(boot$coef) <- names(out$coef)
+    out$boot <- boot
   }
   out
 }

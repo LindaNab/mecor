@@ -5,6 +5,7 @@
 #'
 #' @param object an object of class "mecor", a result of a call to
 #' \link[mecor]{mecor}.
+#' @param alpha probability of obtaining a type II error.
 #' @param zerovar a boolean indicating whether standard errors and confidence
 #' intervals using the zerovariance method must be added to the summary object.
 #' @param fieller a boolean indicating whether confidence intervals using the
@@ -32,13 +33,21 @@
 #'                    method = "rc")
 #' summary(mecor_fit)
 #' summary(mecor_fit, zerovar = T, fieller = T)
+#' summary(mecor_fit, alpha = 0.10)
 #'
 #' @export
-summary.mecor <- function(object, zerovar = F, fieller = F){
+summary.mecor <- function(object, alpha = 0.05, zerovar = F, fieller = F){
   z <- object
   z1 <- z$uncorfit
   z2 <- z$corfit
-  alpha <- attr(z, "alpha")
+  if(zerovar == T && is.null(z2$zerovar_vcov)){
+    warning("there is no 'zerovar_vcov' object, zerovar set to FALSE")
+    zerovar <- F
+  }
+  if (fieller == T && is.null(z2$fieller)){
+    warning("there is no 'fieller' object, fieller set to FALSE")
+    fieller <- F
+  }
   # uncorrected
   rdf1 <- z1$df.residual
   rss1 <- sum(z1$residuals^2)
@@ -64,16 +73,18 @@ summary.mecor <- function(object, zerovar = F, fieller = F){
     ci <- cbind(ci, LCI, UCI)
   }
   if ({B <- attr(z, "B")} != 0){
-    SE_btstr <- sqrt(diag(z2$boot$vcov))
-    LCI_btstr <- z2$boot$ci[1, ]
-    UCI_btstr <- z2$boot$ci[2, ]
+    boot_vcov <- cov(z2$boot$coef)
+    SE_btstr <- sqrt(diag(boot_vcov))
+    boot_ci <- apply(z2$boot$coef,
+                     2,
+                     FUN = quantile,
+                     probs = c(alpha / 2, 1 - alpha / 2))
+    LCI_btstr <- boot_ci[1, ]
+    UCI_btstr <- boot_ci[2, ]
     coefficients <- cbind(coefficients, 'SE (btstr)' = SE_btstr)
     ci <- cbind(ci, 'LCI (btstr)' = LCI_btstr, 'UCI (btstr)' = UCI_btstr)
   }
   if (zerovar == T){
-    if(is.null(z2$zerovar_vcov)){
-      stop("there is no 'zerovar_vcov' object, please set zerovar to FALSE")
-    }
     SE_zerovar <- {se2_zv <- sqrt(diag(z2$zerovar_vcov))}
     LCI_zerovar <- coef2 - zq * se2_zv
     UCI_zerovar <- coef2 + zq * se2_zv
@@ -81,11 +92,22 @@ summary.mecor <- function(object, zerovar = F, fieller = F){
     ci <- cbind(ci, 'LCI (zerovar)' = LCI_zerovar, 'UCI (zerovar)' = UCI_zerovar)
   }
   if (fieller == T){
-    if (is.null(z2$fieller_ci)){
-      stop("there is no 'fieller_ci' object, please set fieller to FALSE")
+    fieller_ci <- mecor:::calc_fieller_ci(z2$fieller$lambda1,
+                                          z2$fieller$var_lambda1,
+                                          z2$fieller$phi_star,
+                                          z2$fieller$var_phi_star,
+                                          alpha)
+    fieller_ci_temp <- matrix(nrow = nrow(ci), ncol = 2)
+    if (nrow(fieller_ci) == 1){
+      fieller_ci_temp[2, ] <- fieller_ci
+      fieller_ci <- fieller_ci_temp
+    } else if (nrow(fieller_ci) > 1){
+      fieller_ci_temp[-1, ] <- fieller_ci
+      fieller_ci <- fieller_ci_temp
     }
-    ci <- cbind(ci, 'LCI (fieller)' = z2$fieller_ci[, 1],
-                'UCI (fieller)' = z2$fieller_ci[, 2])
+    ci <- cbind(ci,
+                'LCI (fieller)' = fieller_ci[, 1],
+                'UCI (fieller)' = fieller_ci[, 2])
   }
   c <- list(coefficients = round(coefficients, 6))
   if (dim(ci)[2] > 1){
@@ -99,7 +121,6 @@ summary.mecor <- function(object, zerovar = F, fieller = F){
   class(out) <- "summary.mecor"
   out
 }
-
 #' @export
 print.summary.mecor <- function(x){
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),
@@ -120,10 +141,9 @@ print.summary.mecor <- function(x){
   printCoefmat(x$uc$coefficients, signif.stars = F)
   cat("\n", paste((1-x$alpha)*100, "%", sep =""), " Confidence Intervals:\n", sep = "")
   print(x$uc$ci)
-  cat("\nResidual standard error:", x$uc$sigma, "on", x$uc$rdf, "degrees of freedom")
+  cat("\nResidual standard error:", x$uc$sigma, "on", x$uc$rdf, "degrees of freedom\n")
   invisible(x)
 }
-
 #' @export
 print.mecor <- function(x){
   cat("\nCall:\n", paste(deparse(attr(x, "call")), sep = "\n", collapse = "\n"),

@@ -3,7 +3,6 @@ analysis_boot <- function(response,
                           covars,
                           me,
                           B = 999,
-                          alpha = 0.05,
                           type,
                           method){
   # allocate memory for samples
@@ -30,12 +29,7 @@ analysis_boot <- function(response,
                    utils::setTxtProgressBar(pb, i)
                    coef[, i] <- do.call(mecor:::mle, samples[[i]])$coef}
         )
-  ci_perc <- apply(coef,
-                   1,
-                   FUN = quantile,
-                   probs = c(alpha / 2, 1 - alpha / 2))
-  out <- list(ci = ci_perc,
-              vcov = cov(t(coef)))
+  out <- list(coef = t(coef))
 }
 get_new_sample <- function(response, covars, me, type, method){
   UseMethod("get_new_sample", me)

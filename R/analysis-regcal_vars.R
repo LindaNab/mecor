@@ -171,8 +171,6 @@ regcal_fieller <- function(beta_star,
                            vcov_calmod,
                            type,
                            alpha){
-  ci <- matrix(nrow = length(beta_star), ncol = 2)
-  colnames(ci) <- c('LCI', 'UCI')
   if (type == "indep"){
     lambda1 <- coef_calmod[1]
     var_lambda1 <- vcov_calmod[1, 1]
@@ -184,25 +182,37 @@ regcal_fieller <- function(beta_star,
     phi_star <- beta_star[-2] #(phi*, gamma*)
     var_phi_star <- diag(vcov_beta_star)[-2] #var(phi*), var(gamma*)
   }
+  out <- list(lambda1 = unname(lambda1),
+              var_lambda1 = unname(var_lambda1),
+              phi_star = unname(phi_star),
+              var_phi_star = unname(var_phi_star))
+  out
+}
+calc_fieller_ci <- function(lambda1,
+                            var_lambda1,
+                            phi_star,
+                            var_phi_star,
+                            alpha){
+  ci <- matrix(nrow = length(phi_star), ncol = 2)
+  colnames(ci) <- c('LCI', 'UCI')
   z <- qnorm(1 - alpha / 2)
   f0 <- z^2 * var_phi_star - phi_star^2
   f1 <- - phi_star * lambda1
   f2 <- z^2 * var_lambda1 - lambda1^2
   D <- f1 ^ 2 - f0 * f2
-  if(type == "indep" && (f2 < 0 & D > 0)){
+  if(length(phi_star) == 1 && (f2 < 0 & D > 0)){
     l1 <- unname((f1 - sqrt(D)) / f2)
     l2 <- unname((f1 + sqrt(D)) / f2)
-    ci[2, ] <- c(min(l1, l2), max(l1, l2))
-  } else if (type == "dep"){
+    ci[1, ] <- c(min(l1, l2), max(l1, l2))
+  } else if (length(phi_star) > 1){
     if(f2 < 0 & all(D > 0)){
       l1 <- unname((f1 - sqrt(D)) / f2)
       l2 <- unname((f1 + sqrt(D)) / f2)
-      ci[2:length(beta_star), ] <- c(pmin(l1, l2), pmax(l1, l2))
+      ci[1:length(phi_star), ] <- c(pmin(l1, l2), pmax(l1, l2))
     }
   }
   ci
 }
-
 # zerovariance ignores uncertainty in calmod_matrix
 # output is vcov matrix of coefficients of beta_star (in that order)
 # beta* = (phi*, alpha*, gamma*)

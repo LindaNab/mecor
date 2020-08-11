@@ -4,11 +4,13 @@
 \alias{summary.mecor}
 \title{Summarizing Measurement Error Correction}
 \usage{
-\method{summary}{mecor}(object, zerovar = F, fieller = F)
+\method{summary}{mecor}(object, alpha = 0.05, zerovar = F, fieller = F)
 }
 \arguments{
 \item{object}{an object of class "mecor", a result of a call to
 \link[mecor]{mecor}.}
+
+\item{alpha}{probability of obtaining a type II error.}
 
 \item{zerovar}{a boolean indicating whether standard errors and confidence
 intervals using the zerovariance method must be added to the summary object.}
@@ -38,6 +40,7 @@ mecor_fit <- mecor(Y ~ MeasError(X_star, reference = X) + Z,
                    method = "rc")
 summary(mecor_fit)
 summary(mecor_fit, zerovar = T, fieller = T)
+summary(mecor_fit, alpha = 0.10)
 
 }
 \seealso{

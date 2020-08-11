@@ -15,7 +15,6 @@
 #' regression calibration), "irc" (inadmissible regression calibration) or "mle"
 #' (maximum likelihood estimation). Defaults to "rc".
 #' @param B number of bootstrap samples, defaults to 0.
-#' @param alpha probability of obtaining a Type-II error, defaults to 0.05.
 #'
 #' @return \code{mecor} returns an object of \link[base]{class} "mecor".
 #'
@@ -64,9 +63,12 @@
 #' # guesstimate the coefficients of the calibration model:
 #' mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.9, 0.2))) + Z,
 #'       data = icvs)
-#' # assume random measurement error in X_star of magnitude 0.5:
-#' mecor(Y ~ MeasErrorRandom(X_star, error = 0.5) + Z,
+#' # assume random measurement error in X_star of magnitude 0.25:
+#' mecor(Y ~ MeasErrorRandom(X_star, error = 0.25) + Z,
 #'       data = icvs)
+#' data(rs) # suppose replicates X2_star and X3_star are not available
+#' mecor(Y ~ MeasErrorRandom(X1_star, error = 0.25) + Z1 + Z2,
+#'       data = rs)
 #'
 #' ## measurement error in the outcome:
 #' # internal outcome-validation study
@@ -104,8 +106,7 @@
 mecor <- function(formula,
                   data,
                   method = "rc",
-                  B = 0,
-                  alpha = 0.05){
+                  B = 0){
   mecor:::check_input_mecor(formula, data, method)
   # Create response, covars and me (= MeasError(Ext/Random) object)
   vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
@@ -145,17 +146,16 @@ mecor <- function(formula,
   }
   uncorfit <- mecor:::uncorrected(response, covars, me, type)
   corfit <- switch(method,
-                   "rc" = mecor:::regcal(response, covars, me, B, alpha, type),
-                   "erc" = mecor:::efficient_regcal(response, covars, me, B, alpha, type),
-                   "irc" = mecor:::inadmissible_regcal(response, covars, me, B, alpha, type),
-                   "mle" = mecor:::mle(response, covars, me, B, alpha, type))
+                   "rc" = mecor:::regcal(response, covars, me, B, type),
+                   "erc" = mecor:::efficient_regcal(response, covars, me, B, type),
+                   "irc" = mecor:::inadmissible_regcal(response, covars, me, B, type),
+                   "mle" = mecor:::mle(response, covars, me, B, type))
   # output
   out <- list(corfit = corfit,
               uncorfit = uncorfit)
   class(out) <- 'mecor'
   attr(out, "call") <- match.call()
   attr(out, "B") <- B
-  attr(out, "alpha") <- alpha
   return(out)
 }
 check_input_mecor <- function(formula,

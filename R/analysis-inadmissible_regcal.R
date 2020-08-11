@@ -5,12 +5,14 @@ inadmissible_regcal <- function(response, covars, me, B, alpha, type){
   out <- list(coef = coef(inadm_fit),
               vcov = mecor:::vcovfromfit(inadm_fit))
   if (B != 0){
-    boot <-
-      mecor:::analysis_boot(response, covars, me,
-                            B = B, alpha = alpha,
-                            type = type, method = "irc")
-    out$boot <- list(ci = boot$ci,
-                     vcov = boot$vcov)
+    boot <- mecor:::analysis_boot(response,
+                                 covars,
+                                 me,
+                                 B = B,
+                                 type = type,
+                                 method = "irc")
+    colnames(boot$coef) <- names(out$coef)
+    out$boot <- boot
   }
   out
 }

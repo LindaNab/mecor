@@ -4,7 +4,7 @@
 \alias{mecor}
 \title{mecor: a Measurement Error Correction Package}
 \usage{
-mecor(formula, data, method = "rc", B = 0, alpha = 0.05)
+mecor(formula, data, method = "rc", B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -22,8 +22,6 @@ regression calibration), "irc" (inadmissible regression calibration) or "mle"
 (maximum likelihood estimation). Defaults to "rc".}
 
 \item{B}{number of bootstrap samples, defaults to 0.}
-
-\item{alpha}{probability of obtaining a Type-II error, defaults to 0.05.}
 }
 \value{
 \code{mecor} returns an object of \link[base]{class} "mecor".
@@ -68,9 +66,12 @@ data(icvs) # suppose reference X is not available
 # guesstimate the coefficients of the calibration model:
 mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.9, 0.2))) + Z,
       data = icvs)
-# assume random measurement error in X_star of magnitude 0.5:
-mecor(Y ~ MeasErrorRandom(X_star, error = 0.5) + Z,
+# assume random measurement error in X_star of magnitude 0.25:
+mecor(Y ~ MeasErrorRandom(X_star, error = 0.25) + Z,
       data = icvs)
+data(rs) # suppose replicates X2_star and X3_star are not available
+mecor(Y ~ MeasErrorRandom(X1_star, error = 0.25) + Z1 + Z2,
+      data = rs)
 
 ## measurement error in the outcome:
 # internal outcome-validation study
