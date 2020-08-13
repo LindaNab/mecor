@@ -6,10 +6,8 @@ mle <- function(response,
                 covars,
                 me,
                 B,
-                alpha,
                 type,
                 calc_vcov = T){
-  mecor:::check_input_mle(type, me)
   if (is.vector(me$replicate)){
     n_rep <- 1
   } else n_rep <- ncol(me$replicate)
@@ -59,16 +57,6 @@ mle <- function(response,
     out$boot <- boot
   }
   out
-}
-check_input_mle <- function(type, me){
-  if (startsWith(type, "dep")){
-    stop("The maximum likelihood estimator does not accommodate correction of measurement error in the dependent variable")
-  }
-  if (class(me) == "MeasErrorExt" || class(me) == "MeasErrorRandom")
-    stop("The maximum likelihood estimator does not acocommodate measurement error correction using a 'MeasErrorExt' or 'MeasErrorRandom' object")
-  if (class(me)[1] == "MeasError" & is.null(me$replicate)){
-    stop("Replicates measures of the substitute measure in 'MeasError' are needed for maximum likelihood estimation")
-  }
 }
 mle_get_coef <- function(lm_fit, lmm_fit){
   coef_lm_fit <- stats::coef(lm_fit)

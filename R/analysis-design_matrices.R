@@ -1,7 +1,8 @@
 # designmatrices
-
-# design matrix for uncor analysis
-get_dm_uncor <- function(covars, me, type){
+# design matrix for uncorrected analysis
+get_dm_uncor <- function(covars,
+                         me,
+                         type){
   if (startsWith(type, "dep")){
     dm <- cbind(1, covars)
     colnames(dm)[1] <- "(Intercept)"
@@ -12,9 +13,10 @@ get_dm_uncor <- function(covars, me, type){
   }
   dm
 }
-
 # design matrix for complete case analysis
-get_dm_cc <- function(covars, me, type){
+get_dm_cc <- function(covars,
+                      me,
+                      type){
   if (startsWith(type, "dep")){
     dm <- get_dm_uncor(covars, me, type)
   } else if (type == "indep"){
@@ -27,9 +29,11 @@ get_dm_cc <- function(covars, me, type){
   }
   dm
 }
-
-# design matrix for calibration model
-get_dm_cm <- function(covars, me, type){
+# design matrix for calibration model (covariate-me) or measurement error model
+# (outcome-me)
+get_dm_cm <- function(covars,
+                      me,
+                      type){
   if (startsWith(type, "dep")){
     dm <- cbind(1, me$reference)
     colnames(dm) <- c("(Intercept)", attributes(me)$input$reference)
@@ -39,14 +43,24 @@ get_dm_cm <- function(covars, me, type){
       colnames(dm)[4] <- paste0(colnames(dm)[2], ":", colnames(dm)[3])
     }
   } else if (type == "indep"){
-    dm <- get_dm_uncor(covars, me, type)
+    dm <- get_dm_uncor(covars,
+                       me,
+                       type)
   }
   dm
 }
-
-get_dm_inadm <- function(covars, me, type){
-  dm <- mecor:::get_dm_uncor(covars, me, type)
-  calmod_fit <- mecor:::regcal_get_calmod(covars, me, type)
+# design matrix for inadmissible regression calibration, sing the references
+# measures if availabler and the the expected values of the calibration model
+# if not
+get_dm_inadm <- function(covars,
+                         me,
+                         type){
+  dm <- mecor:::get_dm_uncor(covars,
+                             me,
+                             type)
+  calmod_fit <- mecor:::regcal_get_calmod(covars,
+                                          me,
+                                          type)
   fitted_values <- dm %*% coef(calmod_fit)
   x <- fitted_values
   x[!is.na(me$reference)] <- me$reference[!is.na(me$reference)]
@@ -56,7 +70,6 @@ get_dm_inadm <- function(covars, me, type){
   colnames(dm)[ind] <- name
   dm
 }
-
 bind_covars <- function(dm, covars){
   if (!is.null(covars)){ # if there are covars, add these to design matrix
     dm <- cbind(dm, covars)

@@ -1,4 +1,7 @@
-uncorrected <- function(response, covars, me, type){
+uncorrected <- function(response,
+                        covars,
+                        me,
+                        type){
   dm_uncor <- mecor:::get_dm_uncor(covars, me, type)
   if (startsWith(type, "dep")){
     uncor_fit <- stats::lm.fit(dm_uncor, me$substitute)

@@ -41,7 +41,7 @@
 #' data(icvs)
 #' mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'       data = icvs,
-#'       method = "rc")
+#'       method = "erc")
 #' # replicates study
 #' data(rs)
 #' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
@@ -75,7 +75,7 @@
 #' data(iovs)
 #' mecor(MeasError(Y_star, reference = Y) ~ X + Z,
 #'       data = iovs,
-#'       method = "erc")
+#'       method = "rc")
 #' # external outcome-validation study
 #' data(eovs)
 #' memod_fit <- lm(Y_star ~ Y, data = eovs)
@@ -112,27 +112,18 @@ mecor <- function(formula,
   vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
   ind_me <- grep("MeasError", vars_formula) # index of MeasError(Ext/Random) in
                                             # list of variables
-  if (length(ind_me) == 0){
-    stop("formula should contain a MeasError(Ext/Random) object")
-  } else if (length(ind_me) != 1){
-    stop("formula can only contain one MeasError(Ext/Random) object")
-  }
+  mecor:::check_ind_me(ind_me)
   ind_response <- attributes(terms(formula))$response
-  if (ind_me == ind_response){
-      type <- "dep"
-  } else type <- "indep"
+  type <- mecor:::get_me_type(ind_me, ind_response)
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
-  B <- mecor:::check_me(me, B, type)
-  if (class(me)[1] == "MeasErrorRandom"){ # should be moved to checks of methods
-    if (method != "rc"){
-      stop("methods different than 'rc' are not supported for MeasErrorRandom objects")
-    }
-  }
-  if (type == "dep" & (!is.null(me$differential) |
-                       length(me$coef) == 4 |
-                       length(me$model$coef) == 4))
+  B <- mecor:::check_me(me, B, type, method)
+  if (type == "dep" & (!is.null(me$differential) | # MeasError
+                       length(me$coef) == 4 | # MeasErrorExt.list
+                       length(me$model$coef) == 4)){ # MeasErrorExt.lm
     type <- "dep_diff"
+  }
+  # init response and covars
   if (type == "indep"){
     response <- as.matrix(vars_formula_eval[[ind_response]])
     colnames(response) <- vars_formula[ind_response]
@@ -144,12 +135,33 @@ mecor <- function(formula,
     covars <- sapply(vars_formula_eval[-ind_me], cbind)
     colnames(covars) <- vars_formula[-ind_me]
   }
-  uncorfit <- mecor:::uncorrected(response, covars, me, type)
+  # corrected fit
   corfit <- switch(method,
-                   "rc" = mecor:::regcal(response, covars, me, B, type),
-                   "erc" = mecor:::efficient_regcal(response, covars, me, B, type),
-                   "irc" = mecor:::inadmissible_regcal(response, covars, me, B, type),
-                   "mle" = mecor:::mle(response, covars, me, B, type))
+                   "rc" = mecor:::regcal(response,
+                                         covars,
+                                         me,
+                                         B,
+                                         type),
+                   "erc" = mecor:::efficient_regcal(response,
+                                                    covars,
+                                                    me,
+                                                    B,
+                                                    type),
+                   "irc" = mecor:::inadmissible_regcal(response,
+                                                       covars,
+                                                       me,
+                                                       B,
+                                                       type),
+                   "mle" = mecor:::mle(response,
+                                       covars,
+                                       me,
+                                       B,
+                                       type))
+  # uncorrected fit
+  uncorfit <- mecor:::uncorrected(response,
+                                  covars,
+                                  me,
+                                  type)
   # output
   out <- list(corfit = corfit,
               uncorfit = uncorfit)
@@ -182,7 +194,19 @@ check_input_mecor <- function(formula,
     stop("this method is not implemented"
     )
 }
-check_me <- function(me, B, type){
+check_ind_me <- function(ind_me){
+  if (length(ind_me) == 0){
+    stop("formula should contain a MeasError(Ext/Random) object")
+  } else if (length(ind_me) != 1){
+    stop("formula can only contain one MeasError(Ext/Random) object")
+  }
+}
+get_me_type <- function(ind_me, ind_response){
+  if (ind_me == ind_response){
+    type <- "dep"
+  } else type <- "indep"
+}
+check_me <- function(me, B, type, method){
   if(class(me)[1] == "MeasErrorExt" && length(grep("MeasErrorExt.list", attributes(me)$call)) != 0){
     if (B != 0){
       B <- 0
@@ -193,6 +217,21 @@ check_me <- function(me, B, type){
     stop("Differential measurement error is only supported in the dependent variable")
   if (type == "dep" & class(me)[1] == "MeasErrorRandom"){
     stop("Random measurement error in the dependent variable won't introduce bias in the fitted model, correction is not needed")
+  }
+  if (class(me)[1] == "MeasErrorRandom"){
+    if (method != "rc"){
+      stop("methods different than 'rc' are not supported for MeasErrorRandom objects")
+    }
+  }
+  if (method == "mle"){
+    if (startsWith(type, "dep")){
+      stop("The maximum likelihood estimator does not accommodate correction of measurement error in the dependent variable")
+    }
+    if (class(me) == "MeasErrorExt" || class(me) == "MeasErrorRandom")
+      stop("The maximum likelihood estimator does not accommodate measurement error correction using a 'MeasErrorExt' or 'MeasErrorRandom' object")
+    if (class(me)[1] == "MeasError" & is.null(me$replicate)){
+      stop("Replicates measures of the substitute measure in 'MeasError' are needed for maximum likelihood estimation")
+    }
   }
   B
 }

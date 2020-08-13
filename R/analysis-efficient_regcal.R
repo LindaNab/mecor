@@ -1,5 +1,10 @@
 #efficient regression calibration
-efficient_regcal <- function(response, covars, me, B, alpha, type, calc_vcov = T){
+efficient_regcal <- function(response,
+                             covars,
+                             me,
+                             B,
+                             type,
+                             calc_vcov = T){
   if (!is.null(me$replicate)){
     rownums_cc <- which (!is.na(me$reference))
     n_rep <- ncol(me$replicate)
@@ -8,10 +13,17 @@ efficient_regcal <- function(response, covars, me, B, alpha, type, calc_vcov = T
     new_me$replicate <- me$replicate[rownums_cc, 2:n_rep, drop = F]
     cc_response <- response[rownums_cc, , drop = F]
     cc_covars <- covars[rownums_cc, , drop = F]
-    cc_fit <- mecor:::mle(cc_response, cc_covars, new_me, B = 0, alpha, type)
+    cc_fit <- mecor:::mle(cc_response,
+                          cc_covars,
+                          new_me,
+                          B = 0,
+                          type) # mle fit
     vcov_cc_fit <- cc_fit$vcov
   } else {
-    cc_fit <- mecor:::complete_case(response, covars, me, type) # complete case fit
+    cc_fit <- mecor:::complete_case(response,
+                                    covars,
+                                    me,
+                                    type) # complete case fit
     vcov_cc_fit <- mecor:::get_vcov(cc_fit, rev = F)
   }
   # reg_cal fit

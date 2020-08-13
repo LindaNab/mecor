@@ -1,4 +1,8 @@
-inadmissible_regcal <- function(response, covars, me, B, alpha, type){
+inadmissible_regcal <- function(response,
+                                covars,
+                                me,
+                                B,
+                                type){
   mecor:::check_input_inadmissible_regcal(me, type)
   dm_inadm <- mecor:::get_dm_inadm(covars, me, type)
   inadm_fit <- stats:::lm.fit(dm_inadm, response)
