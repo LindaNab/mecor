@@ -201,12 +201,16 @@ check_ind_me <- function(ind_me){
     stop("formula can only contain one MeasError(Ext/Random) object")
   }
 }
-get_me_type <- function(ind_me, ind_response){
+get_me_type <- function(ind_me,
+                        ind_response){
   if (ind_me == ind_response){
     type <- "dep"
   } else type <- "indep"
 }
-check_me <- function(me, B, type, method){
+check_me <- function(me,
+                     B,
+                     type,
+                     method){
   if(class(me)[1] == "MeasErrorExt" && length(grep("MeasErrorExt.list", attributes(me)$call)) != 0){
     if (B != 0){
       B <- 0
@@ -231,6 +235,16 @@ check_me <- function(me, B, type, method){
       stop("The maximum likelihood estimator does not accommodate measurement error correction using a 'MeasErrorExt' or 'MeasErrorRandom' object")
     if (class(me)[1] == "MeasError" & is.null(me$replicate)){
       stop("Replicates measures of the substitute measure in 'MeasError' are needed for maximum likelihood estimation")
+    }
+  }
+  if (method == "irc"){
+    if (startsWith(type, "dep")){
+      stop("Inadmissible regression calibration is not suitable for measurement error in the dependent variable")
+    }
+    if (class(me)[1] == "MeasErrorExt"){
+      stop("Inaddmissible regression calbration is not suitable for external designs")
+    } else if (class(me)[1] == "MeasError" && (type == "indep" & !is.null(me$replicate))){
+      stop("Inadmissible regression calibration is not suitable for a design with replicates")
     }
   }
   B

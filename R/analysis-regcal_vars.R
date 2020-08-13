@@ -7,9 +7,9 @@ deltamethod <- function(func,
 }
 # delta method
 regcal_get_vcov <- function(beta_star,
-                            coef_calmod,
+                            coef_model,
                             vcov_beta_star,
-                            vcov_calmod,
+                            vcov_model,
                             type){
   n <- NROW(beta_star) # n = k + 2
   if (startsWith(type, "dep")){
@@ -38,7 +38,7 @@ regcal_get_vcov <- function(beta_star,
   #   (theta01 - theta00), 0, theta10, theta00, 0, 0, 1)
   # vec is of size 2+1 + (2+1)^2 [n+1 + (n+1)^2 where n = 2]
   # Lambda or Theta are referred to as the model_matrix in the code
-  model_matrix <- mecor:::regcal_get_calmod_matrix(coef_calmod,
+  model_matrix <- mecor:::regcal_get_model_matrix(coef_model,
                                                    n,
                                                    type)
   vec_model_matrix <- c(model_matrix)
@@ -52,7 +52,7 @@ regcal_get_vcov <- function(beta_star,
   #                   0,               vcov(vec_solution_matrix)) # see step 2
   vcov_vec_solution_matrix <-
     mecor:::get_vcov_vec_solution_matrix(vec_model_matrix,
-                                         vcov_calmod,
+                                         vcov_model,
                                          n,
                                          type)
   vcov_vec <-
@@ -79,7 +79,6 @@ regcal_using_vec <- function(vec){
   }
   beta
 }
-# create vec(A) is the vectorised calibration matrix
 get_vec_solution_matrix <- function(vec_model_matrix){
   n <- sqrt(NROW(vec_model_matrix))
   model_matrix <- matrix(vec_model_matrix, nrow = n)
@@ -104,7 +103,7 @@ get_vcov_vec <- function(vcov_beta_star,
 }
 # vcov matrix of vec_A = vec(A) or vec_B = vec(B) using the Delta method
 get_vcov_vec_solution_matrix <- function(vec_model_matrix,
-                                         vcov_calmod,
+                                         vcov_model,
                                          n,
                                          type){
   # vcov(vec_A): cov matrix of the vectorised inverse of Lambda
@@ -130,7 +129,7 @@ get_vcov_vec_solution_matrix <- function(vec_model_matrix,
     for(i in 1:n){
       for(j in 1:n){
         vcov_vec_model_matrix[(1 + n * (i - 1)),
-                              (1 + n * (j - 1))] <- vcov_calmod[i, j]
+                              (1 + n * (j - 1))] <- vcov_model[i, j]
       }
     }
   # vcov(vec_B): cov matrix of the vectorised inverse of Theta
@@ -156,14 +155,14 @@ get_vcov_vec_solution_matrix <- function(vec_model_matrix,
     for(i in 1:n){
       for(j in 1:n){
         vcov_vec_model_matrix[(n + 1) * (i - 1) + i, (n + 1) * (j - 1) + j] <-
-          vcov_calmod[2, 2]
+          vcov_model[2, 2]
         vcov_vec_model_matrix[(n + 1) * (i - 1) + i, 2 * (n + 1)] <-
-          vcov_calmod[2, 1]
+          vcov_model[2, 1]
         vcov_vec_model_matrix[2 * (n + 1), (n + 1) * (j - 1) + j] <-
-          vcov_calmod[1, 2]
+          vcov_model[1, 2]
       }
     }
-  vcov_vec_model_matrix[2 * (n + 1), 2 * (n + 1)] <- vcov_calmod[1, 1]
+  vcov_vec_model_matrix[2 * (n + 1), 2 * (n + 1)] <- vcov_model[1, 1]
   # vcov(vec_B): cov matrix of the vectorised inverse of Theta
   # Theta = (theta_11             0            0
   #          theta_11 - theta_10  theta_10     0
@@ -185,22 +184,22 @@ get_vcov_vec_solution_matrix <- function(vec_model_matrix,
   } else if (type == "dep_diff"){
     vcov_vec_model_matrix <- matrix(0, nrow = (n + 1)^2, # n = 2
                                      ncol = (n + 1)^2)
-    # first, reflect the vcov_calmod in its 2nd diagonal:
-    reflectn_vcov_calmod <- mecor:::reflect_vcov_2nd_diagonal(vcov_calmod)
+    # first, reflect the vcov_model in its 2nd diagonal:
+    reflectn_vcov_model <- mecor:::reflect_vcov_2nd_diagonal(vcov_model)
     # var(theta4)          cov(theta4, theta3)
     # vcov(theta3, theta4) var(theta3):
-    vcov_vec_model_matrix[2:3, 2:3] <- reflectn_vcov_calmod[1:2, 1:2]
+    vcov_vec_model_matrix[2:3, 2:3] <- reflectn_vcov_model[1:2, 1:2]
     # cov(theta4, theta2) cov(theta4, theta1)
     # cov(theta3, theta2) cov(theta3, theta1):
-    vcov_vec_model_matrix[2:3, 5:6] <- reflectn_vcov_calmod[1:2, 3:4]
+    vcov_vec_model_matrix[2:3, 5:6] <- reflectn_vcov_model[1:2, 3:4]
     # cov(theta2, theta4) cov(theta2, theta3)
     # cov(theta1, theta4) cov(theta1, theta3):
-    vcov_vec_model_matrix[5:6, 2:3] <- reflectn_vcov_calmod[3:4, 1:2]
+    vcov_vec_model_matrix[5:6, 2:3] <- reflectn_vcov_model[3:4, 1:2]
     # var(theta2)         cov(theta2, theta1)
     # cov(theta1, theta2) var(theta1):
-    vcov_vec_model_matrix[5:6, 5:6] <- reflectn_vcov_calmod[3:4, 3:4]
+    vcov_vec_model_matrix[5:6, 5:6] <- reflectn_vcov_model[3:4, 3:4]
     vcov_vec_model_matrix[1, ] <-
-      mecor:::get_1st_row_vcov_vec_model_matrix_diff_outme(vcov_calmod)
+      mecor:::get_1st_row_vcov_vec_model_matrix_diff_outme(vcov_model)
     vcov_vec_model_matrix[, 1] <- vcov_vec_model_matrix[1, ] # first column =
                                                              # first row
   }
@@ -243,34 +242,34 @@ reflect_vcov_2nd_diagonal <- function(vcov){
 # cov(theta4 + theta2, theta3), 0,
 # cov(theta4 + theta2, theta2), cov(theta4 + theta2, theta1),
 # 0, 0, 0)
-get_1st_row_vcov_vec_model_matrix_diff_outme <- function(vcov_calmod){
+get_1st_row_vcov_vec_model_matrix_diff_outme <- function(vcov_model){
   row <- numeric(9)
   # var(theta4 + theta2) = var(theta4) + var(theta2) + 2*cov(theta4, theta2)
-  row[1] <- vcov_calmod[4, 4] + vcov_calmod[2, 2] + 2 * vcov_calmod[4, 2]
+  row[1] <- vcov_model[4, 4] + vcov_model[2, 2] + 2 * vcov_model[4, 2]
   # cov(theta4 + theta2, theta4) = var(theta4) + cov(theta2, theta4)
-  row[2] <- vcov_calmod[4, 4] + vcov_calmod[2, 4]
+  row[2] <- vcov_model[4, 4] + vcov_model[2, 4]
   # cov(theta4 + theta2, theta3) = cov(theta4, theta3) + cov(theta2, theta3)
-  row[3] <- vcov_calmod[4, 3] + vcov_calmod[2, 3]
+  row[3] <- vcov_model[4, 3] + vcov_model[2, 3]
   # cov(theta4 + theta2, theta2) = cov(theta4, theta2) + var(theta2)
-  row[5] <- vcov_calmod[4, 2] + vcov_calmod[2, 2]
+  row[5] <- vcov_model[4, 2] + vcov_model[2, 2]
   # cov(theta4 + theta2, theta1) = cov(theta4, theta1) + cov(theta2, theta1)
-  row[6] <- vcov_calmod[4, 1] + vcov_calmod[2, 1]
+  row[6] <- vcov_model[4, 1] + vcov_model[2, 1]
   row
 }
 # coefficients needed to calculate fieller based ci
 regcal_fieller <- function(beta_star,
-                           coef_calmod,
+                           coef_model,
                            vcov_beta_star,
-                           vcov_calmod,
+                           vcov_model,
                            type){
   if (type == "indep"){
-    lambda1 <- coef_calmod[1]
-    var_lambda1 <- vcov_calmod[1, 1]
+    lambda1 <- coef_model[1]
+    var_lambda1 <- vcov_model[1, 1]
     phi_star <- beta_star[1]
     var_phi_star <- vcov_beta_star[1, 1]
   } else if (type == "dep"){
-    lambda1 <- coef_calmod[2] # theta1
-    var_lambda1 <- vcov_calmod[2,2] # var(theta1)
+    lambda1 <- coef_model[2] # theta1
+    var_lambda1 <- vcov_model[2,2] # var(theta1)
     phi_star <- beta_star[-2] # (phi*, gamma*)
     var_phi_star <- diag(vcov_beta_star)[-2] # var(phi*), var(gamma*)
   }
@@ -316,7 +315,7 @@ calc_fieller_ci <- function(lambda1,
 # output is vcov matrix of coefficients of beta_star (in that order)
 # beta* = (phi*, alpha*, gamma*)
 regcal_zerovar <- function(vcov_beta_star,
-                           calmod_matrix,
+                           model_matrix,
                            type){
   n <- nrow(vcov_beta_star)
   dimnames_coef <- dimnames(vcov_beta_star)
@@ -325,9 +324,9 @@ regcal_zerovar <- function(vcov_beta_star,
     vcov_temp[1:n, 1:n] <- vcov_beta_star
     vcov_beta_star <- vcov_temp
   }
-  vcov <- t(solve(calmod_matrix)) %*%
+  vcov <- t(solve(model_matrix)) %*%
             vcov_beta_star %*%
-            solve(calmod_matrix) # sandwich method t(Lambda)*vcov_beta_star*Lambda
+            solve(model_matrix) # sandwich method t(Lambda)*vcov_beta_star*Lambda
   vcov <- vcov[1:n, 1:n]
   dimnames(vcov) <- dimnames_coef
   vcov

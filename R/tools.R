@@ -1,19 +1,23 @@
 ## tools
-get_coefs <- function(fit, rev = TRUE){
+get_coefs <- function(fit,
+                      rev = TRUE){
   coefs <- fit$coef
   if (rev == TRUE){ # reverse coefficients
     coefs <- mecor:::change_order_coefs(fit$coef)
   }
   coefs
 }
-get_vcov <- function(fit, rev = TRUE){
+get_vcov <- function(fit,
+                     rev = TRUE){
   vcov <- mecor:::vcovfromfit(fit)
   if (rev == TRUE){ # reverse coefficients
     vcov <- mecor:::change_order_vcov(vcov)
   }
   vcov
 }
-get_vcovHC3 <- function(fit, dm, rev = TRUE){
+get_vcovHC3 <- function(fit,
+                        dm,
+                        rev = TRUE){
   vcov <- mecor:::vcovHC3fromfit(fit,dm)
   if (rev == TRUE){ # reverse coefficients
     vcov <- mecor:::change_order_vcov(vcov)
@@ -34,7 +38,8 @@ vcovfromfit <- function(fit){
   dimnames(vcov) <- list(names(fit$coefficients), names(fit$coefficients))
   vcov
 }
-vcovHC3fromfit <- function(fit, dm){
+vcovHC3fromfit <- function(fit,
+                           dm){
   n <- NROW(dm)
   hat <- dm %*% solve( t(dm) %*% dm ) %*% t(dm)
   diaghat <- diag(hat)

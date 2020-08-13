@@ -36,7 +36,10 @@
 #' summary(mecor_fit, alpha = 0.10)
 #'
 #' @export
-summary.mecor <- function(object, alpha = 0.05, zerovar = F, fieller = F){
+summary.mecor <- function(object,
+                          alpha = 0.05,
+                          zerovar = F,
+                          fieller = F){
   z <- object
   z1 <- z$uncorfit
   z2 <- z$corfit

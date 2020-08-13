@@ -34,7 +34,11 @@ analysis_boot <- function(response,
 get_new_sample <- function(response, covars, me, type, method){
   UseMethod("get_new_sample", me)
 }
-get_new_sample.MeasError <- function(response, covars, me, type, method){
+get_new_sample.MeasError <- function(response,
+                                     covars,
+                                     me,
+                                     type,
+                                     method){
   # sample new rownums
   rownum_filled <- which (!is.na(me$reference))
   rownum_empty <- which (is.na(me$reference))
@@ -71,7 +75,11 @@ get_new_sample.MeasError <- function(response, covars, me, type, method){
     new_sample$calc_vcov = F
   new_sample
 }
-get_new_sample.MeasErrorExt <- function(response, covars, me, type, method){
+get_new_sample.MeasErrorExt <- function(response,
+                                        covars,
+                                        me,
+                                        type,
+                                        method){
   new_rownums <- sample(1:NROW(me$substitute),
                         size = NROW(me$substitute),
                         replace = T)

@@ -58,10 +58,10 @@ get_dm_inadm <- function(covars,
   dm <- mecor:::get_dm_uncor(covars,
                              me,
                              type)
-  calmod_fit <- mecor:::regcal_get_calmod(covars,
+  model_fit <- mecor:::regcal_get_model(covars,
                                           me,
                                           type)
-  fitted_values <- dm %*% coef(calmod_fit)
+  fitted_values <- dm %*% coef(model_fit)
   x <- fitted_values
   x[!is.na(me$reference)] <- me$reference[!is.na(me$reference)]
   dm[, as.character(attributes(me)$input$substitute)] <- x
@@ -70,7 +70,8 @@ get_dm_inadm <- function(covars,
   colnames(dm)[ind] <- name
   dm
 }
-bind_covars <- function(dm, covars){
+bind_covars <- function(dm,
+                        covars){
   if (!is.null(covars)){ # if there are covars, add these to design matrix
     dm <- cbind(dm, covars)
   }

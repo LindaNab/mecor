@@ -5,6 +5,10 @@ efficient_regcal <- function(response,
                              B,
                              type,
                              calc_vcov = T){
+  # when the MeasError object contains replicates, mle will be used to obtain a
+  # internal fit using only the replicates
+  # when the MeasError object does not contain replicates, a complete case will
+  # be used (using the reference)
   if (!is.null(me$replicate)){
     rownums_cc <- which (!is.na(me$reference))
     n_rep <- ncol(me$replicate)
@@ -24,11 +28,17 @@ efficient_regcal <- function(response,
                                     covars,
                                     me,
                                     type) # complete case fit
-    vcov_cc_fit <- mecor:::get_vcov(cc_fit, rev = F)
+    vcov_cc_fit <- mecor:::get_vcov(cc_fit,
+                                    rev = F)
   }
   # reg_cal fit
-  rc_fit <- mecor:::regcal(response, covars, me, B = 0, type = type)
-  cc_fit_coef <- mecor:::get_coefs(cc_fit, rev = F)
+  rc_fit <- mecor:::regcal(response,
+                           covars,
+                           me,
+                           B = 0,
+                           type = type)
+  cc_fit_coef <- mecor:::get_coefs(cc_fit,
+                                   rev = F)
   inv_vcov_cc_fit <- solve(vcov_cc_fit)
   inv_vcov_rc_fit <- solve(rc_fit$vcov)
   beta <- solve(inv_vcov_cc_fit + inv_vcov_rc_fit) %*%
