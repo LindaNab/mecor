@@ -3,7 +3,7 @@ regcal <- function(response,
                    me,
                    B = 0,
                    type,
-                   calc_vcov = T){ # turned off when used in bootstrap
+                   calc_vcov = TRUE){ # turned off when used in bootstrap
   # estimate beta_star (uncor) and its vcov
   uncor_fit <- mecor:::uncorrected(response,
                                    covars,
@@ -19,10 +19,10 @@ regcal <- function(response,
   } else if (calc_vcov) vcov_beta_star <- mecor:::get_vcov(uncor_fit)
   # estimate calibration model (cov-me)/measurement error model (out-me)
   model <- mecor:::model(response,
-                           covars,
-                           me,
-                           type,
-                           calc_vcov)
+                         covars,
+                         me,
+                         type,
+                         calc_vcov)
   coef_model <- model$coef
   if (!is.null(model$vcov)){
     vcov_model <- model$vcov

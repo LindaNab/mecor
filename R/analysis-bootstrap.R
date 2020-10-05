@@ -12,7 +12,8 @@ analysis_boot <- function(response,
     samples[[i]] <-
       mecor:::get_new_sample(response, covars, me, type, method)
   }
-  n_coef <- ncol(covars) + ifelse(type == "indep", 2, 1)
+  n_coef <- ifelse(is.null(covars), 0, ncol(covars)) +
+    ifelse(type == "indep", 2, 1)
   pb <- utils::txtProgressBar(min = 0, max = B, style = 3)
   coef <- matrix(ncol = B, nrow = n_coef)
   switch(method,

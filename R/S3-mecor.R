@@ -38,18 +38,18 @@
 #' @export
 summary.mecor <- function(object,
                           alpha = 0.05,
-                          zerovar = F,
-                          fieller = F){
+                          zerovar = FALSE,
+                          fieller = FALSE){
   z <- object
   z1 <- z$uncorfit
   z2 <- z$corfit
-  if(zerovar == T && is.null(z2$zerovar_vcov)){
+  if(zerovar == TRUE && is.null(z2$zerovar_vcov)){
     warning("there is no 'zerovar_vcov' object, zerovar set to FALSE")
-    zerovar <- F
+    zerovar <- FALSE
   }
-  if (fieller == T && is.null(z2$fieller)){
+  if (fieller == TRUE && is.null(z2$fieller)){
     warning("there is no 'fieller' object, fieller set to FALSE")
-    fieller <- F
+    fieller <- FALSE
   }
   # uncorrected
   rdf1 <- z1$df.residual
@@ -94,7 +94,7 @@ summary.mecor <- function(object,
     coefficients <- cbind(coefficients, 'SE (zerovar)' = SE_zerovar)
     ci <- cbind(ci, 'LCI (zerovar)' = LCI_zerovar, 'UCI (zerovar)' = UCI_zerovar)
   }
-  if (fieller == T){
+  if (fieller == TRUE){
     fieller_ci <- mecor:::calc_fieller_ci(z2$fieller$lambda1,
                                           z2$fieller$var_lambda1,
                                           z2$fieller$phi_star,

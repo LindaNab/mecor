@@ -75,4 +75,5 @@ bind_covars <- function(dm,
   if (!is.null(covars)){ # if there are covars, add these to design matrix
     dm <- cbind(dm, covars)
   }
+  else dm
 }
