@@ -4,8 +4,8 @@ The mecor Package
 =================
 
 This package for R implements measurement error correction methods for
-measurement error in a continuous covariate or outcome in a linear
-regression with a continuous outcome.
+measurement error in a continuous covariate or outcome in linear
+models with a continuous outcome.
 
 Installation
 ============
