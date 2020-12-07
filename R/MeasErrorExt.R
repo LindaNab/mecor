@@ -71,12 +71,12 @@
 #'                                                'Y' = 0.5))))
 #' @export
 MeasErrorExt <- function(substitute,
-                         model){
+                         model) {
   UseMethod("MeasErrorExt", model)
 }
 #' @export
 MeasErrorExt.lm <- function(substitute,
-                            model){
+                            model) {
   if (missing(substitute))
     stop("'substitute' in the MeasErrorMatrix object is missing")
   if (!is.vector(substitute))
@@ -93,7 +93,7 @@ MeasErrorExt.lm <- function(substitute,
 }
 #' @export
 MeasErrorExt.list <- function(substitute,
-                              model){
+                              model) {
   if (missing(substitute))
     stop("'substitute' in the MeasErrorExt object is missing")
   if (is.null(model$coef))
@@ -106,12 +106,14 @@ MeasErrorExt.list <- function(substitute,
     stop("'substitute' in the MeasErrorExt object cannot contain missing values")
   if (length(model$coef) == 1)
     stop("length of 'coef' should be 2 or greater than 2")
-  if (!is.null(model$vcov)){
-    if (!is.matrix(model$vcov)){
+  if (!is.null(model$vcov)) {
+    if (!is.matrix(model$vcov)) {
       stop("'vcov' in the list 'model' should be a matrix")
     } else if (length(model$coef) != nrow(model$vcov) &
                length(model$coef) != ncol(model$vcov))
-      stop("dimensions of 'vcov' in the list 'model' should be equal to length of 'coef' in 'calfit'")
+      stop(
+        "dimensions of 'vcov' in the list 'model' should be equal to length of 'coef' in 'calfit'"
+      )
   }
   out <- list(substitute = substitute,
               model = model)

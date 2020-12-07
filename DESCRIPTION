@@ -1,6 +1,6 @@
 Package: mecor
 Type: Package
-Title: Measurement Error Corrections
+Title: Measurement Error Correction in Linear Models with a Continuous Outcome
 Version: 0.1.0
 Author: Linda Nab
 Maintainer: Linda Nab <l.nab@lumc.nl>
@@ -13,8 +13,7 @@ URL: https://github.com/LindaNab/mecor.git
 Imports: 
     lme4,
     lmerTest,
-    numDeriv,
-    optimx
+    numDeriv
 Suggests: knitr,
           rmarkdown
 VignetteBuilder: knitr

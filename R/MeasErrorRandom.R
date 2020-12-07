@@ -25,14 +25,14 @@
 #' with(icvs, MeasErrorRandom(X_star, error = 0.5))
 #' @export
 MeasErrorRandom <- function(substitute,
-                            error){
+                            error) {
   if (missing(substitute))
     stop("'substitute' in the MeasErrorRandom object is missing")
   if (!is.vector(substitute))
     stop("'substitute' in the MeasErrorRandom object is not a vector")
   if (any(is.na(substitute)) == TRUE)
     stop("'substitute' in the MeasErrorRandom object cannot contain missing values")
-  if (!is.numeric(error)){
+  if (!is.numeric(error)) {
     stop("'error' in the MeasErrorRandom object is not numeric")
   }
   out <- list(substitute = substitute,
