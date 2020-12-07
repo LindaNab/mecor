@@ -4,7 +4,7 @@
 \alias{summary.mecor}
 \title{Summarizing Measurement Error Correction}
 \usage{
-\method{summary}{mecor}(object, alpha = 0.05, zerovar = F, fieller = F)
+\method{summary}{mecor}(object, alpha = 0.05, zerovar = FALSE, fieller = FALSE)
 }
 \arguments{
 \item{object}{an object of class "mecor", a result of a call to

@@ -2,13 +2,14 @@
 # design matrix for uncorrected analysis
 get_dm_uncor <- function(covars,
                          me,
-                         type){
-  if (startsWith(type, "dep")){
+                         type) {
+  if (startsWith(type, "dep")) {
     dm <- cbind(1, covars)
     colnames(dm)[1] <- "(Intercept)"
-  } else if (type == "indep"){
+  } else if (type == "indep") {
     dm <- cbind(1, me$substitute)
-    colnames(dm) <- c("(Intercept)", attributes(me)$input$substitute)
+    colnames(dm) <-
+      c("(Intercept)", attributes(me)$input$substitute)
     dm <- mecor:::bind_covars(dm, covars)
   }
   dm
@@ -16,14 +17,16 @@ get_dm_uncor <- function(covars,
 # design matrix for complete case analysis
 get_dm_cc <- function(covars,
                       me,
-                      type){
-  if (startsWith(type, "dep")){
+                      type) {
+  if (startsWith(type, "dep")) {
     dm <- get_dm_uncor(covars, me, type)
-  } else if (type == "indep"){
+  } else if (type == "indep") {
     dm <- cbind(1, me$reference)
-    name <- ifelse(!is.null(me$replicate),
-                   paste0("cor_", attributes(me)$input$substitute),
-                   attributes(me)$input$reference)
+    name <- ifelse(
+      !is.null(me$replicate),
+      paste0("cor_", attributes(me)$input$substitute),
+      attributes(me)$input$reference
+    )
     colnames(dm) <- c("(Intercept)", name)
     dm <- mecor:::bind_covars(dm, covars)
   }
@@ -33,47 +36,52 @@ get_dm_cc <- function(covars,
 # (outcome-me)
 get_dm_cm <- function(covars,
                       me,
-                      type){
-  if (startsWith(type, "dep")){
+                      type) {
+  if (startsWith(type, "dep")) {
     dm <- cbind(1, me$reference)
     colnames(dm) <- c("(Intercept)", attributes(me)$input$reference)
-    if(type == "dep_diff"){
+    if (type == "dep_diff") {
       dm <- cbind(dm, me$differential, me$reference * me$differential)
-      colnames(dm)[3] <- as.character(attributes(me)$input$differential)
-      colnames(dm)[4] <- paste0(colnames(dm)[2], ":", colnames(dm)[3])
+      colnames(dm)[3] <-
+        as.character(attributes(me)$input$differential)
+      colnames(dm)[4] <-
+        paste0(colnames(dm)[2], ":", colnames(dm)[3])
     }
-  } else if (type == "indep"){
+  } else if (type == "indep") {
     dm <- get_dm_uncor(covars,
                        me,
                        type)
   }
   dm
 }
-# design matrix for inadmissible regression calibration, sing the references
-# measures if availabler and the the expected values of the calibration model
+# design matrix for validation regression calibration, sing the references
+# measures if available and the the expected values of the calibration model
 # if not
-get_dm_inadm <- function(covars,
-                         me,
-                         type){
+get_dm_vrc <- function(covars,
+                       me,
+                       type) {
   dm <- mecor:::get_dm_uncor(covars,
                              me,
                              type)
-  model_fit <- mecor:::regcal_get_model(covars,
+  model_fit <- mecor:::standard_get_model(covars,
                                           me,
                                           type)
   fitted_values <- dm %*% coef(model_fit)
   x <- fitted_values
   x[!is.na(me$reference)] <- me$reference[!is.na(me$reference)]
   dm[, as.character(attributes(me)$input$substitute)] <- x
-  ind <- colnames(dm) == as.character(attributes(me)$input$substitute)
+  ind <-
+    colnames(dm) == as.character(attributes(me)$input$substitute)
   name <- as.character(attributes(me)$input$reference)
   colnames(dm)[ind] <- name
   dm
 }
 bind_covars <- function(dm,
-                        covars){
-  if (!is.null(covars)){ # if there are covars, add these to design matrix
+                        covars) {
+  if (!is.null(covars)) {
+    # if there are covars, add these to design matrix
     dm <- cbind(dm, covars)
   }
-  else dm
+  else
+    dm
 }

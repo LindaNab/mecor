@@ -4,7 +4,7 @@
 \alias{mecor}
 \title{mecor: a Measurement Error Correction Package}
 \usage{
-mecor(formula, data, method = "rc", B = 0)
+mecor(formula, data, method = "standard", B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
@@ -17,9 +17,12 @@ as.data.frame to a data frame) containing the variables in the model
 specified in \code{formula}.}
 
 \item{method}{a character string indicating the method used to correct for
-the measurement error, either "rc" (regression calibration), "erc" (efficient
-regression calibration), "irc" (inadmissible regression calibration) or "mle"
-(maximum likelihood estimation). Defaults to "rc".}
+the measurement error, either "standard" (regression calibration for
+covariate measurement error and method of moments for outcome measurement
+error), "efficient" (efficient regression calibration for covariate
+measurement error and efficient method of moments for outcome measurement
+error), "valregcal" (validation regression calibration) or "mle" (maximum
+likelihood estimation). Defaults to "standard".}
 
 \item{B}{number of bootstrap samples, defaults to 0.}
 }
@@ -42,9 +45,11 @@ covariate or outcome in linear regression models with a continuous outcome
 ## measurement error in a covariate:
 # internal covariate-validation study
 data(icvs)
+out <-
 mecor(Y ~ MeasError(X_star, reference = X) + Z,
       data = icvs,
-      method = "rc")
+      method = "standard",
+      B = 999)
 # replicates study
 data(rs)
 mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
@@ -54,7 +59,7 @@ mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
 data(ccs)
 mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
       data = ccs,
-      method = "erc")
+      method = "efficient")
 # external covariate-validation study
 data(ecvs)
 calmod_fit <- lm(X ~ X_star + Z, data = ecvs)
@@ -78,40 +83,42 @@ mecor(Y ~ MeasErrorRandom(X1_star, error = 0.25) + Z1 + Z2,
 data(iovs)
 mecor(MeasError(Y_star, reference = Y) ~ X + Z,
       data = iovs,
-      method = "erc")
+      method = "standard")
 # external outcome-validation study
 data(eovs)
 memod_fit <- lm(Y_star ~ Y, data = eovs)
 data(iovs) # suppose reference Y is not available
 mecor(MeasErrorExt(Y_star, model = memod_fit) ~ X + Z,
       data = iovs,
-      method = "rc")
+      method = "standard")
 # sensitivity analyses
 data(iovs) # suppose reference Y is not available
 # guesstimate the coefficients of the measurement error model:
 mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
       data = iovs,
-      method = "rc")
+      method = "standard")
 
 ## differential measurement error in the outcome:
 # internal outcome-validation study
 data(iovs_diff)
 mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
       data = iovs_diff,
-      method = "rc")
+      method = "standard")
 # sensitivity analysis
 data(iovs_diff) # suppose reference Y is not available
 # guesstimate the coefficients of the measurement error model:
 mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5, 1, 1))) ~ X,
       data = iovs_diff,
-      method = "rc")
+      method = "standard")
 }
 \references{
 L. Nab, R.H.H. Groenwold, P.M.J. Welsing, and  M. van Smeden.
-Measurement error in continuous endpoints in randomised trials: problems and solutions
+Measurement error in continuous endpoints in randomised trials: problems and
+solutions
 
 L. Nab, M. van Smeden, R.H. Keogh, and R.H.H. Groenwold.
-mecor: an R package for measurement error correction
+mecor: an R package for measurement error correction in linear models with
+continuous outcomes
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

@@ -1,10 +1,11 @@
-#efficient regression calibration
-efficient_regcal <- function(response,
-                             covars,
-                             me,
-                             B,
-                             type,
-                             calc_vcov = T){
+# efficient regcal (cov me) and efficient mm (outcome me)
+efficient <- function(response,
+                      covars,
+                      me,
+                      B,
+                      type,
+                      calc_vcov = T) {
+
   # when the MeasError object contains replicates, mle will be used to obtain a
   # internal fit using only the replicates
   # when the MeasError object does not contain replicates, a complete case will
@@ -32,15 +33,15 @@ efficient_regcal <- function(response,
                                     rev = F)
   }
   # reg_cal fit
-  rc_fit <- mecor:::regcal(response,
-                           covars,
-                           me,
-                           B = 0,
-                           type = type)
+  rc_fit <- mecor:::standard(response,
+                             covars,
+                             me,
+                             B = 0,
+                             type = type)
   cc_fit_coef <- mecor:::get_coefs(cc_fit,
                                    rev = F)
-  inv_vcov_cc_fit <- solve(vcov_cc_fit)
-  inv_vcov_rc_fit <- solve(rc_fit$vcov)
+  inv_vcov_cc_fit <- erc_solve(vcov_cc_fit, "complete case")
+  inv_vcov_rc_fit <- erc_solve(rc_fit$vcov, "regcal")
   beta <- solve(inv_vcov_cc_fit + inv_vcov_rc_fit) %*%
     (inv_vcov_cc_fit %*% cc_fit_coef +
        inv_vcov_rc_fit %*% rc_fit$coef)
@@ -49,15 +50,42 @@ efficient_regcal <- function(response,
     vcov_beta <- solve(inv_vcov_rc_fit + inv_vcov_cc_fit)
     out$vcov <- vcov_beta
   }
+  out$method <- mecor:::efficient_get_method(type)
   if (B != 0){
     boot <- mecor:::analysis_boot(response,
                                   covars,
                                   me,
                                   B = B,
                                   type = type,
-                                  method = "erc")
+                                  method = "efficient")
     colnames(boot$coef) <- names(out$coef)
     out$boot <- boot
   }
   out
+}
+# Catches errors when matrices are singular (so cannot be solved)
+erc_solve <- function(vcov,
+                      type) {
+  out <- tryCatch(
+    {
+      solve(vcov)
+    },
+    error = function(cond){
+      warning(paste0("The vcov matrix of ", type, " is computationally singular. The ", type, " estimate got weight 0."),
+              call. = FALSE)
+      return(matrix(0,
+                    nrow = nrow(vcov),
+                    ncol = ncol(vcov)))
+    }
+  )
+  return(out)
+}
+
+efficient_get_method <- function(type) {
+  if (startsWith(type, "dep")) {
+    method <- "efficient method of moments"
+  } else if (type == "indep") {
+    method <- "efficient regression calibration"
+  }
+  method
 }
