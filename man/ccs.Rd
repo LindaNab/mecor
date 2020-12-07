@@ -11,9 +11,9 @@ A data frame with 1000 rows and 5 variables:
   \item{X_star}{error-prone exposure with systematic measurement error,
   continuous}
   \item{Z}{covariate, continuous}
-  \item{X1_star}{first replicate of error-prone exposure with classical
+  \item{X_star_1}{first replicate of error-prone exposure with classical
   measurement error, continuous}
-  \item{X2_star}{second replicate of error-prone exposure with classical
+  \item{X_star_2}{second replicate of error-prone exposure with classical
   measurement error, continuous}
 }
 }
