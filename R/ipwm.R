@@ -41,7 +41,7 @@
 #' @references
 #' Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436.
 #'
-#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcme misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
+#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcome misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
 #'
 #' @examples
 #' data(sim) # simulated data on 10 covariates, exposure A and outcome Y.
@@ -138,8 +138,8 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     v <- fn(1,0,0)+fn(1,0,1)+fn(1,1,0)+fn(1,1,1)
     w <- v+fn(0,0,0)+fn(0,0,1)+fn(0,1,0)+fn(0,1,1)
     num <- pB*v/w
-    fn <- function(y,a) pr(data,par,y,a,1,data[,dep_var[4L]])
-    denom <- fn(0,0)+fn(0,1)+fn(1,0)+fn(1,1)
+    fn2 <- function(y,a) pr(data,par,y,a,1,data[,dep_var[4L]])
+    denom <- fn2(0,0)+fn2(0,1)+fn2(1,0)+fn2(1,1)
     W <- num/denom
     p1 <- mean((data[,dep_var[3L]]*W)[data[,dep_var[4L]]==1])
     p0 <- mean((data[,dep_var[3L]]*W)[data[,dep_var[4L]]==0])
@@ -169,8 +169,8 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
       isna <- is.na(out)
       if(all(rowSums(isna[,dep_var[1:2]])>0) && !fix_nNAs) return(gen_boot(data,par))
       if(semiparametric){
-        fn <- function(x,y) pr(out[y,,drop=FALSE],par,grd[x,1L],grd[x,2L],grd[x,3L],grd[x,4L])
-        p <- outer(seq_len(16L),seq_len(n),fn)
+        fn3 <- function(x,y) pr(out[y,,drop=FALSE],par,grd[x,1L],grd[x,2L],grd[x,3L],grd[x,4L])
+        p <- outer(seq_len(16L),seq_len(n),fn3)
         cp <- p
         for(i in 2:16) cp[i,] <- cp[i,]+cp[i-1L,]
         wh <- (stats::runif(n)<p[1L,])*1L
@@ -211,8 +211,8 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
       offset <- lapply(tm,function(x) do.call(cbind,lapply(seq_len(length(attr(x,"offset"))),
                                                            function(i)eval(attr(x,"variables")[[attr(x,"offset")[[i]]+1L]],envir=data))))
       for(i in seq_len(length(offset))) if(is.null(offset[[i]])) offset[[i]] <- matrix(0,nrow=nrow(data))
-      fn <- function(w,x,y,z) pbern(z,as.vector(expit(rowSums(w)+x%*%y)))
-      out <- mapply(fn,offset,mm,par,as.list(data[,dep_var]),SIMPLIFY=FALSE)
+      fn4 <- function(w,x,y,z) pbern(z,as.vector(expit(rowSums(w)+x%*%y)))
+      out <- mapply(fn4,offset,mm,par,as.list(data[,dep_var]),SIMPLIFY=FALSE)
       out <- out[[1L]]*out[[2L]]*out[[3L]]*out[[4L]]
       return(out)
     }
@@ -224,29 +224,29 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
       }
       z <- by(data,S,list,simplify=FALSE)
       for(i in c('2','4')){
-        fn <- function(x){
+        fn5 <- function(x){
           for(j in 1:length(z[[i]])) z[[i]][[j]][,dep_var[2L]] <- x
           return(z[[i]])
         }
-        if(i%in%names(z)) z[[i]] <- do.call(c,lapply(0:1,fn))
+        if(i%in%names(z)) z[[i]] <- do.call(c,lapply(0:1,fn5))
       }
       for(i in c('3','4')){
-        fn <- function(x){
+        fn6 <- function(x){
           for(j in seq_len(length(z[[i]]))) z[[i]][[j]][,dep_var[1L]] <- x
           return(z[[i]])
         }
-        if(i%in%names(z)) z[[i]] <- do.call(c,lapply(0:1,fn))
+        if(i%in%names(z)) z[[i]] <- do.call(c,lapply(0:1,fn6))
       }
       z <- do.call(rbind,lapply(z,do.call,what=rbind))
       id <- unlist(mapply(rep,split(seq_len(n),factor(S,levels=seq_len(4L)),drop=FALSE),c(1L,2L,2L,4L)))
       v <- factor(unlist(mapply(rep,1:4,npar)),seq_len(4L))
-      fn <- function(par=numeric(sum(npar))){
+      fn7 <- function(par=numeric(sum(npar))){
         par <- split(par,v)
         L <- pr(z,par)
         return(-sum(log(tapply(L,id,sum))))
       }
       optim_args$par <- numeric(sum(npar))
-      optim_args$fn <- fn
+      optim_args$fn <- fn7
       optim_out <- do.call(stats::optim,optim_args)
       if(optim_out$converge) warning("Optimisation algorithm did not converge.")
       par <- split(optim_out$par,v)

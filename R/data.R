@@ -117,3 +117,29 @@
 #' @examples
 #' data("eovs", package = "mecor")
 "eovs"
+#' Simulated dataset for the \link[mecor]{ipwm} function
+#'
+#' A simulated dataset containing 5000 observations of the covariates L1-L10,
+#' the true exposure A and true outcome Y, and the misclassified exposure B and
+#' misclassified outcome Z.
+#'
+#' @format A data frame with 5000 rows and 14 variables:
+#' \describe{
+#'   \item{L1}{covariate, binary}
+#'   \item{L2}{covariate, continuous}
+#'   \item{L3}{covariate, binary}
+#'   \item{L4}{covariate, continuous}
+#'   \item{L5}{covariate, binary}
+#'   \item{L6}{covariate, binary}
+#'   \item{L7}{covariate, continuous}
+#'   \item{L8}{covariate, binary}
+#'   \item{L9}{covariate, binary}
+#'   \item{L10}{covariate, continuous}
+#'   \item{A}{exposure, binary}
+#'   \item{Y}{outcome, binary}
+#'   \item{B}{misclassified exposure, binary}
+#'   \item{Z}{misclassified outcome, binary}
+#' }
+#' @examples
+#' data("sim", package = "mecor")
+"sim"
