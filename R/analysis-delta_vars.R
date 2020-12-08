@@ -2,7 +2,7 @@
 deltamethod <- function(func,
                         vec,
                         vcov_vec) {
-  j_func <- numDeriv:::jacobian(func, vec, method = "simple")
+  j_func <- numDeriv::jacobian(func, vec, method = "simple")
   vcov <- j_func %*% vcov_vec %*% t(j_func)
 }
 # delta method
@@ -39,13 +39,13 @@ standard_get_vcov <- function(beta_star,
   #   (theta01 - theta00), 0, theta10, theta00, 0, 0, 1)
   # vec is of size 2+1 + (2+1)^2 [n+1 + (n+1)^2 where n = 2]
   # Lambda or Theta are referred to as the model_matrix in the code
-  model_matrix <- mecor:::standard_get_model_matrix(coef_model,
-                                                    n,
-                                                    type)
+  model_matrix <- standard_get_model_matrix(coef_model,
+                                            n,
+                                            type)
   vec_model_matrix <- c(model_matrix)
   # A or B is referred to as the solution matrix in the code
   vec_solution_matrix <-
-    mecor:::get_vec_solution_matrix(vec_model_matrix)
+    get_vec_solution_matrix(vec_model_matrix)
   vec <- c(beta_star, vec_solution_matrix)
   # The covariance matrix of vec is of size size(vec)^2 x size(vec)^2
   # We assume that there is no covariance between beta_star and the solution
@@ -53,21 +53,21 @@ standard_get_vcov <- function(beta_star,
   # Thus, vcov(vec) = (vcov(beta_star), 0
   #                   0,               vcov(vec_solution_matrix)) # see step 2
   vcov_vec_solution_matrix <-
-    mecor:::get_vcov_vec_solution_matrix(vec_model_matrix,
-                                         vcov_model,
-                                         n,
-                                         type)
+    get_vcov_vec_solution_matrix(vec_model_matrix,
+                                 vcov_model,
+                                 n,
+                                 type)
   vcov_vec <-
-    mecor:::get_vcov_vec(vcov_beta_star,
-                         vcov_vec_solution_matrix,
-                         type)
+    get_vcov_vec(vcov_beta_star,
+                 vcov_vec_solution_matrix,
+                 type)
   # We assume that vec is multivariate normal with mean vec and cov vcov_vec
   # Now, there is a function f: R^{n + n^2} -> R^n so that
   # f(vec) = beta
   # Then, using the delta method vcov(beta) = Jf %*% vcov_vec %*% t(Jf)
-  vcov_beta <- mecor:::deltamethod(mecor:::standard_using_vec,
-                                   vec,
-                                   vcov_vec)
+  vcov_beta <- deltamethod(standard_using_vec,
+                           vec,
+                           vcov_vec)
   dimnames(vcov_beta) <- list(names(beta_star), names(beta_star))
   # output
   vcov_beta[1:n, 1:n]
@@ -99,11 +99,12 @@ get_vcov_vec <- function(vcov_beta_star,
                             ncol = nrow(vcov_vec_solution_matrix)
                           )),
                     cbind(matrix(
-                      0,
-                      nrow = nrow(vcov_vec_solution_matrix),
-                      ncol = nrow(vcov_beta_star)
-                    ),
-                    vcov_vec_solution_matrix))
+                            0,
+                            nrow = nrow(vcov_vec_solution_matrix),
+                            ncol = nrow(vcov_beta_star)
+                         ),
+                         vcov_vec_solution_matrix
+                         ))
 }
 # vcov matrix of vec_A = vec(A) or vec_B = vec(B) using the Delta method
 get_vcov_vec_solution_matrix <- function(vec_model_matrix,
@@ -189,7 +190,7 @@ get_vcov_vec_solution_matrix <- function(vec_model_matrix,
     vcov_vec_model_matrix <- matrix(0, nrow = (n + 1)^2, # n = 2
                                      ncol = (n + 1)^2)
     # first, reflect the vcov_model in its 2nd diagonal:
-    reflectn_vcov_model <- mecor:::reflect_vcov_2nd_diagonal(vcov_model)
+    reflectn_vcov_model <- reflect_vcov_2nd_diagonal(vcov_model)
     # var(theta4)          cov(theta4, theta3)
     # vcov(theta3, theta4) var(theta3):
     vcov_vec_model_matrix[2:3, 2:3] <- reflectn_vcov_model[1:2, 1:2]
@@ -203,7 +204,7 @@ get_vcov_vec_solution_matrix <- function(vec_model_matrix,
     # cov(theta1, theta2) var(theta1):
     vcov_vec_model_matrix[5:6, 5:6] <- reflectn_vcov_model[3:4, 3:4]
     vcov_vec_model_matrix[1, ] <-
-      mecor:::get_1st_row_vcov_vec_model_matrix_diff_outme(vcov_model)
+      get_1st_row_vcov_vec_model_matrix_diff_outme(vcov_model)
     vcov_vec_model_matrix[, 1] <- vcov_vec_model_matrix[1, ] # first column =
                                                              # first row
   }
@@ -217,9 +218,9 @@ get_vcov_vec_solution_matrix <- function(vec_model_matrix,
   # Thus, using the Delta method, vcov(vec_A) is:
   # [idem dito vec_Theta --> vec_B]
   vcov_vec_solution_matrix <-
-    mecor:::deltamethod(mecor:::get_vec_solution_matrix,
-                        vec_model_matrix,
-                        vcov_vec_model_matrix)
+    deltamethod(get_vec_solution_matrix,
+                vec_model_matrix,
+                vcov_vec_model_matrix)
 }
 # the 2nd diagonal is the one from the upper right corner to the lower left
 # corner. The elements on that diagonal will stay the same and the other
@@ -289,7 +290,7 @@ standard_fieller <- function(beta_star,
 # gives lci and uci for phi* when there is measurement error in a covariate
 # gives lci and uci for phi* and gamma* when there is measrurement error in the
 # outcome
-# used in mecor:::summary.mecor
+# used in mecor::summary.mecor
 calc_fieller_ci <- function(lambda1,
                             var_lambda1,
                             phi_star,

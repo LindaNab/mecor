@@ -18,30 +18,30 @@ efficient <- function(response,
     new_me$replicate <- me$replicate[rownums_cc, 2:n_rep, drop = F]
     cc_response <- response[rownums_cc, , drop = F]
     cc_covars <- covars[rownums_cc, , drop = F]
-    cc_fit <- mecor:::mle(cc_response,
-                          cc_covars,
-                          new_me,
-                          B = 0,
-                          type) # mle fit
+    cc_fit <- mle(cc_response,
+                  cc_covars,
+                  new_me,
+                  B = 0,
+                  type) # mle fit
     vcov_cc_fit <- cc_fit$vcov
   } else {
-    cc_fit <- mecor:::complete_case(response,
-                                    covars,
-                                    me,
-                                    type) # complete case fit
-    vcov_cc_fit <- mecor:::get_vcov(cc_fit,
-                                    rev = F)
+    cc_fit <- complete_case(response,
+                            covars,
+                            me,
+                            type) # complete case fit
+    vcov_cc_fit <- get_vcov(cc_fit,
+                            rev = F)
   }
   # reg_cal fit
-  rc_fit <- mecor:::standard(response,
-                             covars,
-                             me,
-                             B = 0,
-                             type = type)
-  cc_fit_coef <- mecor:::get_coefs(cc_fit,
-                                   rev = F)
-  inv_vcov_cc_fit <- mecor:::erc_solve(vcov_cc_fit, "complete case")
-  inv_vcov_rc_fit <- mecor:::erc_solve(rc_fit$vcov, "regcal")
+  rc_fit <- standard(response,
+                     covars,
+                     me,
+                     B = 0,
+                     type = type)
+  cc_fit_coef <- get_coefs(cc_fit,
+                           rev = F)
+  inv_vcov_cc_fit <- erc_solve(vcov_cc_fit, "complete case")
+  inv_vcov_rc_fit <- erc_solve(rc_fit$vcov, "regcal")
   beta <- solve(inv_vcov_cc_fit + inv_vcov_rc_fit) %*%
     (inv_vcov_cc_fit %*% cc_fit_coef +
        inv_vcov_rc_fit %*% rc_fit$coef)
@@ -50,14 +50,14 @@ efficient <- function(response,
     vcov_beta <- solve(inv_vcov_rc_fit + inv_vcov_cc_fit)
     out$vcov <- vcov_beta
   }
-  out$method <- mecor:::efficient_get_method(type)
+  out$method <- efficient_get_method(type)
   if (B != 0){
-    boot <- mecor:::analysis_boot(response,
-                                  covars,
-                                  me,
-                                  B = B,
-                                  type = type,
-                                  method = "efficient")
+    boot <- analysis_boot(response,
+                          covars,
+                          me,
+                          B = B,
+                          type = type,
+                          method = "efficient")
     colnames(boot$coef) <- names(out$coef)
     out$boot <- boot
   }

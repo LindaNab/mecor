@@ -6,85 +6,83 @@ standard <- function(response,
                      calc_vcov = TRUE) {
   # turned off when used in bootstrap
   # estimate beta_star (uncor) and its vcov
-  uncor_fit <- mecor:::uncorrected(response,
-                                   covars,
-                                   me,
-                                   type)
-  beta_star <- mecor:::get_coefs(uncor_fit)
+  uncor_fit <- uncorrected(response,
+                           covars,
+                           me,
+                           type)
+  beta_star <- get_coefs(uncor_fit)
   if (calc_vcov && type == "dep_diff") {
-    dm_uncor <- mecor:::get_dm_uncor(covars,
-                                     me,
-                                     type)
-    vcov_beta_star <- mecor:::get_vcovHC3(uncor_fit,
-                                          dm_uncor)
+    dm_uncor <- get_dm_uncor(covars,
+                             me,
+                             type)
+    vcov_beta_star <- get_vcovHC3(uncor_fit,
+                                  dm_uncor)
   } else if (calc_vcov)
-    vcov_beta_star <- mecor:::get_vcov(uncor_fit)
+    vcov_beta_star <- get_vcov(uncor_fit)
   # estimate calibration model (cov-me)/measurement error model (out-me)
-  model <- mecor:::model(response,
-                         covars,
-                         me,
-                         type,
-                         calc_vcov)
+  model <- model(response,
+                 covars,
+                 me,
+                 type,
+                 calc_vcov)
   coef_model <- model$coef
   if (!is.null(model$vcov)) {
     vcov_model <- model$vcov
   }
   # estimate beta (cor) and its vcov
-  beta <- mecor:::standard_get_coef(beta_star,
-                                    coef_model,
-                                    type)
+  beta <- standard_get_coef(beta_star,
+                            coef_model,
+                            type)
   if (type == "indep") {
-    beta <- mecor:::change_names(beta,
-                                 me)
+    beta <- change_names(beta,
+                         me)
   }
-  out <- list(coef = mecor:::change_order_coefs(beta))
+  out <- list(coef = change_order_coefs(beta))
   n <- NROW(beta_star)
-  model_matrix <- mecor:::standard_get_model_matrix(coef_model,
-                                                    n,
-                                                    type)
+  model_matrix <- standard_get_model_matrix(coef_model,
+                                            n,
+                                            type)
   out$matrix <- model_matrix
   if (calc_vcov) {
     if (exists("vcov_model")) {
       # delta method
-      vcov_beta <- mecor:::standard_get_vcov(beta_star,
-                                             coef_model,
-                                             vcov_beta_star,
-                                             vcov_model,
-                                             type)
+      vcov_beta <- standard_get_vcov(beta_star,
+                                     coef_model,
+                                     vcov_beta_star,
+                                     vcov_model,
+                                     type)
       if (type == "indep")
-        vcov_beta <- mecor:::change_names(vcov_beta,
-                                          me)
-      out$vcov <- mecor:::change_order_vcov(vcov_beta)
+        vcov_beta <- change_names(vcov_beta,
+                                  me)
+      out$vcov <- change_order_vcov(vcov_beta)
     }
     # vcov matrix obtained by ignoring uncertainty in coefs of model_matrix
-    zerovar_vcov <- mecor:::standard_zerovar(vcov_beta_star,
-                                             model_matrix,
-                                             type)
+    zerovar_vcov <- standard_zerovar(vcov_beta_star,
+                                     model_matrix,
+                                     type)
     if (type == "indep")
-      zerovar_vcov <- mecor:::change_names(zerovar_vcov,
-                                           me)
-    out$zerovar_vcov <- mecor:::change_order_vcov(zerovar_vcov)
+      zerovar_vcov <- change_names(zerovar_vcov,
+                                   me)
+    out$zerovar_vcov <- change_order_vcov(zerovar_vcov)
     # elements to build fieller ci's
     if (exists("vcov_model") && type != "dep_diff") {
-      fieller <- mecor:::standard_fieller(beta_star,
-                                          coef_model,
-                                          vcov_beta_star,
-                                          vcov_model,
-                                          type)
+      fieller <- standard_fieller(beta_star,
+                                  coef_model,
+                                  vcov_beta_star,
+                                  vcov_model,
+                                  type)
       out$fieller <- fieller
     }
   }
-  out$method <- mecor:::standard_get_method(type)
+  out$method <- standard_get_method(type)
   # bootstrap
   if (B != 0) {
-    boot <- mecor:::analysis_boot(
-      response,
-      covars,
-      me,
-      B = B,
-      type = type,
-      method = "standard"
-    )
+    boot <- analysis_boot(response,
+                          covars,
+                          me,
+                          B = B,
+                          type = type,
+                          method = "standard")
     colnames(boot$coef) <- names(out$coef)
     out$boot <- boot
   }
@@ -102,15 +100,15 @@ model.MeasError <- function(response,
                             me,
                             type,
                             calc_vcov = T) {
-  model_fit <- mecor:::standard_get_model(covars,
-                                          me,
-                                          type)
-  coef_model <- mecor:::get_coefs(model_fit,
-                                  type == "indep")
+  model_fit <- standard_get_model(covars,
+                                  me,
+                                  type)
+  coef_model <- get_coefs(model_fit,
+                          type == "indep")
   out <- list(coef = coef_model)
   if (calc_vcov) {
-    vcov_model <- mecor:::get_vcov(model_fit,
-                                   type == "indep")
+    vcov_model <- get_vcov(model_fit,
+                           type == "indep")
     out$vcov <- vcov_model
   }
   out
@@ -120,18 +118,18 @@ model.MeasErrorExt <- function(response,
                                me,
                                type,
                                calc_vcov = T) {
-  coef_model <- mecor:::get_coefs(me$model,
-                                  type == "indep")
+  coef_model <- get_coefs(me$model,
+                          type == "indep")
   out <- list(coef = coef_model)
   if (calc_vcov) {
     if (length(grep("MeasErrorExt.lm", attributes(me)$call)) != 0) {
-      vcov_model <- mecor:::get_vcov(me$model,
-                                     type == "indep")
+      vcov_model <- get_vcov(me$model,
+                             type == "indep")
       out$vcov <- vcov_model
     } else if (length(grep("MeasErrorExt.list", attributes(me)$call)) != 0) {
       if (!is.null(me$model$vcov)) {
         if (type == "indep") {
-          vcov_model <- mecor:::change_order_vcov(me$vcov)
+          vcov_model <- change_order_vcov(me$vcov)
         } else
           vcov_model <- me$vcov
         out$vcov <- vcov_model
@@ -167,9 +165,9 @@ model.MeasErrorRandom <- function(response,
 standard_get_model <- function(covars,
                                me,
                                type) {
-  dm_cm <- mecor:::get_dm_cm(covars,
-                             me,
-                             type) # design matrix calibration model (cov-me)
+  dm_cm <- get_dm_cm(covars,
+                     me,
+                     type) # design matrix calibration model (cov-me)
   # or measurement error model (outcome-me)
   if (startsWith(type, "dep")) {
     y <- me$substitute
@@ -187,9 +185,9 @@ standard_get_coef <- function(beta_star,
                               coef_model,
                               type) {
   n <- NROW(beta_star)
-  model_matrix <- mecor:::standard_get_model_matrix(coef_model,
-                                                    n,
-                                                    type)
+  model_matrix <- standard_get_model_matrix(coef_model,
+                                            n,
+                                            type)
   # estimate beta (cor)
   if (startsWith(type, "dep")) {
     beta_star <- c(beta_star, 1)

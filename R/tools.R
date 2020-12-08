@@ -4,26 +4,26 @@ get_coefs <- function(fit,
   coefs <- fit$coef
   if (rev == TRUE) {
     # reverse coefficients
-    coefs <- mecor:::change_order_coefs(fit$coef)
+    coefs <- change_order_coefs(fit$coef)
   }
   coefs
 }
 get_vcov <- function(fit,
                      rev = TRUE) {
-  vcov <- mecor:::vcovfromfit(fit)
+  vcov <- vcovfromfit(fit)
   if (rev == TRUE) {
     # reverse coefficients
-    vcov <- mecor:::change_order_vcov(vcov)
+    vcov <- change_order_vcov(vcov)
   }
   vcov
 }
 get_vcovHC3 <- function(fit,
                         dm,
                         rev = TRUE) {
-  vcov <- mecor:::vcovHC3fromfit(fit, dm)
+  vcov <- vcovHC3fromfit(fit, dm)
   if (rev == TRUE) {
     # reverse coefficients
-    vcov <- mecor:::change_order_vcov(vcov)
+    vcov <- change_order_vcov(vcov)
   }
   vcov
 }

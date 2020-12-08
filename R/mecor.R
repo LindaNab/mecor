@@ -114,20 +114,20 @@ mecor <- function(formula,
                   data,
                   method = "standard",
                   B = 0) {
-  mecor:::check_input_mecor(formula,
-                            data,
-                            method)
+  check_input_mecor(formula,
+                    data,
+                    method)
   # Create response, covars and me (= MeasError(Ext/Random) object)
   vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
   ind_me <- grep("MeasError",
                  vars_formula) # index of MeasError(Ext/Random) in
   # list of variables
-  mecor:::check_ind_me(ind_me)
+  check_ind_me(ind_me)
   ind_response <- attributes(terms(formula))$response
-  type <- mecor:::get_me_type(ind_me, ind_response)
+  type <- get_me_type(ind_me, ind_response)
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
-  B <- mecor:::check_me(me, B, type, method)
+  B <- check_me(me, B, type, method)
   if (type == "dep" & (!is.null(me$differential) | # MeasError
                        length(me$coef) == 4 | # MeasErrorExt.list
                        length(me$model$coef) == 4)) {
@@ -150,32 +150,32 @@ mecor <- function(formula,
   # corrected fit
   corfit <- switch(
     method,
-    "standard" = mecor:::standard(response,
-                                  covars,
-                                  me,
-                                  B,
-                                  type),
-    "efficient" = mecor:::efficient(response,
-                                    covars,
-                                    me,
-                                    B,
-                                    type),
-    "valregcal" = mecor:::valregcal(response,
-                                    covars,
-                                    me,
-                                    B,
-                                    type),
-    "mle" = mecor:::mle(response,
-                        covars,
-                        me,
-                        B,
-                        type)
+    "standard" = standard(response,
+                          covars,
+                          me,
+                          B,
+                          type),
+    "efficient" = efficient(response,
+                            covars,
+                            me,
+                            B,
+                            type),
+    "valregcal" = valregcal(response,
+                            covars,
+                            me,
+                            B,
+                            type),
+    "mle" = mle(response,
+                covars,
+                me,
+                B,
+                type)
   )
   # uncorrected fit
-  uncorfit <- mecor:::uncorrected(response,
-                                  covars,
-                                  me,
-                                  type)
+  uncorfit <- uncorrected(response,
+                          covars,
+                          me,
+                          type)
   # output
   out <- list(corfit = corfit,
               uncorfit = uncorfit)

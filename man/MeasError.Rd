@@ -43,12 +43,12 @@ with (icvs, MeasError(substitute = X_star,
                       reference = X))
 # replicates study
 data(rs)
-with (rs, MeasError(substitute = X1_star,
-                    replicate = cbind(X2_star, X3_star)))
+with (rs, MeasError(substitute = X_star_1,
+                    replicate = cbind(X_star_2, X_star_3)))
 # covariate-calibration study
 data(ccs)
 with(ccs, MeasError(substitute = X_star,
-                    replicate = cbind(X1_star, X2_star)))
+                    replicate = cbind(X_star_1, X_star_2)))
 ## measurement error in the outcome:
 # internal outcome-validation study
 data(iovs)

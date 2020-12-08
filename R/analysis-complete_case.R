@@ -2,7 +2,7 @@ complete_case <- function(response,
                           covars,
                           me,
                           type) {
-  dm_cc <- mecor:::get_dm_cc(covars, me, type)
+  dm_cc <- get_dm_cc(covars, me, type)
   if (startsWith(type, "dep")) {
     y <- me$reference
   } else if (type == "indep") {

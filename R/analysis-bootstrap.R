@@ -10,7 +10,7 @@ analysis_boot <- function(response,
                     length = B)
   for (i in seq_along(samples)) {
     samples[[i]] <-
-      mecor:::get_new_sample(response, covars, me, type, method)
+      get_new_sample(response, covars, me, type, method)
   }
   n_coef <- ifelse(is.null(covars), 0, ncol(covars)) +
     ifelse(type == "indep", 2, 1)
@@ -21,22 +21,22 @@ analysis_boot <- function(response,
     "standard" = for (i in seq_along(samples)) {
       utils::setTxtProgressBar(pb, i)
       coef[, i] <-
-        do.call(mecor:::standard, samples[[i]])$coef
+        do.call(standard, samples[[i]])$coef
     },
     "efficient" = for (i in seq_along(samples)) {
       utils::setTxtProgressBar(pb, i)
       coef[, i] <-
-        do.call(mecor:::efficient, samples[[i]])$coef
+        do.call(efficient, samples[[i]])$coef
     },
     "valregcal" = for (i in seq_along(samples)) {
       utils::setTxtProgressBar(pb, i)
       coef[, i] <-
-        do.call(mecor:::valregcal, samples[[i]])$coef
+        do.call(valregcal, samples[[i]])$coef
     },
     "mle" = for (i in seq_along(samples)) {
       utils::setTxtProgressBar(pb, i)
       coef[, i] <-
-        do.call(mecor:::mle, samples[[i]])$coef
+        do.call(mle, samples[[i]])$coef
     }
   )
   out <- list(coef = t(coef))

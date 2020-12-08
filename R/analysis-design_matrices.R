@@ -10,7 +10,7 @@ get_dm_uncor <- function(covars,
     dm <- cbind(1, me$substitute)
     colnames(dm) <-
       c("(Intercept)", attributes(me)$input$substitute)
-    dm <- mecor:::bind_covars(dm, covars)
+    dm <- bind_covars(dm, covars)
   }
   dm
 }
@@ -28,7 +28,7 @@ get_dm_cc <- function(covars,
       attributes(me)$input$reference
     )
     colnames(dm) <- c("(Intercept)", name)
-    dm <- mecor:::bind_covars(dm, covars)
+    dm <- bind_covars(dm, covars)
   }
   dm
 }
@@ -60,10 +60,10 @@ get_dm_cm <- function(covars,
 get_dm_vrc <- function(covars,
                        me,
                        type) {
-  dm <- mecor:::get_dm_uncor(covars,
+  dm <- get_dm_uncor(covars,
                              me,
                              type)
-  model_fit <- mecor:::standard_get_model(covars,
+  model_fit <- standard_get_model(covars,
                                           me,
                                           type)
   fitted_values <- dm %*% coef(model_fit)

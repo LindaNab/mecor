@@ -64,7 +64,7 @@ summary.mecor <- function(object,
     Estimate = (coef1 <- z1$coef),
     'Std. Error' = (se1 <-
                       sqrt(diag(
-                        mecor:::vcovfromfit(z1)
+                        vcovfromfit(z1)
                       ))),
     't value' = (t1 <- coef1 / se1),
     'Pr(>|t|)' = 2 * pt(abs(t1), rdf1, lower.tail = FALSE)
@@ -117,7 +117,7 @@ summary.mecor <- function(object,
                 'UCI (zerovar)' = UCI_zerovar)
   }
   if (fieller == TRUE) {
-    fieller_ci <- mecor:::calc_fieller_ci(
+    fieller_ci <- calc_fieller_ci(
       z2$fieller$lambda1,
       z2$fieller$var_lambda1,
       z2$fieller$phi_star,

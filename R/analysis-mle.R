@@ -20,14 +20,17 @@ mle <- function(response,
   } else data_wide <- cbind.data.frame(me$substitute,
                                        me$replicate,
                                        response)
-  lm_formula <- stats:::as.formula(paste0(colnames(response),
-                                          " ~ ",
-                                          paste(ifelse(!is.null(covars), colnames(covars), 1),
-                                                collapse = " + ")))
+  lm_formula <- stats::as.formula(paste0(colnames(response),
+                                         " ~ ",
+                                         paste(
+                                           ifelse(!is.null(covars),
+                                                  colnames(covars), 1),
+                                           collapse = " + "
+                                         )))
 
-  lm_fit <- stats:::lm(formula = lm_formula,
+  lm_fit <- stats::lm(formula = lm_formula,
                        data = data_wide)
-  data_long <- stats:::reshape(
+  data_long <- stats::reshape(
     data_wide,
     varying = 1:{
       n_rep + 1
@@ -38,38 +41,37 @@ mle <- function(response,
   )
   if(!is.null(covars)){
     terms_formula_dep <- paste(colnames(response),
-                               paste(colnames(covars), collapse = " + "),
+                               paste(colnames(covars),
+                                     collapse = " + "),
                                sep = " + ")
   } else terms_formula_dep <- colnames(response)
   lmm_formula <- as.formula(paste0("X_star ~ ",
                                    terms_formula_dep,
                                    " + (1|id)"))
-  lmm_fit <- mecor:::lme(lmm_formula,
-                         data_long)
-  beta <- mecor:::mle_get_coef(lm_fit,
-                               lmm_fit)
-  beta <- mecor:::change_names(beta,
-                               me)
+  lmm_fit <- lme(lmm_formula,
+                 data_long)
+  beta <- mle_get_coef(lm_fit,
+                       lmm_fit)
+  beta <- change_names(beta,
+                       me)
   # change order of coef
-  out <- list(coef = mecor:::change_order_coefs(beta))
+  out <- list(coef =change_order_coefs(beta))
   if (calc_vcov == T) {
     # if mle is used in a bootstrap loop
-    vcov_beta <- mecor:::mle_get_vcov(lm_fit,
-                                      lmm_fit)
-    vcov_beta <- mecor:::change_names(vcov_beta,
-                                      me)
-    out$vcov <- mecor:::change_order_vcov(vcov_beta)
+    vcov_beta <- mle_get_vcov(lm_fit,
+                              lmm_fit)
+    vcov_beta <- change_names(vcov_beta,
+                              me)
+    out$vcov <- change_order_vcov(vcov_beta)
   }
   out$method = "maximum likelihood estimation"
   if (B != 0) {
-    boot <- mecor:::analysis_boot(
-      response,
-      covars,
-      me,
-      B = B,
-      type = "indep",
-      method = "mle"
-    )
+    boot <- analysis_boot(response,
+                          covars,
+                          me,
+                          B = B,
+                          type = "indep",
+                          method = "mle")
     colnames(boot$coef) <- names(out$coef)
     out$boot <- boot
   }
@@ -111,10 +113,10 @@ mle_get_coef <- function(lm_fit, lmm_fit) {
   fixed_ef_lmm_fit <- lme4::fixef(lmm_fit)
   sigma_sq <- summary(lm_fit)$sigma ^ 2
   random_int <- attributes(lme4::VarCorr(lmm_fit)$id)$stddev ^ 2
-  beta <- mecor:::mle_coef(coef_lm_fit,
-                           sigma_sq,
-                           fixed_ef_lmm_fit,
-                           random_int)
+  beta <- mle_coef(coef_lm_fit,
+                   sigma_sq,
+                   fixed_ef_lmm_fit,
+                   random_int)
   beta
 }
 mle_coef <- function(coef_lm_fit,
@@ -146,11 +148,11 @@ mle_get_vcov <- function(lm_fit, lmm_fit) {
   vec <- c(coef_lm_fit, sigma_sq,
            fixed_ef_lmm_fit,
            random_int)
-  vcov_vec <- mecor:::mle_vcov_vec(lm_fit,
-                                   lmm_fit)
-  vcov_beta <- mecor:::deltamethod(mecor:::mle_get_coef_using_vec,
-                                   vec,
-                                   vcov_vec)
+  vcov_vec <- mle_vcov_vec(lm_fit,
+                           lmm_fit)
+  vcov_beta <- deltamethod(mle_get_coef_using_vec,
+                           vec,
+                           vcov_vec)
   names_vcov_beta <- names(fixed_ef_lmm_fit)
   names_vcov_beta[1:2] <- rev(names(fixed_ef_lmm_fit)[1:2])
   dimnames(vcov_beta) <- list(names_vcov_beta,
@@ -197,8 +199,8 @@ mle_get_coef_using_vec <- function(vec) {
   sigma_sq <- vec[n_delta + 1]
   fixed_ef_lmm_fit <- vec[{n_delta + 2}:{n_delta + 1 + n_kappa}]
   random_int <- vec[length(vec)]
-  beta <- mecor:::mle_coef(coef_lm_fit,
-                           sigma_sq,
-                           fixed_ef_lmm_fit,
-                           random_int)
+  beta <- mle_coef(coef_lm_fit,
+                   sigma_sq,
+                   fixed_ef_lmm_fit,
+                   random_int)
 }
