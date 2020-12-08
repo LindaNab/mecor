@@ -6,7 +6,7 @@ Author: Linda Nab
 Maintainer: Linda Nab <l.nab@lumc.nl>
 Description: Implementation of methods correcting for measurement error in continuous endpoints.
 Depends: R (>= 2.10)
-License: GPL-3
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/LindaNab/mecor.git
