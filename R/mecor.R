@@ -51,12 +51,12 @@
 #'       B = 999)
 #' # replicates study
 #' data(rs)
-#' mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+#' mecor(Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, X_star_3)) + Z1 + Z2,
 #'       data = rs,
 #'       method = "mle")
 #' # covariate-calibration study
 #' data(ccs)
-#' mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
+#' mecor(Y ~ MeasError(X_star, replicate = cbind(X_star_1, X_star_2)) + Z,
 #'       data = ccs,
 #'       method = "efficient")
 #' # external covariate-validation study
@@ -73,8 +73,8 @@
 #' # assume random measurement error in X_star of magnitude 0.25:
 #' mecor(Y ~ MeasErrorRandom(X_star, error = 0.25) + Z,
 #'       data = icvs)
-#' data(rs) # suppose replicates X2_star and X3_star are not available
-#' mecor(Y ~ MeasErrorRandom(X1_star, error = 0.25) + Z1 + Z2,
+#' data(rs) # suppose replicates X_star_2 and X_star_2 are not available
+#' mecor(Y ~ MeasErrorRandom(X_star_1, error = 0.25) + Z1 + Z2,
 #'       data = rs)
 #'
 #' ## measurement error in the outcome:
@@ -207,6 +207,7 @@ check_input_mecor <- function(formula,
   if (!method %in% c("standard", "efficient", "valregcal", "mle"))
     stop("this method is not implemented")
 }
+
 check_ind_me <- function(ind_me) {
   if (length(ind_me) == 0) {
     stop("formula should contain a MeasError(Ext/Random) object")
@@ -252,8 +253,7 @@ check_me <- function(me,
         "The maximum likelihood estimator does not accommodate correction of measurement error in the dependent variable"
       )
     }
-    if (class(me) == "MeasErrorExt" ||
-        class(me) == "MeasErrorRandom")
+    if (class(me)[1] == "MeasErrorExt" || class(me)[1] == "MeasErrorRandom")
       stop(
         "The maximum likelihood estimator does not accommodate measurement error correction using a 'MeasErrorExt' or 'MeasErrorRandom' object"
       )

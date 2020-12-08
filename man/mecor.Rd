@@ -52,12 +52,12 @@ mecor(Y ~ MeasError(X_star, reference = X) + Z,
       B = 999)
 # replicates study
 data(rs)
-mecor(Y ~ MeasError(X1_star, replicate = cbind(X2_star, X3_star)) + Z1 + Z2,
+mecor(Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, X_star_3)) + Z1 + Z2,
       data = rs,
       method = "mle")
 # covariate-calibration study
 data(ccs)
-mecor(Y ~ MeasError(X_star, replicate = cbind(X1_star, X2_star)) + Z,
+mecor(Y ~ MeasError(X_star, replicate = cbind(X_star_1, X_star_2)) + Z,
       data = ccs,
       method = "efficient")
 # external covariate-validation study
@@ -74,8 +74,8 @@ mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.9, 0.2))) + Z,
 # assume random measurement error in X_star of magnitude 0.25:
 mecor(Y ~ MeasErrorRandom(X_star, error = 0.25) + Z,
       data = icvs)
-data(rs) # suppose replicates X2_star and X3_star are not available
-mecor(Y ~ MeasErrorRandom(X1_star, error = 0.25) + Z1 + Z2,
+data(rs) # suppose replicates X_star_2 and X_star_2 are not available
+mecor(Y ~ MeasErrorRandom(X_star_1, error = 0.25) + Z1 + Z2,
       data = rs)
 
 ## measurement error in the outcome:

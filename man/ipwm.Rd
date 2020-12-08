@@ -48,7 +48,7 @@ ipwm(
 
 \item{sp}{scalar shrinkage parameter in the interval \code{(0, Inf)}. Values closer to zero result in greater shrinkage of the estimated odds ratio to unity; \code{sp == Inf} results in no shrinkage.}
 
-\item{print}{logical indicator specifying whether or not print the output.}
+\item{print}{logical indicator specifying whether or not to print the output.}
 }
 \value{
 \code{ipwm} returns an object of \link[base]{class} \code{ipwm}.
@@ -81,6 +81,7 @@ formulas <- list(
   Z ~ L1 + L2 + L3 + L4 + L5 + L6 + L7 + L8 + L9 + L10 + B,
   B ~ L1 + L2 + L3 + L4 + L5 + L6 + L7 + L8 + L9 + L10
 )
+\dontrun{
 ipwm_out <- ipwm(
   formulas = formulas,
   data = sim,
@@ -92,6 +93,7 @@ ipwm_out <- ipwm(
   sp = 1e6
 )
 ipwm_out
+}
 
 }
 \references{

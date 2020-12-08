@@ -15,7 +15,7 @@
 #' @param optim_args arguments passed onto \code{\link[stats]{optim}} if called. See Details below for more information.
 #' @param force_optim logical indicator specifying whether or not to force the \code{\link[stats]{optim}} function to be called
 #' @param sp scalar shrinkage parameter in the interval \code{(0, Inf)}. Values closer to zero result in greater shrinkage of the estimated odds ratio to unity; \code{sp == Inf} results in no shrinkage.
-#' @param print logical indicator specifying whether or not print the output.
+#' @param print logical indicator specifying whether or not to print the output.
 #'
 #' @details
 #' This function is an implementation of the weighting method described by Penning de Vries et al. (2018).
@@ -51,6 +51,7 @@
 #'   Z ~ L1 + L2 + L3 + L4 + L5 + L6 + L7 + L8 + L9 + L10 + B,
 #'   B ~ L1 + L2 + L3 + L4 + L5 + L6 + L7 + L8 + L9 + L10
 #' )
+#' \dontrun{
 #' ipwm_out <- ipwm(
 #'   formulas = formulas,
 #'   data = sim,
@@ -62,6 +63,7 @@
 #'   sp = 1e6
 #' )
 #' ipwm_out
+#' }
 #'
 #' @importFrom boot 'boot'
 #' @importFrom boot 'boot.ci'

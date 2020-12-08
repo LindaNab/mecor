@@ -31,9 +31,9 @@
 #' data(icvs)
 #' mecor_fit <- mecor(Y ~ MeasError(X_star, reference = X) + Z,
 #'                    data = icvs,
-#'                    method = "rc")
+#'                    method = "standard")
 #' summary(mecor_fit)
-#' summary(mecor_fit, zerovar = T, fieller = T)
+#' summary(mecor_fit, zerovar = TRUE, fieller = TRUE)
 #' summary(mecor_fit, alpha = 0.10)
 #'
 #' @export
