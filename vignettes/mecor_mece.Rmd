@@ -1,5 +1,5 @@
 ---
-title: "Measurement errors in continuous trial endpoints"
+title: "Measurement error correction in a continuous trial endpoint"
 author: "Linda Nab"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -14,18 +14,56 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+library(mecor)
 ```
-If endpoints in a trial are measured with error, you need to:
+This vignette shows how one can correct for the bias in the trial's effect estimate using the R package mecor. We make use of external validation data. Suppose an endpoint in a trial is measured with error, i.e., the substitute endpoint $Y^*$ instead of the reference endpoint $Y$ is observed. 
 
-- Quantify the measurement error in an external dataset
+First, we simulate some example data for a trial composed out of two groups. For example, a placebo group ($X = 0$) and an active comparator ($X = 1$). The number of individuals included in the trial is set to 1000, 500 individuals in each group. Suppose the substitute endpoint $Y^*$ is observed instead of $Y$. Further, suppose that an external validation set of sample size 500 is available in which both $Y^*$ and $Y$ are measured. 
+```{r example1}
+# simulate the trial's data
+X <- rep(c(0,1), 500)
+Y <- 2 * X + rnorm(1000, 0, 1) # estimand: 2
+# introduce measurement error
+Y_star <- 1.1 * Y + rnorm(1000, 0, 1)
+trial <- cbind.data.frame(X = X, Y_star = Y_star)
+# simulate an external validation data set
+Y <- rnorm(100, 2, 1)
+Y_star <- 1.1 * Y + rnorm(500, 0, 1)
+trial_ext <- cbind.data.frame(Y = Y, Y_star = Y_star)
+```
 
-- Correct for the measurement error 
+When the error is ignored, one would estimate the trial's effect by regressing $X$ on $Y^*$.
+```{r example2}
+# uncorrected estimate of the trial's effect:
+uncor_fit <- lm(Y_star ~ X, data = trial)
+uncor_fit$coefficients
+```
+As you might expect, the trial's effect estimate does not equal 2, to which value the estimand was set when generating the data. To obtain an unbiased trial effect, measurement error correction is needed. First, we estimate the parameters of the measurement error model using our external validation data:
+```{r example3}
+memod_fit <- lm(Y_star ~ Y, data = trial_ext)
+memod_fit$coefficients
+```
 
-## Quantification of measurement error
+Then, mecor can be used to correct for the measurement error in the trial's effect estimate as follows:
+```{r example4}
+cor_fit <- mecor(MeasErrorExt(substitute = Y_star, model = memod_fit) ~ X,
+                 data = trial,
+                 method = "standard",
+                 B = 0 # for bootstrap intervals, set to e.g. 999
+                 )
+```
 
-The function 'mefit' in the mecor package can be used for quantification of the measurement error in an external calibration set by fitting a linear regression between the true endpoint and the with error contaminated endpoint measure (that is used in the trial for endpoint measurement). Depending on the assumed structure of the underlying measurement error model (e.g., systematic or differential), a different fit is used for the data. 
+Confidence intervals for the corrected estimate can be obtained by using the summary object:
+```{r example5}
+summary(cor_fit, fieller = TRUE, zerovar = TRUE)
+```
 
-## Correction of measurement error
-
-The function 'mecor' is the mecor package can be used to correct for the measurement error in the trial. It needs a 'mefit' object where the measurement error is quantified. 
-
+When there is no external validation data available. One could conduct a sensitivity analysis by making informed guesses about the parameters values of the measurement error model. Suppose e.g. we guess the following measurement error model: $Y^* = 1.1 Y$. The following code can be used to quantify the impact of the measurement error would be on the trial's effect estimate: 
+```{r example6}
+sens_fit <- mecor(MeasErrorExt(substitute = Y_star, 
+                               model = list(coef = c(0, 1.1))) ~ X, 
+                  data = trial,
+                  method = "standard"
+                  )
+sens_fit
+```
