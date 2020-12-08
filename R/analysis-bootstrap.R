@@ -68,7 +68,7 @@ get_new_sample.MeasError <- function(response,
     new_me$differential <- me$differential[new_rownums]
   }
   if (!is.null(me$replicate)) {
-    if (is.null(dim(replicate))) {
+    if (is.null(dim(me$replicate))) {
       new_me$replicate <- me$replicate[new_rownums]
     } else {
       new_me$replicate <- me$replicate[new_rownums,]
