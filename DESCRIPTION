@@ -1,15 +1,15 @@
 Package: mecor
 Type: Package
 Title: Measurement Error Correction in Linear Models with a Continuous Outcome
-Version: 0.1.0
+Version: 1.0.0
 Author: Linda Nab
-Maintainer: Linda Nab <l.nab@lumc.nl>
-Description: Implementation of methods correcting for measurement error in continuous endpoints.
+Maintainer: Linda Nab <lindanab4@gmail.com>
+Description: Measurement Error Correction in a Covariate or the Outcome in Linear Models with a Continuous Outcome.
 Depends: R (>= 2.10)
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
-URL: https://github.com/LindaNab/mecor.git
+URL: https://github.com/LindaNab/mecor
 Imports: 
     lme4,
     lmerTest,

@@ -10,8 +10,7 @@ mle <- function(response,
                 calc_vcov = T) {
   if (is.vector(me$replicate)) {
     n_rep <- 1
-  } else
-    n_rep <- ncol(me$replicate)
+  } else n_rep <- ncol(me$replicate)
   if (!is.null(covars)){
   data_wide <- cbind.data.frame(me$substitute,
                                 me$replicate,
@@ -20,13 +19,13 @@ mle <- function(response,
   } else data_wide <- cbind.data.frame(me$substitute,
                                        me$replicate,
                                        response)
+  if (!is.null(covars)){
   lm_formula <- stats::as.formula(paste0(colnames(response),
                                          " ~ ",
-                                         paste(
-                                           ifelse(!is.null(covars),
-                                                  colnames(covars), 1),
+                                         paste(colnames(covars),
                                            collapse = " + "
                                          )))
+  } else lm_formula <- stats::as.formula(paste0(colnames(response), " ~ 1"))
 
   lm_fit <- stats::lm(formula = lm_formula,
                        data = data_wide)

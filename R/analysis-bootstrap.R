@@ -116,8 +116,7 @@ get_new_sample.MeasErrorExt <- function(me,
     me = new_me,
     B = 0,
     # no bootstrapping within bootstrap
-    type = type,
-    method = method
+    type = type
   )
   if (type == "indep") {
     new_response <- response[new_rownums, , drop = F]
