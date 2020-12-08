@@ -6,7 +6,7 @@ efficient <- function(response,
                       type,
                       calc_vcov = T) {
 
-  # when the MeasError object contains replicates, mle will be used to obtain a
+  # if the MeasError object contains replicates, mle will be used to obtain a
   # internal fit using only the replicates
   # when the MeasError object does not contain replicates, a complete case will
   # be used (using the reference)
@@ -40,8 +40,8 @@ efficient <- function(response,
                              type = type)
   cc_fit_coef <- mecor:::get_coefs(cc_fit,
                                    rev = F)
-  inv_vcov_cc_fit <- erc_solve(vcov_cc_fit, "complete case")
-  inv_vcov_rc_fit <- erc_solve(rc_fit$vcov, "regcal")
+  inv_vcov_cc_fit <- mecor:::erc_solve(vcov_cc_fit, "complete case")
+  inv_vcov_rc_fit <- mecor:::erc_solve(rc_fit$vcov, "regcal")
   beta <- solve(inv_vcov_cc_fit + inv_vcov_rc_fit) %*%
     (inv_vcov_cc_fit %*% cc_fit_coef +
        inv_vcov_rc_fit %*% rc_fit$coef)
