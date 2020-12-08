@@ -20,9 +20,9 @@ standard <- function(response,
   } else if (calc_vcov)
     vcov_beta_star <- get_vcov(uncor_fit)
   # estimate calibration model (cov-me)/measurement error model (out-me)
-  model <- model(response,
+  model <- model(me,
+                 response,
                  covars,
-                 me,
                  type,
                  calc_vcov)
   coef_model <- model$coef
@@ -88,16 +88,12 @@ standard <- function(response,
   }
   out
 }
-model <- function(response,
-                  covars,
-                  me,
-                  type,
-                  calc_vcov = T) {
-  UseMethod("model", me)
+model <- function(x, ...) {
+  UseMethod("model")
 }
-model.MeasError <- function(response,
+model.MeasError <- function(me,
+                            response,
                             covars,
-                            me,
                             type,
                             calc_vcov = T) {
   model_fit <- standard_get_model(covars,
@@ -113,9 +109,9 @@ model.MeasError <- function(response,
   }
   out
 }
-model.MeasErrorExt <- function(response,
+model.MeasErrorExt <- function(me,
+                               response,
                                covars,
-                               me,
                                type,
                                calc_vcov = T) {
   coef_model <- get_coefs(me$model,
@@ -138,9 +134,9 @@ model.MeasErrorExt <- function(response,
   }
   out
 }
-model.MeasErrorRandom <- function(response,
+model.MeasErrorRandom <- function(me,
+                                  response,
                                   covars,
-                                  me,
                                   type,
                                   calc_vcov = T) {
   if (length(me$substitute) != nrow(covars)) {

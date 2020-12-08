@@ -1,5 +1,5 @@
 #' @export
-print.MeasErrorRandom <- function(x) {
+print.MeasErrorRandom <- function(x, ...) {
   cat("\nCall:\n", deparse(attributes(x)$call), "\n", sep = "")
   cat(
     "\nThe error-prone variable",

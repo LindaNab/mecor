@@ -45,7 +45,7 @@ mle <- function(response,
                                      collapse = " + "),
                                sep = " + ")
   } else terms_formula_dep <- colnames(response)
-  lmm_formula <- as.formula(paste0("X_star ~ ",
+  lmm_formula <- stats::as.formula(paste0("X_star ~ ",
                                    terms_formula_dep,
                                    " + (1|id)"))
   lmm_fit <- lme(lmm_formula,

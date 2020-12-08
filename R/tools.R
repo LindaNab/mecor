@@ -48,7 +48,7 @@ vcovHC3fromfit <- function(fit,
   hat <- dm %*% solve(t(dm) %*% dm) %*% t(dm)
   diaghat <- diag(hat)
   df <- fit$df.residual
-  res <- residuals(fit)
+  res <- stats::residuals(fit)
   omega <- res ^ 2 / (1 - diaghat) ^ 2
   rval <- sqrt(omega) * dm
   rval <- crossprod(rval) / n

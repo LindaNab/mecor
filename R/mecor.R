@@ -118,12 +118,12 @@ mecor <- function(formula,
                     data,
                     method)
   # Create response, covars and me (= MeasError(Ext/Random) object)
-  vars_formula <- as.list(attr(terms(formula), "variables"))[-1]
+  vars_formula <- as.list(attr(stats::terms(formula), "variables"))[-1]
   ind_me <- grep("MeasError",
                  vars_formula) # index of MeasError(Ext/Random) in
   # list of variables
   check_ind_me(ind_me)
-  ind_response <- attributes(terms(formula))$response
+  ind_response <- attributes(stats::terms(formula))$response
   type <- get_me_type(ind_me, ind_response)
   vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]

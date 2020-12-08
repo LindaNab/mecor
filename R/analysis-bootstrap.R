@@ -10,7 +10,11 @@ analysis_boot <- function(response,
                     length = B)
   for (i in seq_along(samples)) {
     samples[[i]] <-
-      get_new_sample(response, covars, me, type, method)
+      get_new_sample(me,
+                     response,
+                     covars,
+                     type,
+                     method)
   }
   n_coef <- ifelse(is.null(covars), 0, ncol(covars)) +
     ifelse(type == "indep", 2, 1)
@@ -41,12 +45,12 @@ analysis_boot <- function(response,
   )
   out <- list(coef = t(coef))
 }
-get_new_sample <- function(response, covars, me, type, method) {
-  UseMethod("get_new_sample", me)
+get_new_sample <- function(x, ...) {
+  UseMethod("get_new_sample")
 }
-get_new_sample.MeasError <- function(response,
+get_new_sample.MeasError <- function(me,
+                                     response,
                                      covars,
-                                     me,
                                      type,
                                      method) {
   # sample new rownums
@@ -91,9 +95,9 @@ get_new_sample.MeasError <- function(response,
     new_sample$calc_vcov = F
   new_sample
 }
-get_new_sample.MeasErrorExt <- function(response,
+get_new_sample.MeasErrorExt <- function(me,
+                                        response,
                                         covars,
-                                        me,
                                         type,
                                         method) {
   new_rownums <- sample(1:NROW(me$substitute),
@@ -106,7 +110,7 @@ get_new_sample.MeasErrorExt <- function(response,
                                  size = nrow(me$model$model),
                                  replace = T)
   new_ext_data <- me$model$model[new_rownums_ext_data,]
-  new_me$model <- lm(terms(me$model), data = new_ext_data)
+  new_me$model <- stats::lm(stats::terms(me$model), data = new_ext_data)
   new_sample <- list(
     covars = new_covars,
     me = new_me,

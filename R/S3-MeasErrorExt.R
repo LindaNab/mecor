@@ -1,5 +1,5 @@
 #' @export
-print.MeasErrorExt <- function(x) {
+print.MeasErrorExt <- function(x, ...) {
   cat("\nCall:\n", deparse(attributes(x)$call), "\n", sep = "")
   cat(
     "\nThe error-prone variable",

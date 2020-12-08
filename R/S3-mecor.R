@@ -10,6 +10,7 @@
 #' intervals using the zerovariance method must be added to the summary object.
 #' @param fieller a boolean indicating whether confidence intervals using the
 #' fieller method must be added to the summary object.
+#' @param ... additional arguments affecting the summary produced
 #'
 #' @return
 #' The function \code{summary.mecor} returns a list of summary statistics of the
@@ -39,7 +40,8 @@
 summary.mecor <- function(object,
                           alpha = 0.05,
                           zerovar = FALSE,
-                          fieller = FALSE) {
+                          fieller = FALSE,
+                          ...) {
   z <- object
   z1 <- z$uncorfit
   z2 <- z$corfit
@@ -54,7 +56,7 @@ summary.mecor <- function(object,
   # uncorrected
   rdf1 <- z1$df.residual
   rss1 <- sum(z1$residuals ^ 2)
-  tq <- qt((1 - alpha / 2), rdf1)
+  tq <- stats::qt((1 - alpha / 2), rdf1)
   uc <- list(
     residuals = z1$residuals,
     rdf = rdf1,
@@ -67,7 +69,7 @@ summary.mecor <- function(object,
                         vcovfromfit(z1)
                       ))),
     't value' = (t1 <- coef1 / se1),
-    'Pr(>|t|)' = 2 * pt(abs(t1), rdf1, lower.tail = FALSE)
+    'Pr(>|t|)' = 2 * stats::pt(abs(t1), rdf1, lower.tail = FALSE)
   )
   uc$ci <- cbind(
     Estimate = coef1,
@@ -78,7 +80,7 @@ summary.mecor <- function(object,
   # corrected
   coefficients <- cbind(Estimate = (coef2 <- z2$coef))
   ci <- cbind(Estimate = coef2)
-  zq <- qnorm((1 - alpha / 2))
+  zq <- stats::qnorm((1 - alpha / 2))
   if (!is.null(z2$vcov)) {
     SE <- {
       se2 <- sqrt(diag(z2$vcov))
@@ -91,11 +93,11 @@ summary.mecor <- function(object,
   if ({
     B <- attr(z, "B")
   } != 0) {
-    boot_vcov <- cov(z2$boot$coef)
+    boot_vcov <- stats::cov(z2$boot$coef)
     SE_btstr <- sqrt(diag(boot_vcov))
     boot_ci <- apply(z2$boot$coef,
                      2,
-                     FUN = quantile,
+                     FUN = stats::quantile,
                      probs = c(alpha / 2, 1 - alpha / 2))
     LCI_btstr <- boot_ci[1,]
     UCI_btstr <- boot_ci[2,]
@@ -150,7 +152,7 @@ summary.mecor <- function(object,
   out
 }
 #' @export
-print.summary.mecor <- function(x) {
+print.summary.mecor <- function(x, ...) {
   cat("\nCall:\n",
       paste(deparse(x$call),
             sep = "\n",
@@ -183,8 +185,8 @@ print.summary.mecor <- function(x) {
     print(x$c$matrix)
   }
   cat("\nCoefficients Uncorrected Model:\n")
-  printCoefmat(x$uc$coefficients,
-               signif.stars = F)
+  stats::printCoefmat(x$uc$coefficients,
+                      signif.stars = F)
   cat("\n",
       paste((1 - x$alpha) * 100,
             "%",
@@ -200,7 +202,7 @@ print.summary.mecor <- function(x) {
   invisible(x)
 }
 #' @export
-print.mecor <- function(x) {
+print.mecor <- function(x, ...) {
   cat("\nCall:\n",
       paste(deparse(attr(x, "call")),
             sep = "\n",

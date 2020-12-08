@@ -298,7 +298,7 @@ calc_fieller_ci <- function(lambda1,
                             alpha) {
   ci <- matrix(nrow = length(phi_star), ncol = 2)
   colnames(ci) <- c('LCI', 'UCI')
-  z <- qnorm(1 - alpha / 2)
+  z <- stats::qnorm(1 - alpha / 2)
   f0 <- z^2 * var_phi_star - phi_star^2
   f1 <- - phi_star * lambda1
   f2 <- z^2 * var_lambda1 - lambda1^2

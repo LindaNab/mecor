@@ -1,7 +1,5 @@
 #' @export
-
-#' @export
-print.MeasError <- function(x) {
+print.MeasError <- function(x, ...) {
   cat("\nCall:\n", deparse(attributes(x)$call), "\n", sep = "")
   if (is.null(x$replicate) & is.null(x$differential)) {
     cat("\nThe error-prone variable",

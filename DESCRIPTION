@@ -13,7 +13,8 @@ URL: https://github.com/LindaNab/mecor.git
 Imports: 
     lme4,
     lmerTest,
-    numDeriv
+    numDeriv,
+    boot
 Suggests: knitr,
           rmarkdown
 VignetteBuilder: knitr

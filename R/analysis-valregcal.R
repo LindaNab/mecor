@@ -8,7 +8,7 @@ valregcal <- function(response,
                        type) # design matrix
   vrc_fit <- stats::lm.fit(dm_vrc,
                            response)
-  out <- list(coef = coef(vrc_fit),
+  out <- list(coef = stats::coef(vrc_fit),
               vcov = vcovfromfit(vrc_fit))
   out$method <- "validation regression calibration"
   if (B != 0) {

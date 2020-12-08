@@ -66,7 +66,7 @@ get_dm_vrc <- function(covars,
   model_fit <- standard_get_model(covars,
                                           me,
                                           type)
-  fitted_values <- dm %*% coef(model_fit)
+  fitted_values <- dm %*% stats::coef(model_fit)
   x <- fitted_values
   x[!is.na(me$reference)] <- me$reference[!is.na(me$reference)]
   dm[, as.character(attributes(me)$input$substitute)] <- x

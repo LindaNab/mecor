@@ -4,7 +4,7 @@
 \alias{summary.mecor}
 \title{Summarizing Measurement Error Correction}
 \usage{
-\method{summary}{mecor}(object, alpha = 0.05, zerovar = FALSE, fieller = FALSE)
+\method{summary}{mecor}(object, alpha = 0.05, zerovar = FALSE, fieller = FALSE, ...)
 }
 \arguments{
 \item{object}{an object of class "mecor", a result of a call to
@@ -17,6 +17,8 @@ intervals using the zerovariance method must be added to the summary object.}
 
 \item{fieller}{a boolean indicating whether confidence intervals using the
 fieller method must be added to the summary object.}
+
+\item{...}{additional arguments affecting the summary produced}
 }
 \value{
 The function \code{summary.mecor} returns a list of summary statistics of the

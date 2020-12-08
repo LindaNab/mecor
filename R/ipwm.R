@@ -2,7 +2,7 @@
 #'
 #' \code{ipwm} implements a method for estimating the marginal causal odds ratio by constructing weights (modified inverse probability weights) that address both confounding and joint misclassification of exposure and outcome.
 #'
-#' @param formulas a list of objects of \link[base]{class} \code{\link[stats]{formula}} specifying the probability models for the terms of some factorisation of the joint conditional probability function of \code{exposure_true}, \code{exposure_mis}, \code{outcome_true} and \code{outcome_mis}, given covariates
+#' @param formulas a list of objects of \link[base]{class} \code{\link[stats]{formula}} specifying the probability models for the stats::terms of some factorisation of the joint conditional probability function of \code{exposure_true}, \code{exposure_mis}, \code{outcome_true} and \code{outcome_mis}, given covariates
 #' @param data \code{\link[base]{data.frame}} containing \code{exposure.true}, \code{exposure.mis}, \code{outcome.true}, \code{outcome.mis} and covariates. Missings (\code{NA}s) are allowed on variables \code{exposure_true} and \code{outcome_true}.
 #' @param exposure_true a character string specifying the name of the true exposure variable that is free of misclassification but possibly unknown (\code{NA}) for some (but not all) subjects
 #' @param exposure_mis a character string specifying the name of the counterpart of \code{exposure_true} that is available on all subjects but potentially misclassifies subjects as exposed or as non-exposed. The default (\code{exposure_mis = NULL}) indicates absence of exposure misclassification
@@ -15,6 +15,7 @@
 #' @param optim_args arguments passed onto \code{\link[stats]{optim}} if called. See Details below for more information.
 #' @param force_optim logical indicator specifying whether or not to force the \code{\link[stats]{optim}} function to be called
 #' @param sp scalar shrinkage parameter in the interval \code{(0, Inf)}. Values closer to zero result in greater shrinkage of the estimated odds ratio to unity; \code{sp == Inf} results in no shrinkage.
+#' @param print logical indicator specifying whether or not print the output.
 #'
 #' @details
 #' This function is an implementation of the weighting method described by Penning de Vries et al. (2018).
@@ -22,7 +23,7 @@
 #'
 #' The function assumes that the exposure or the outcome has a misclassified version. An error is issued when both \code{outcome_mis} and \code{exposure_mis} are set to \code{NULL}.
 #'
-#' Provided \code{force_optim = FALSE}, \code{ipwm} is considerably more efficient when the \code{\link[stats]{optim}} function is not invoked; i.e., when (1) \code{exposure_mis = NULL} and the formula for \code{outcome_true} does not contain terms involving \code{outcome_mis} or \code{exposure_true}, (2) \code{outcome_mis = NULL} and the formula for \code{exposure_true} does not contain terms involving \code{exposure_mis} or \code{outcome_true}, or (3) \code{all(is.na(data[, exposure_true]) == is.na(data[, outcome_true]))} and the formulas for \code{exposure_true} and \code{outcome_true} do not contain terms involving \code{exposure_mis} or \code{outcome_mis}. In these cases, \code{ipwm} uses iteratively reweighted least squares via the \code{\link[stats]{glm}} function for maximum likelihood estimation. In all other cases, \code{optim_args} is passed on to \code{\link[stats]{optim}} for optimisation of the joint likelihood of \code{outcome_true}, \code{outcome_mis}, \code{exposure_true} and \code{exposure_mis}.
+#' Provided \code{force_optim = FALSE}, \code{ipwm} is considerably more efficient when the \code{\link[stats]{optim}} function is not invoked; i.e., when (1) \code{exposure_mis = NULL} and the formula for \code{outcome_true} does not contain stats::terms involving \code{outcome_mis} or \code{exposure_true}, (2) \code{outcome_mis = NULL} and the formula for \code{exposure_true} does not contain stats::terms involving \code{exposure_mis} or \code{outcome_true}, or (3) \code{all(is.na(data[, exposure_true]) == is.na(data[, outcome_true]))} and the formulas for \code{exposure_true} and \code{outcome_true} do not contain stats::terms involving \code{exposure_mis} or \code{outcome_mis}. In these cases, \code{ipwm} uses iteratively reweighted least squares via the \code{\link[stats]{glm}} function for maximum likelihood estimation. In all other cases, \code{optim_args} is passed on to \code{\link[stats]{optim}} for optimisation of the joint likelihood of \code{outcome_true}, \code{outcome_mis}, \code{exposure_true} and \code{exposure_mis}.
 #'
 #' @return \code{ipwm} returns an object of \link[base]{class} \code{ipwm}.
 #' The returned object is a list containing the following elements:
@@ -62,6 +63,8 @@
 #' )
 #' ipwm_out
 #'
+#' @importFrom boot 'boot'
+#' @importFrom boot 'boot.ci'
 #' @export
 ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,exposure_mis=NULL,nboot=1000,conf_level=0.95,
   fix_nNAs=FALSE,semiparametric=FALSE,optim_args=list(method="BFGS"),force_optim=FALSE,sp=Inf,print=TRUE
@@ -85,7 +88,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     while(outcome_mis%in%colnames(data)) outcome_mis <- paste0(outcome_mis,".")
     data <- cbind(Z,data)
     colnames(data)[1L] <- outcome_mis
-    formulas <- c(as.formula(paste0(outcome_mis,"~-1+offset(ifelse(",outcome_true,",Inf,-Inf))")),formulas)
+    formulas <- c(stats::as.formula(paste0(outcome_mis,"~-1+offset(ifelse(",outcome_true,",Inf,-Inf))")),formulas)
     dep_var <- lapply(formulas,"[[",2L)
     dep_var <- as.character(dep_var)
     mt <- match(c(outcome_true,exposure_true,outcome_mis,exposure_mis),dep_var)
@@ -96,7 +99,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     while(exposure_mis%in%colnames(data)) exposure_mis <- paste0(exposure_mis,".")
     data <- cbind(B,data)
     colnames(data)[1L] <- exposure_mis
-    formulas <- c(as.formula(paste0(exposure_mis,"~-1+offset(ifelse(",exposure_true,",Inf,-Inf))")),formulas)
+    formulas <- c(stats::as.formula(paste0(exposure_mis,"~-1+offset(ifelse(",exposure_true,",Inf,-Inf))")),formulas)
     dep_var <- lapply(formulas,"[[",2L)
     dep_var <- as.character(dep_var)
     mt <- match(c(outcome_true,exposure_true,outcome_mis,exposure_mis),dep_var)
@@ -148,7 +151,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     if(print && nboot>0L){
       it <<- it+1L
       cat("\rBootstrapping: ",round(100*it/(nboot+1L)),"% complete",sep="")
-      flush.console()
+      utils::flush.console()
     }
     return(logOR)
   }
@@ -168,10 +171,10 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
         p <- outer(seq_len(16L),seq_len(n),fn)
         cp <- p
         for(i in 2:16) cp[i,] <- cp[i,]+cp[i-1L,]
-        wh <- (runif(n)<p[1L,])*1L
+        wh <- (stats::runif(n)<p[1L,])*1L
         for(i in 2:16){
           nwh <- !wh
-          wh[nwh] <- (runif(sum(nwh))<p[i,nwh]/(1-cp[i-1,nwh]))*i
+          wh[nwh] <- (stats::runif(sum(nwh))<p[i,nwh]/(1-cp[i-1,nwh]))*i
         }
         out[,dep_var] <- grd[wh,]
         out[isna] <- NA
@@ -187,12 +190,12 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
       if(!missing(Z)) data[,dep_var[3L]] <- Z
       if(!missing(B)) data[,dep_var[4L]] <- B
       p <- suppressWarnings(lapply(1:4,function(u)
-        pbern(data[,dep_var[u]],predict(par[[u]],newdata=data,type='response'))
+        pbern(data[,dep_var[u]],stats::predict(par[[u]],newdata=data,type='response'))
       ))
       out <- p[[1L]]*p[[2L]]*p[[3L]]*p[[4L]]
       return(out)
     }
-    get_par <- function(data,S) suppressWarnings(lapply(formulas,glm,data=data,family=binomial))
+    get_par <- function(data,S) suppressWarnings(lapply(formulas,stats::glm,data=data,family=stats::binomial))
   } else{
     method <- optim_args$method
     if(print) cat("Using stats::optim (method = ",method,") for maximum likelihood estimation ...\n",sep="")
@@ -201,8 +204,8 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
       if(!missing(A)) data[,dep_var[2L]] <- A
       if(!missing(Z)) data[,dep_var[3L]] <- Z
       if(!missing(B)) data[,dep_var[4L]] <- B
-      mm <- lapply(formulas,model.matrix,data=data)
-      tm <- lapply(formulas,terms)
+      mm <- lapply(formulas,stats::model.matrix,data=data)
+      tm <- lapply(formulas,stats::terms)
       offset <- lapply(tm,function(x) do.call(cbind,lapply(seq_len(length(attr(x,"offset"))),
                                                            function(i)eval(attr(x,"variables")[[attr(x,"offset")[[i]]+1L]],envir=data))))
       for(i in seq_len(length(offset))) if(is.null(offset[[i]])) offset[[i]] <- matrix(0,nrow=nrow(data))
@@ -214,7 +217,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     get_par <- function(data,S){
       npar <- integer(4L)
       for(i in 1:4){
-        ft <- terms.formula(formulas[[i]])
+        ft <- stats::terms.formula(formulas[[i]])
         npar[i] <- length(attr(ft,"term.labels"))+attr(ft,"intercept")
       }
       z <- by(data,S,list,simplify=FALSE)
@@ -242,7 +245,7 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
       }
       optim_args$par <- numeric(sum(npar))
       optim_args$fn <- fn
-      optim_out <- do.call(optim,optim_args)
+      optim_out <- do.call(stats::optim,optim_args)
       if(optim_out$converge) warning("Optimisation algorithm did not converge.")
       par <- split(optim_out$par,v)
       return(par)
@@ -252,11 +255,11 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     par <- get_par(data,S)
     if(print && nboot>0){
       cat("\rBootstrapping: ",round(100*it/(nboot+1L)),"% complete",sep="")
-      flush.console()
+      utils::flush.console()
     }
-    boot_out <- boot(data=data,statistic=stat,ran.gen=gen_boot,sim="parametric",mle=par,R=nboot)
-    se <- sd(boot_out$t)
-    boot_ci <- boot.ci(boot_out,type="perc",conf=conf_level)
+    boot_out <- boot::boot(data=data,statistic=stat,ran.gen=gen_boot,sim="parametric",mle=par,R=nboot)
+    se <- stats::sd(boot_out$t)
+    boot_ci <- boot::boot.ci(boot_out,type="perc",conf=conf_level)
     out <- list(logOR=boot_out$t0,SE=se)
     ci <- c(boot_ci$percent[4:5])
     names(ci) <- paste0(100*(1-conf_level)/2+c(0,100*conf_level),"%")
@@ -269,7 +272,8 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
 }
 
 #' @export
-print.ipwm <- function(object){
+print.ipwm <- function(x, ...){
+  object <- x
   cat("Call:\n",paste(deparse(object$call),sep="\n",collapse="\n"),"\n\n",sep="")
   OR <- formatC(exp(object$logOR),format="f",digits=3L)
   include_CI <- "CI"%in%names(object)
@@ -311,9 +315,9 @@ permutations <- function(n,k=n,print=TRUE){
     }
     if(print){
       for(i in 1:m){
-        cat("\r",i,"/",m,sep=""); flush.console()
+        cat("\r",i,"/",m,sep=""); utils::flush.console()
         out[[i]] <- f(i)
-      }; cat("\n");flush.console()
+      }; cat("\n");utils::flush.console()
     }
     else for(i in 1:m) out[[i]] <- f(i)
     return(out)

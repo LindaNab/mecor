@@ -118,7 +118,7 @@ get_ref_from_rep <- function(replicate) {
     # only one replicate measure provided
     reference <- replicate
   } else {
-    rownums_cc <- which (complete.cases(replicate))
+    rownums_cc <- which (stats::complete.cases(replicate))
     reference <- rowMeans(replicate)
     reference[-rownums_cc] <- NA
   }
