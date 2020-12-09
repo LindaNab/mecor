@@ -23,6 +23,7 @@ Quick demo
 library(mecor)
 # load the internal covariate validation study
 data("icvs", package = "mecor")
+head(icvs)
 # correct the biased exposure-outcome association
 mecor(Y ~ MeasError(X_star, reference = X) + Z, data = icvs, method = "standard")
 ```
