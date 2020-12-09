@@ -88,7 +88,7 @@ References to methods implemented in the package
     regression relative risk estimates and confidence intervals for
     random within-person measurement error. American Journal of
     Epidemiology. 1992:136(11):1400-1413.
-    [doi:10.1093/oxfordjournals.aje.a116453](https://doi.org/0.1093/oxfordjournals.aje.a116453)
+    [doi:10.1093/oxfordjournals.aje.a116453](https://doi.org/10.1093/oxfordjournals.aje.a116453)
 
 -   Spiegelman D, Carroll RJ, Kipnis V. Efficient regression calibration
     for logistic regression in main study/internal validation study
