@@ -10,7 +10,7 @@ with a continuous outcome.
 Installation
 ============
 
-It can be installed via
+The package can be installed via
 
 ``` r
 devtools::install_github("LindaNab/mecor")
@@ -43,7 +43,7 @@ References to methods implemented in the package
 -   Bartlett JW, Stavola DBL, Frost C. Linear mixed models for
     replication data to efficiently allow for covariate measurement
     error. Statistics in Medicine. 2009:28(25):3158–3178.
-    <doi:10.1002/sim.3713>
+    [doi:10.1002/sim.3713](http://doi.org/10.1002/sim.3713)
 
 -   Buonaccorsi JP. Measurement error: Models, methods, and
     applications. 2010. Chapman & Hall/CRC, Boca Raton.
@@ -55,30 +55,33 @@ References to methods implemented in the package
 -   Keogh RH, Carroll RJ, Tooze JA, Kirkpatrick SI, Freedman LS.
     Statistical issues related to dietary intake as the response
     variable in intervention trials. Statistics in Medicine.
-    2016:35(25):4493–4508. <doi:10.1002/sim.7011>
+    2016:35(25):4493–4508.
+    [doi:10.1002/sim.7011](http://doi.org/10.1002/sim.7011)
 
 -   Keogh RH, White IR. A toolkit for measurement error correction, with
     a focus on nutritional epidemiology. Statistics in Medicine
-    2014:33(12):2137–2155. <doi:10.1002/sim.6095>
+    2014:33(12):2137–2155.
+    [doi:10.1002/sim.6095](http://doi.org/10.1002/sim.6095)
 
 -   Nab L, Groenwold RHH, Welsing PMJ, van Smeden M. Measurement error
     in continuous endpoints in randomised trials: Problems and
     solutions. Statistics in Medicine. 2019:38(27):5182-5196.
-    <doi:10.1002/sim.8359>
+    [doi:10.1002/sim.8359](http://doi.org/10.1002/sim.8359)
 
 -   Rosner B, Spiegelman D, Willett WC. Correction of logistic
     regression relative risk estimates and confidence intervals for
     measurement error: The case of multiple covariates measured with
-    error. 1990:132(4):734-745. <doi:10.1093/oxfordjournals.aje.a115715>
+    error. 1990:132(4):734-745.
+    [doi:10.1093/oxfordjournals.aje.a115715](http://doi.org/10.1093/oxfordjournals.aje.a115715)
 
 -   Rosner B, Spiegelman D, Willett WC. Correction of logistic
     regression relative risk estimates and confidence intervals for
     random within-person measurement error. American Journal of
     Epidemiology. 1992:136(11):1400-1413.
-    <doi:10.1093/oxfordjournals.aje.a116453>
+    [doi:10.1093/oxfordjournals.aje.a116453](http://doi.org/0.1093/oxfordjournals.aje.a116453)
 
 -   Spiegelman D, Carroll RJ, Kipnis V. Efficient regression calibration
     for logistic regression in main study/internal validation study
     designs with an imperfect reference intstrument. Statistics in
     Medicine. 2001:20(1):139-160.
-    <doi:10.1002/1097-0258(20010115)20:1%3C139::AID-SIM644%3E3.0.CO;2-K>
+    [doi:10.1002/1097-0258(20010115)20:1\<139::AID-SIM644\>3.0.CO;2-K](http://doi.org/10.1002/1097-0258(20010115)20:1%3C139::AID-SIM644%3E3.0.CO;2-K)
