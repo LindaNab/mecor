@@ -92,6 +92,6 @@ References to methods implemented in the package
 
 -   Spiegelman D, Carroll RJ, Kipnis V. Efficient regression calibration
     for logistic regression in main study/internal validation study
-    designs with an imperfect reference intstrument. Statistics in
+    designs with an imperfect reference instrument. Statistics in
     Medicine. 2001:20(1):139-160.
     [doi:10.1002/1097-0258(20010115)20:1\<139::AID-SIM644\>3.0.CO;2-K](https://doi.org/10.1002/1097-0258(20010115)20:1%3C139::AID-SIM644%3E3.0.CO;2-K)

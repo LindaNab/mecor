@@ -8,7 +8,7 @@ mecor(formula, data, method = "standard", B = 0)
 }
 \arguments{
 \item{formula}{an object of class \link[stats]{formula} (or one that is
-coerced to that class): a symbolic description of the regressino model
+coerced to that class): a symbolic description of the regression model
 containing a \link[mecor]{MeasError}, \link[mecor]{MeasErrorExt} or
 \link[mecor]{MeasErrorRandom} object in one of the covariates or the outcome.}
 
