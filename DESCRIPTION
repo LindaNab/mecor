@@ -6,7 +6,7 @@ Author: Linda Nab
 Maintainer: Linda Nab <lindanab4@gmail.com>
 Description: Measurement Error Correction in a Covariate or the Outcome in Linear Models with a Continuous Outcome.
 Depends: R (>= 2.10)
-License: GPL-3 + file LICENSE
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/LindaNab/mecor
