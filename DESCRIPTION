@@ -1,7 +1,7 @@
 Package: mecor
 Type: Package
 Title: Measurement Error Correction in Linear Models with a Continuous Outcome
-Version: 1.0.0
+Version: 0.9.0
 Author: Linda Nab
 Maintainer: Linda Nab <lindanab4@gmail.com>
 Description: Measurement Error Correction in a Covariate or the Outcome in Linear Models with a Continuous Outcome.
