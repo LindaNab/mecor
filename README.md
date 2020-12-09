@@ -13,7 +13,7 @@ Installation
 The package can be installed via
 
 ``` r
-devtools::install_github("LindaNab/mecor")
+devtools::install_github("LindaNab/mecor", build_vignettes = TRUE)
 ```
 
 Quick demo
@@ -26,6 +26,15 @@ data("icvs", package = "mecor")
 head(icvs)
 # correct the biased exposure-outcome association
 mecor(Y ~ MeasError(X_star, reference = X) + Z, data = icvs, method = "standard")
+```
+
+More examples
+=============
+
+Browse the vignettes of the package for more information.
+
+``` r
+browseVignettes(package = "mecor")
 ```
 
 References
