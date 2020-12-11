@@ -39,7 +39,7 @@ Alternatively, one could perform an analysis restricted to the internal validati
 # analysis restricted to the internal validation set
 lm(Y ~ X + Z, data = subset(icvs, !is.na(X)))
 ```
-Although the above would result in an unbiased estimation of the exposure-outcome association, approximately 75% of the data is thrown out. Instead of doing an analysis restricted to the internal validation set, you could use *standard regression calibration* to correct for the measurement error in $X^*$. The following code chunck shows *standard regression calibration* with `mecor()`:
+Although the above would result in an unbiased estimation of the exposure-outcome association, approximately 75% of the data is thrown out. Instead of doing an analysis restricted to the internal validation set, you could use *standard regression calibration* to correct for the measurement error in $X^*$. The following code chunk shows *standard regression calibration* with `mecor()`:
 ```{r rc, eval = TRUE}
 mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + Z,
       data = icvs,
@@ -128,7 +128,7 @@ mecor(formula = Y ~ MeasError(X_star_1, replicate = X_star_2) + Z,
 Standard errors of the regression calibration estimator and confidence intervals can be constructed similar to what was shown for an internal validation study.
 
 ## External validation study
-The simulated data set `ecvs` in __mecor__ is a external covariate-validation study. An external validation study is used when in the main study, no information is avaible to correct for the measurement error in the exposure $X$. Suppose for example that  $X$ is not observed in the internal covariate-validation study `icvs`. An external validation study is a (small) substudy containing observations of the reference measure $X$, the error-prone substitute measure $X^*$ and the covariate $Z$ of the original study. The external validation study is then used to estimate the calibration model, that is subsequently used to correct for the measurement error in the main study. 
+The simulated data set `ecvs` in __mecor__ is a external covariate-validation study. An external validation study is used when in the main study, no information is available to correct for the measurement error in the exposure $X$. Suppose for example that  $X$ is not observed in the internal covariate-validation study `icvs`. An external validation study is a (small) sub study containing observations of the reference measure $X$, the error-prone substitute measure $X^*$ and the covariate $Z$ of the original study. The external validation study is then used to estimate the calibration model, that is subsequently used to correct for the measurement error in the main study. 
 ```{r load_data4, eval = TRUE}
 # load internal covariate validation study
 data("ecvs", package = "mecor")
