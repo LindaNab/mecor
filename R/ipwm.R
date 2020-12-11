@@ -39,9 +39,9 @@
 #' @author Bas B. L. Penning de Vries, \email{b.b.l.penning_de_vries@lumc.nl}
 #'
 #' @references
-#' Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436.
+#' Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436. https://doi.org/10.1002/sim.7522
 #'
-#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcome misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
+#' Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2020). A weighting method for simultaneous adjustment for confounding and joint exposure-outcome misclassifications. \emph{Statistical Methods in Medical Research}, 0(0), 1-15. https://doi.org/10.1177/0962280220960172
 #'
 #' @examples
 #' data(sim) # simulated data on 10 covariates, exposure A and outcome Y.
@@ -65,11 +65,9 @@
 #' ipwm_out
 #' }
 #'
-#' @importFrom boot 'boot'
-#' @importFrom boot 'boot.ci'
 #' @export
 ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,exposure_mis=NULL,nboot=1000,conf_level=0.95,
-  fix_nNAs=FALSE,semiparametric=FALSE,optim_args=list(method="BFGS"),force_optim=FALSE,sp=Inf,print=TRUE
+                 fix_nNAs=FALSE,semiparametric=FALSE,optim_args=list(method="BFGS"),force_optim=FALSE,sp=Inf,print=TRUE
 ){
   n <- nrow(data)
   if(!is.numeric(sp) || length(sp)!=1L || sp<=0) stop("'sp' should be Inf or a positive number.")
@@ -122,14 +120,13 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
   if(!opt){
     if(nullB) w <- which(wh_fo%in%1:6)
     else if(nullZ) w <- which(wh_fo%in%7:12)
-    else w <- which(wh_fo%in%c(1L,2L,7L,8L)[tS[c(2L,2L,3L,3L)==0L]])
+    else w <- which(wh_fo%in%c(1L,2L,7L,8L)[tS[c(2L,2L,3L,3L)]==0L])
     if(length(w)) fo <- fact_order[[wh_fo[w[1L]]]]
     else{
       fo <- fact_order[[wh_fo[1L]]]
       opt <- TRUE
     }
   } else fo <- fact_order[[wh_fo[1L]]]
-  if(print) it <- 0L
   stat <- function(data){
     S <- 1L+is.na(data[,dep_var[1L]])*2L+is.na(data[,dep_var[2L]])
     par <- get_par(data,S)
@@ -150,11 +147,6 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
     p1 <- p1*(1+2/sp)^-1+(sp+2)^-1
     p0 <- p0*(1+2/sp)^-1+(sp+2)^-1
     logOR <- log(odds(p1))-log(odds(p0))
-    if(print && nboot>0L){
-      it <<- it+1L
-      cat("\rBootstrapping: ",round(100*it/(nboot+1L)),"% complete",sep="")
-      utils::flush.console()
-    }
     return(logOR)
   }
   if(nboot){
@@ -255,17 +247,17 @@ ipwm <- function(formulas,data,outcome_true,outcome_mis=NULL,exposure_true,expos
   }
   if(nboot){
     par <- get_par(data,S)
-    if(print && nboot>0){
-      cat("\rBootstrapping: ",round(100*it/(nboot+1L)),"% complete",sep="")
+    est <- stat(data)
+    boot_out <- numeric(nboot)
+    for(it in seq_len(nboot)){
+      bsample <- gen_boot(data,par)
+      boot_out[it] <- stat(bsample)
+      cat("\rBootstrapping: ",round(100*it/nboot),"% complete",sep="")
       utils::flush.console()
     }
-    boot_out <- boot::boot(data=data,statistic=stat,ran.gen=gen_boot,sim="parametric",mle=par,R=nboot)
-    se <- stats::sd(boot_out$t)
-    boot_ci <- boot::boot.ci(boot_out,type="perc",conf=conf_level)
-    out <- list(logOR=boot_out$t0,SE=se)
-    ci <- c(boot_ci$percent[4:5])
-    names(ci) <- paste0(100*(1-conf_level)/2+c(0,100*conf_level),"%")
-    out$CI <- ci
+    se <- stats::sd(boot_out)
+    ci <- stats::quantile(boot_out,probs=(1-conf_level)/2+c(0,conf_level))
+    out <- list(logOR=est,SE=se,CI=ci)
     if(print) cat("\n")
   } else out <- list(logOR=stat(data))
   out$call <- match.call()

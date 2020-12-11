@@ -97,9 +97,9 @@ ipwm_out
 
 }
 \references{
-Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436.
+Gravel, C. A., & Platt, R. W. (2018). Weighted estimation for confounded binary outcomes subject to misclassification. \emph{Statistics in medicine}, 37(3), 425-436. https://doi.org/10.1002/sim.7522
 
-Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2018). A weighting method for simultaneous adjustment for confounding and joint exposure-outcome misclassifications. \emph{arXiv preprint arXiv:XXXX.XXXXX}.
+Penning de Vries, B. B. L., van Smeden, M., & Groenwold, R. H. H. (2020). A weighting method for simultaneous adjustment for confounding and joint exposure-outcome misclassifications. \emph{Statistical Methods in Medical Research}, 0(0), 1-15. https://doi.org/10.1177/0962280220960172
 }
 \author{
 Bas B. L. Penning de Vries, \email{b.b.l.penning_de_vries@lumc.nl}
