@@ -16,29 +16,32 @@ This is a resubmission. In this version I have:
 
 There was 1 NOTE:
 Possibly mis-spelled words in DESCRIPTION:
-  Buonaccorsi (8:522, 8:994)
-  Crainiceanu (8:144, 8:1093)
-  Fieller (8:966)
-  JA (8:624)
-  JW (8:376)
+  Buonaccorsi (8:543, 8:1015)
+  Crainiceanu (8:144, 8:1114)
+  Fieller (8:987)
+  JA (8:645)
+  JW (8:397)
   Kipnis (8:247)
-  RJ (8:114, 8:242, 8:614, 8:1063)
-  Rosner (8:789, 8:877)
-  Ruppert (8:118, 8:1067)
-  Spiegelman (8:220, 8:799, 8:887)
-  Stavola (8:380)
-  Stefanski (8:129, 8:1078)
-  Tooze (8:618)
-  Willett (8:814, 8:902)
+  RJ (8:114, 8:242, 8:635, 8:1084)
+  Rosner (8:810, 8:898)
+  Ruppert (8:118, 8:1088)
+  Spiegelman (8:220, 8:820, 8:908)
+  Stavola (8:401)
+  Stefanski (8:129, 8:1099)
+  Tooze (8:639)
+  URLencode (8:263)
+  Willett (8:835, 8:923)
+
 These are names and not misspelled.
 
-Found the following (possibly) invalid DOIs:
-  DOI: 10.1002/1097-0258(20010115)20:1<139::AID-SIM644
-    From: DESCRIPTION
-    Status: Not Found
-    Message: 404
-The doi contains a closing angle bracket, which causes the note to occur: https://doi.org/10.1002/1097-0258(20010115)20:1<139::AID-SIM644>3.0.CO;2-K
-I tried different things but I don't know how I should solve this problem.
+The Description field contains
+  URLencode("https://doi.org/10.1002/1097-0258(20010115)20:1<139::AID-SIM644>3.0.CO;2-K")
+Please enclose URLs in angle brackets (<...>).
+The Description field contains
+  URLencode("https://doi.org/10.1002/1097-0258(20010115)20:1<139::AID-SIM644>3.0.CO;2-K")
+Please write DOIs as <doi:10.prefix/suffix>.
+
+I was asked to use URLencode() since the doi contains angle brackets. 
 
 ## revdepchecks
 No reverse dependencies
