@@ -139,22 +139,29 @@ model.MeasErrorRandom <- function(response,
                                   me,
                                   type,
                                   calc_vcov = T) {
-  if (length(me$substitute) != nrow(covars)) {
-    stop("substitute and other covariates need to be of same length")
-  }
-  Q <- scale(cbind(me$substitute, covars), scale = F)
+  if (!is.null(covars)) {
+    if (length(me$substitute) != nrow(covars)) {
+      stop("substitute and other covariates need to be of same length")
+    } else q <- cbind(me$substitute, covars)
+  } else q <- me$substitute
+  Q <- scale(q, scale = F)
   matrix <- t(Q) %*% Q / (length(me$substitute) - 1)
   matrix1 <- matrix
-  matrix1[1, 1] <- matrix1[1, 1] - me$error
+  matrix1[1, 1] <- matrix1[1, 1] - me$variance
   model_matrix <- solve(matrix1) %*% matrix
   # (1/lambda1        0
   #  -lambda2/lambda1 1)
   n_model_matrix <- nrow(model_matrix)
   lambda1 <- 1 / model_matrix[1, 1]
-  lambda2 <- model_matrix[2:n_model_matrix, 1] * -lambda1
-  lambda0 <- mean(me$substitute) - lambda1 * mean(me$substitute) -
-    t(lambda2) %*% colMeans(covars)
-  out <- list(coef = c(lambda1, lambda0, lambda2))
+  if (!is.null(covars)) {
+    lambda2 <- model_matrix[2:n_model_matrix, 1] * -lambda1
+    lambda0 <- mean(me$substitute) - lambda1 * mean(me$substitute) -
+      t(lambda2) %*% colMeans(covars)
+    out <- list(coef = c(lambda1, lambda0, lambda2))
+  } else {
+    lambda0 <- mean(me$substitute) - lambda1 * mean(me$substitute)
+    out <- list(coef = c(lambda1, lambda0))
+  }
   out
 }
 # estimate calibration model/measurement error model
@@ -221,6 +228,7 @@ standard_get_model_matrix <- function(coef_model,
     model_matrix <- diag(n)
     model_matrix[1, ] <- coef_model
     dimnames_model_matrix <- paste0("Lambda", 1:n)
+    dimnames_model_matrix[2] <- "Lambda0"
     dimnames(model_matrix) <- list(dimnames_model_matrix,
                                    dimnames_model_matrix)
   }

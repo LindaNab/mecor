@@ -95,7 +95,7 @@ mecor(formula = Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, X_star_3)) +
 Instead of using the *reference* argument in the `MeasError()` object, the *replicate* argument is used. Standard errors of the regression calibration estimator and confidence intervals can be constructed similar to what was shown for an internal validation study.
 
 ## Calibration study
-The simulated data set `ccs` in __mecor__ is a covariate calibration study. In a calibration study, two types of measurements are used to measure the exposure. A measurement method prone to 'systematic' error, and a measurement method prone to 'random' error. The measurement prone to 'systematic' error is observed in the full study, the measurement prone to 'classical' erorr is observed in a subset of the study and repeatedly measured. The dataset `ccs` contains 1000 observations of the outcome $Y$, the substitute exposure $X^{*^s}$ prone to systematic error, the covariate $Z$ and two replicates of the substitute exposure prone $X^*_1$ and $X^*_2$ prone to 'random' error. The two replicate measures are observed in the first 500 individuals of the study population.
+The simulated data set `ccs` in __mecor__ is a covariate calibration study. In a calibration study, two types of measurements are used to measure the exposure. A measurement method prone to 'systematic' error, and a measurement method prone to 'random' error. The measurement prone to 'systematic' error is observed in the full study, the measurement prone to 'classical' error is observed in a subset of the study and repeatedly measured. The dataset `ccs` contains 1000 observations of the outcome $Y$, the substitute exposure $X^{*^s}$ prone to systematic error, the covariate $Z$ and two replicates of the substitute exposure prone $X^*_1$ and $X^*_2$ prone to 'random' error. The two replicate measures are observed in the first 500 individuals of the study population.
 ```{r load_data3, eval = TRUE}
 # load calibration study
 data("ccs", package = "mecor")
@@ -141,12 +141,12 @@ Suppose reference measure $X$ is not observed in dataset `icvs`. To correct the 
 calmod <- lm(X ~ X_star + Z, 
              data = ecvs)
 # Use the calibration model for measurement error correction:
-mecor(Y ~ MeasErrorExt(X_star, model = calmod) + Z,
+mecor(Y ~ MeasErrorExt(substitute = X_star, model = calmod) + Z,
       data = icvs)
 ```
-Here, a `MeasErrorExt()` object is used, since external information is used for measurement error correction. The model argument takes a linear model of class lm or a named list with the coefficients of the calibration model:
+In the above, a `MeasErrorExt()` object is used, indicating that external information is used for measurement error correction. The model argument of a `MeasErrorExt()` object takes a linear model of class lm (in the above `calmod`). Alternatively, a named list with the coefficients of the calibration model can be used as follows:
 ```{r extrc2, eval = TRUE}
-# Use coefficiets for measurement error correction:
+# Use coefficients for measurement error correction:
 mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.8, 2))) + Z,
       data = icvs)
 ```

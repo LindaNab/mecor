@@ -72,10 +72,10 @@ data(icvs) # suppose reference X is not available
 mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.9, 0.2))) + Z,
       data = icvs)
 # assume random measurement error in X_star of magnitude 0.25:
-mecor(Y ~ MeasErrorRandom(X_star, error = 0.25) + Z,
+mecor(Y ~ MeasErrorRandom(X_star, variance = 0.25) + Z,
       data = icvs)
 data(rs) # suppose replicates X_star_2 and X_star_2 are not available
-mecor(Y ~ MeasErrorRandom(X_star_1, error = 0.25) + Z1 + Z2,
+mecor(Y ~ MeasErrorRandom(X_star_1, variance = 0.25) + Z1 + Z2,
       data = rs)
 
 ## measurement error in the outcome:

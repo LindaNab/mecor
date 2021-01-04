@@ -5,7 +5,7 @@ print.MeasErrorRandom <- function(x, ...) {
     "\nThe error-prone variable",
     deparse((attr(x, 'input')$substitute)),
     "is assumed measured with random measurement error with variance",
-    x$error
+    x$variance
   )
   invisible(x)
 }
