@@ -1,9 +1,7 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-* Described the methods implemented and added key references to the description field in DESCRIPTION
-* Ommitted the use of '<<-' in ipwm
-* Changed the broken doi in README
+* Changed the doi in DESCRIPTION
 
 ## Test environments
 * local OS x86_64-apple-darwin17.0, R 4.0.2
@@ -29,19 +27,9 @@ Possibly mis-spelled words in DESCRIPTION:
   Stavola (8:401)
   Stefanski (8:129, 8:1099)
   Tooze (8:639)
-  URLencode (8:263)
   Willett (8:835, 8:923)
 
 These are names and not misspelled.
-
-The Description field contains
-  URLencode("https://doi.org/10.1002/1097-0258(20010115)20:1<139::AID-SIM644>3.0.CO;2-K")
-Please enclose URLs in angle brackets (<...>).
-The Description field contains
-  URLencode("https://doi.org/10.1002/1097-0258(20010115)20:1<139::AID-SIM644>3.0.CO;2-K")
-Please write DOIs as <doi:10.prefix/suffix>.
-
-I was asked to use URLencode() since the doi contains angle brackets. 
 
 ## revdepchecks
 No reverse dependencies
