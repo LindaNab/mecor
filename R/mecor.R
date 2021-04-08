@@ -119,13 +119,14 @@ mecor <- function(formula,
                     method)
   # Create response, covars and me (= MeasError(Ext/Random) object)
   vars_formula <- as.list(attr(stats::terms(formula), "variables"))[-1]
-  ind_me <- grep("MeasError",
-                 vars_formula) # index of MeasError(Ext/Random) in
+  vars_formula_eval <- sapply(vars_formula, eval, envir = data, enclos = parent.frame())
+  if (any(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasError")){
+    ind_me <- which(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasError")
+  } else ind_me <- NA
   # list of variables
   check_ind_me(ind_me)
   ind_response <- attributes(stats::terms(formula))$response
   type <- get_me_type(ind_me, ind_response)
-  vars_formula_eval <- sapply(vars_formula, eval, envir = data)
   me <- vars_formula_eval[[ind_me]]
   B <- check_me(me, B, type, method)
   if (type == "dep" & (!is.null(me$differential) | # MeasError
@@ -209,7 +210,7 @@ check_input_mecor <- function(formula,
 }
 
 check_ind_me <- function(ind_me) {
-  if (length(ind_me) == 0) {
+  if (is.na(ind_me)) {
     stop("formula should contain a MeasError(Ext/Random) object")
   } else if (length(ind_me) != 1) {
     stop("formula can only contain one MeasError(Ext/Random) object")
