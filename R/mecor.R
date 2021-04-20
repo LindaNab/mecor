@@ -122,6 +122,10 @@ mecor <- function(formula,
   vars_formula_eval <- sapply(vars_formula, eval, envir = data, enclos = parent.frame())
   if (any(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasError")){
     ind_me <- which(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasError")
+  } else if (any(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasErrorRandom")){
+    ind_me <- which(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasErrorRandom")
+  } else if (any(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasErrorExt")){
+    ind_me <- which(unlist(sapply(vars_formula_eval, FUN = class)) ==  "MeasErrorExt")
   } else ind_me <- NA
   # list of variables
   check_ind_me(ind_me)
