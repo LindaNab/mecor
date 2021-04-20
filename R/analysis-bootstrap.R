@@ -43,6 +43,7 @@ analysis_boot <- function(response,
         do.call(mle, samples[[i]])$coef
     }
   )
+  close(pb)
   out <- list(coef = t(coef))
 }
 get_new_sample <- function(x, ...) {
@@ -95,6 +96,25 @@ get_new_sample.MeasError <- function(me,
     new_sample$calc_vcov = F
   new_sample
 }
+get_new_sample.MeasErrorRandom <- function(me,
+                                           response,
+                                           covars,
+                                           type,
+                                           method){
+  new_rownums <- sample(1:NROW(me$substitute),
+                        size = NROW(me$substitute),
+                        replace = T)
+  new_me <- me
+  new_me$substitute <- new_me$substitute[new_rownums]
+  new_sample <- list(
+    response = response[new_rownums, , drop = F],
+    covars = covars[new_rownums, , drop = F],
+    me = new_me,
+    B = 0, # no bootstrapping within bootstrap
+    type = type
+  )
+  new_sample
+}
 get_new_sample.MeasErrorExt <- function(me,
                                         response,
                                         covars,
@@ -114,8 +134,7 @@ get_new_sample.MeasErrorExt <- function(me,
   new_sample <- list(
     covars = new_covars,
     me = new_me,
-    B = 0,
-    # no bootstrapping within bootstrap
+    B = 0, # no bootstrapping within bootstrap
     type = type
   )
   if (type == "indep") {
