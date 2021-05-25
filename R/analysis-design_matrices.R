@@ -39,7 +39,8 @@ get_dm_cm <- function(covars,
                       type) {
   if (startsWith(type, "dep")) {
     dm <- cbind(1, me$reference)
-    colnames(dm) <- c("(Intercept)", attributes(me)$input$reference)
+    name <- attributes(me)$input$reference
+    colnames(dm) <- c("(Intercept)", name)
     if (type == "dep_diff") {
       dm <- cbind(dm, me$differential, me$reference * me$differential)
       colnames(dm)[3] <-
@@ -54,8 +55,8 @@ get_dm_cm <- function(covars,
   }
   dm
 }
-# design matrix for validation regression calibration, sing the references
-# measures if available and the the expected values of the calibration model
+# design matrix for validation regression calibration, using the references
+# measures if available and the expected values of the calibration model
 # if not
 get_dm_vrc <- function(covars,
                        me,

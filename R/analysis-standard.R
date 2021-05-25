@@ -17,8 +17,7 @@ standard <- function(response,
                              type)
     vcov_beta_star <- get_vcovHC3(uncor_fit,
                                   dm_uncor)
-  } else if (calc_vcov)
-    vcov_beta_star <- get_vcov(uncor_fit)
+  } else if (calc_vcov) vcov_beta_star <- get_vcov(uncor_fit)
   # estimate calibration model (cov-me)/measurement error model (out-me)
   model <- model(response,
                  covars,

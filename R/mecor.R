@@ -240,6 +240,10 @@ check_me <- function(me,
       )
     }
   }
+  if (type == "dep" & !is.null(me$replicate)){
+    if(ncol(me$replicate) <= 1)
+      stop("More than one replicate measure is needed for measurement error correction in the dependent variable")
+  }
   if (type == "indep" & !is.null(me$differential))
     stop("Differential measurement error is only supported in the dependent variable")
   if (type == "dep" & class(me)[1] == "MeasErrorRandom") {
