@@ -241,7 +241,7 @@ check_me <- function(me,
     }
   }
   if (type == "dep" & !is.null(me$replicate)){
-    if(ncol(me$replicate) <= 1)
+    if(is.null(dim(me$replicate)))
       stop("More than one replicate measure is needed for measurement error correction in the dependent variable")
   }
   if (type == "indep" & !is.null(me$differential))

@@ -47,7 +47,7 @@
 #' Capillary haemoglobin and venous haemoglobin levels of 400 subjects of a trial investigating the efficacy of low-dose iron supplements during pregnancy.
 #' Venous haemoglobin levels were observed of approximately 25\% of the subjects included in the trial.
 #'
-#' This is a simulated data set inspired by a trial investigating low-dose iron supplements <doi:10.1093/ajcn/78.1.145. A motivating example using the example data can be found here: <doi:10.1002/sim.8359>
+#' This is a simulated data set inspired by a trial investigating low-dose iron supplements <doi:10.1093/ajcn/78.1.145>. A motivating example using the example data can be found here: <doi:10.1002/sim.8359>
 #'
 #' @format A data frame with 400 rows and 3 variables:
 #' \describe{
@@ -62,6 +62,28 @@
 #'
 #' Linda Nab, Rolf HH Groenwold, Paco MJ Welsing, and Maarten van Smeden. Measurement error in continuous endpoints in randomised trials: Problems and solutions. Statistics in Medicine (2019). <doi:10.1002/sim.8359>
 "haemoglobin"
+#' TONE sodium data [outcome-calibration study]
+#'
+#' Self-reported sodium intake and urinary sodium in the TONE study, a randomized controlled trial designed to
+#' investigate whether a reduction in sodium intake results in satisfactory blood pressure control.
+#' Two replicate urinary sodium measures were available in 50\% of the subjects included in the trial.
+#'
+#' This is a simulated data set inspired by the TONE study <doi: 10.1016/1047-2797(94)00056-y>. A motivating example using the example data can be found here: <doi:10.1002/sim.7011>
+#'
+#' @format A data frame with 1000 rows and 4 variables:
+#' \describe{
+#'   \item{recall}{Sodium intake measured by a 24h recall (mg)}
+#'   \item{diet}{Usual diet or sodium-lowering diet (0 = usual, 1 = sodium-lowering)}
+#'   \item{urinary1}{Sodium intake measured in urine (1st measure, mg)}
+#'   \item{urinary2}{Sodium intake measured in urine (2nd measure, mg)}
+#' }
+#' @examples
+#' data("sodium", package = "mecor")
+#' @references
+#' Lawrence J Appel, Mark Espeland, Paul K Whelton, Therese Dolecek, Shiriki Kumanyika, William B Applegate, Walter H Ettinger, John B Kostis, Alan C Wilson, Clifton Lacy, and Stephen T Miller. Trial of Nonpharmacologic Intervention in the Elderly (TONE). Design and rationale of a blood pressure control trial. Annals of Epidemiology (1995). <doi: 10.1016/1047-2797(94)00056-y>
+#'
+#' Ruth H Keogh, Raymond J Carroll, Janet A Tooze, Sharon I Kirkpatrick, Laurence S Freedman. Statistical issues related to dietary intake as the response variable in intervention trials. Statistics in Medicine (2016). <doi:10.1002/sim.7011>
+"sodium"
 #' Internal Covariate-Validation Study
 #'
 #' A simulated dataset containing 1000 observations of the outcome Y, the

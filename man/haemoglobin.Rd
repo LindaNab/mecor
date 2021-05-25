@@ -20,7 +20,7 @@ Capillary haemoglobin and venous haemoglobin levels of 400 subjects of a trial i
 Venous haemoglobin levels were observed of approximately 25\% of the subjects included in the trial.
 }
 \details{
-This is a simulated data set inspired by a trial investigating low-dose iron supplements <doi:10.1093/ajcn/78.1.145. A motivating example using the example data can be found here: <doi:10.1002/sim.8359>
+This is a simulated data set inspired by a trial investigating low-dose iron supplements <doi:10.1093/ajcn/78.1.145>. A motivating example using the example data can be found here: <doi:10.1002/sim.8359>
 }
 \examples{
 data("haemoglobin", package = "mecor")

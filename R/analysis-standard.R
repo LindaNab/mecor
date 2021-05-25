@@ -94,17 +94,36 @@ model.MeasError <- function(response,
                             covars,
                             me,
                             type,
-                            calc_vcov = T) {
-  model_fit <- standard_get_model(covars,
+                            calc_vcov = TRUE) {
+  if (type == "dep" & !is.null(me$replicate)){ # outcome calibration study
+    cc <- which(!is.na(me$reference)) # select the individuals of whom all k replicate measures are available
+    me2 <- MeasError(substitute = me$replicate[cc, 1], replicate = me$replicate[cc, -1]) # has to be >1, which is checked earlier in check_me
+    corfit <- standard(
+      response = me$substitute[cc],
+      covars = NULL,
+      me2,
+      B = 0,
+      type = "indep",
+      calc_vcov
+    ) # correct the regression of Y*,s ~ Y*,c with standard regression calibration to get correct model matrix
+    coef_model <- corfit$coef
+    out <- list(coef = coef_model)
+    if (calc_vcov){
+      vcov_model <- corfit$vcov
+      out$vcov <- vcov_model
+    }
+  } else {
+    model_fit <- standard_get_model(covars,
                                   me,
                                   type)
-  coef_model <- get_coefs(model_fit,
-                          type == "indep")
-  out <- list(coef = coef_model)
-  if (calc_vcov) {
-    vcov_model <- get_vcov(model_fit,
-                           type == "indep")
-    out$vcov <- vcov_model
+    coef_model <- get_coefs(model_fit,
+                            type == "indep")
+    out <- list(coef = coef_model)
+    if (calc_vcov){
+      vcov_model <- get_vcov(model_fit,
+                             type == "indep")
+      out$vcov <- vcov_model
+    }
   }
   out
 }
@@ -112,7 +131,7 @@ model.MeasErrorExt <- function(response,
                                covars,
                                me,
                                type,
-                               calc_vcov = T) {
+                               calc_vcov = TRUE) {
   coef_model <- get_coefs(me$model,
                           type == "indep")
   out <- list(coef = coef_model)
@@ -137,7 +156,7 @@ model.MeasErrorRandom <- function(response,
                                   covars,
                                   me,
                                   type,
-                                  calc_vcov = T) {
+                                  calc_vcov = TRUE) {
   if (!is.null(covars)) {
     if (length(me$substitute) != nrow(covars)) {
       stop("substitute and other covariates need to be of same length")
@@ -239,7 +258,7 @@ change_names <- function(x,
     name_reference <- as.character(attributes(me)$input$reference)
   } else {
     name_reference <-
-      paste0("cor_", attributes(me)$input$substitute) # add cor_
+      paste0("cor_", attributes(me)$input$substitute)[1] # add cor_
   }
   if (is.matrix(x)) {
     colnames(x)[1] <- name_reference

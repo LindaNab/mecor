@@ -4,18 +4,20 @@ efficient <- function(response,
                       me,
                       B,
                       type,
-                      calc_vcov = T) {
-
-  # if the MeasError object contains replicates, mle will be used to obtain a
-  # internal fit using only the replicates
+                      calc_vcov = TRUE) {
+  # when the MeasError object contains replicates, mle will be used to obtain a
+  # internal fit using only the replicates (cov me)
+  # when the MeasError object contains replicates, complete case will be used to
+  # obtain an internal fit using only the replicates (out me --> calibration study)
   # when the MeasError object does not contain replicates, a complete case will
   # be used (using the reference)
-  if (!is.null(me$replicate)){
+  if (type == "indep" & !is.null(me$replicate)) {
     rownums_cc <- which (!is.na(me$reference))
     n_rep <- ncol(me$replicate)
     new_me <- me
     new_me$substitute <- me$replicate[rownums_cc, 1]
-    new_me$replicate <- me$replicate[rownums_cc, 2:n_rep, drop = F]
+    new_me$replicate <-
+      me$replicate[rownums_cc, 2:n_rep, drop = F]
     cc_response <- response[rownums_cc, , drop = F]
     cc_covars <- covars[rownums_cc, , drop = F]
     cc_fit <- mle(cc_response,
