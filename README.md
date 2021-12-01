@@ -45,7 +45,8 @@ Key reference
 
 -   Nab L, van Smeden M, Keogh RH, Groenwold RHH. mecor: an R package
     for measurement error correction in linear models with a continuous
-    outcome.
+    outcome. 2021:208:106238. 
+    [doi:10.1016/j.cmpb.2021.106238](https://doi.org/10.1016/j.cmpb.2021.106238)
 
 References to methods implemented in the package
 ------------------------------------------------
