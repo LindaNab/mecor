@@ -23,35 +23,35 @@ __mecor__ is an R package for Measurement Error CORrection. __mecor__ implements
 *Regression calibration* is one of the most popular measurement error correction methods for covariate measurement error. This vignette shows how *standard regression calibration* is applied in an internal validation study, a replicates study, a calibration study and an external validation study. Each of the four studies will be introduced in the subsequent sections, along with examples of how *standard regression calibration* can be applied in each of the four studies using __mecor__'s function `mecor()`. In all four studies, our interest lies in estimating the association between a continuous reference exposure $X$ and a continuous outcome $Y$, given covariates $Z$. Instead of $X$, the substitute error-prone exposure $X^*$ is measured. 
 
 ## Internal validation study
-The simulated data set `icvs` in __mecor__ is an internal covariate-validation study. An internal validation study includes a subset of individuals of whom the reference exposure $X$ is observed. The data set `icvs` contains 1000 observations of the outcome $Y$, the error-prone exposure $X^*$ and the covariate $Z$. The reference exposure $X$ is observed in approximately 25% of the individuals in the study.
+The simulated data set `vat` in __mecor__ is an internal covariate-validation study. An internal validation study includes a subset of individuals of whom the reference exposure $X$ is observed. The data set `vat` contains 1000 observations of the outcome insulin resistance $IR_{ln}$, the error-prone exposure waist circumference $WC$ and the covariates sex, age and total body fat, $sex$, $age$ and $TBF$, respectively. The reference exposure visceral adipose tissue $VAT$ is observed in approximately 25% of the individuals in the study.
 ```{r load_data, eval = TRUE}
 # load internal covariate validation study
-data("icvs", package = "mecor")
-head(icvs)
+data("vat", package = "mecor")
+head(vat)
 ```
-When ignoring the measurement error in $X^*$, one would naively regress $X^*$ and $Z$ on $Y$. This results in a biased estimation of the exposure-outcome association:
+When ignoring the measurement error in $WC$, one would naively regress $WC$ and $sex$, $age$ and $TBF$ on $IR_{ln}$. This results in a biased estimation of the exposure-outcome association:
 ```{r uncorfit, eval = TRUE}
 # naive estimate of the exposure-outcome association
-lm(Y ~ X_star + Z, data = icvs)
+lm(ir_ln ~ wc + sex + age + tbf, data = vat)
 ```
 Alternatively, one could perform an analysis restricted to the internal validation set: 
 ```{r ivr, eval = TRUE}
 # analysis restricted to the internal validation set
-lm(Y ~ X + Z, data = subset(icvs, !is.na(X)))
+lm(ir_ln ~ vat + sex + age + tbf, data = subset(vat, !is.na(vat)))
 ```
 Although the above would result in an unbiased estimation of the exposure-outcome association, approximately 75% of the data is thrown out. Instead of doing an analysis restricted to the internal validation set, you could use *standard regression calibration* to correct for the measurement error in $X^*$. The following code chunk shows *standard regression calibration* with `mecor()`:
 ```{r rc, eval = TRUE}
-mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + Z,
-      data = icvs,
+mecor(formula = ir_ln ~ MeasError(substitute = wc, reference = vat) + sex + age + tbf,
+      data = vat,
       method = "standard", # defaults to "standard"
       B = 0) # defaults to 0
 ```
-As shown in the above code chunk, the `mecor()` function needs a *formula* argument, a *data* argument, a *method* argument and a *B* argument. Presumably, you are familiar with the structure of a formula in R. The only thing that's different here is the use of a `MeasError()` object in the formula. A `MeasError()` object is used to declare the substitute measure, in our case $X^*$, and the reference measure, in our case $X$. The *B* argument of `mecor()` is used to calculate bootstrap confidence intervals for the corrected coefficients of the model. Let us construct 95% confidence intervals using the bootstrap with 999 replicates:
+As shown in the above code chunk, the `mecor()` function needs a *formula* argument, a *data* argument, a *method* argument and a *B* argument. Presumably, you are familiar with the structure of a formula in R. The only thing that's different here is the use of a `MeasError()` object in the formula. A `MeasError()` object is used to declare the substitute measure, in our case $WC$, and the reference measure, in our case $VAT$. The *B* argument of `mecor()` is used to calculate bootstrap confidence intervals for the corrected coefficients of the model. Let us construct 95% confidence intervals using the bootstrap with 999 replicates:
 ```{r rc_se, eval = TRUE, results = 'hide'}
 # save corrected fit
 rc_fit <- 
-  mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + Z,
-        data = icvs,
+  mecor(formula = ir_ln ~ MeasError(substitute = wc, reference = vat) + age + sex + tbf,
+        data = vat,
         method = "standard", # defaults to "standard"
         B = 999) # defaults to 0
 ```
@@ -67,88 +67,83 @@ summary(rc_fit, zerovar = TRUE, fieller = TRUE)
 Fieller method confidence intervals are only constructed for the corrected covariate (in this case $X$). 
 
 ## Replicates study
-The simulated data set `rs` in __mecor__ is a replicates study. A replicates study includes a subset of individuals of whom the error-prone substitute exposure is repeatedly measured. The dataset `rs` contains 1000 observations of the outcome Y, three replicate measures of the error-prone exposure $X_1^*, X_2^*$ and $X_3^*$, and two covariates $Z_1$ and $Z_2$. It is assumed that there is 'random' measurement error in the repeatedly measured substitute exposure measure. 
+The simulated data set `bloodpressure` in __mecor__ is a replicates study. A replicates study includes a subset of individuals of whom the error-prone substitute exposure is repeatedly measured. The dataset `bloodpressure` contains 1000 observations of the outcome $creatinine$, three replicate measures of the error-prone exposure systolic blood pressure $sbp30, sbp60$ and $sbp120$, and one covariates age $age$. It is assumed that there is 'random' measurement error in the repeatedly measured substitute exposure measure. 
 ```{r load_data2, eval = TRUE}
 # load replicates study
-data("rs", package = "mecor")
-head(rs)
+data("bloodpressure", package = "mecor")
+head(bloodpressure)
 ```
-When ignoring the measurement error in $X_1^*$, one would naively regress $X_1^*$, $Z_1$ and $Z_2$ on $Y$. Which results in a biased estimation of the exposure-outcome association:
+When ignoring the measurement error in $sbp30$, one would naively regress $sbp30$, $age$ on $creatinine$. Which results in a biased estimation of the exposure-outcome association:
 ```{r uncorfit2, eval = TRUE}
 # naive estimate of the exposure-outcome association
-lm(Y ~ X_star_1 + Z1 + Z2, 
-   data = rs)
+lm(creatinine ~ sbp30 + age, 
+   data = bloodpressure)
 ```
 Or alternatively, one could calculate the mean of each of the three replicate measures. Yet, this would still lead to a biased estimation of the exposure-outcome association:
 ```{r uncorfit3, eval = TRUE}
 ## calculate the mean of the three replicate measures
-rs$X_star_123 <- with(rs, rowMeans(cbind(X_star_1, X_star_2, X_star_3)))
+bloodpressure$sbp_123 <- with(bloodpressure, rowMeans(cbind(sbp30, sbp60, sbp120)))
 # naive estimate of the exposure-outcome association version 2
-lm(Y ~ X_star_123 + Z1 + Z2,
-   data = rs)
+lm(creatinine ~ sbp_123 + age,
+   data = bloodpressure)
 ```
 For an unbiased estimation of the exposure-outcome association, one could use regression calibration using `mecor()`:
 ```{r rc2, eval = TRUE}
-mecor(formula = Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, X_star_3)) + Z1 + Z2,
-      data = rs)
+mecor(formula = creatinine ~ MeasError(sbp30, replicate = cbind(sbp60, sbp120)) + age,
+      data = bloodpressure)
 ```
 Instead of using the *reference* argument in the `MeasError()` object, the *replicate* argument is used. Standard errors of the regression calibration estimator and confidence intervals can be constructed similar to what was shown for an internal validation study.
 
 ## Calibration study
-The simulated data set `ccs` in __mecor__ is a covariate calibration study. In a calibration study, two types of measurements are used to measure the exposure. A measurement method prone to 'systematic' error, and a measurement method prone to 'random' error. The measurement prone to 'systematic' error is observed in the full study, the measurement prone to 'classical' error is observed in a subset of the study and repeatedly measured. The dataset `ccs` contains 1000 observations of the outcome $Y$, the substitute exposure $X^{*^s}$ prone to systematic error, the covariate $Z$ and two replicates of the substitute exposure prone $X^*_1$ and $X^*_2$ prone to 'random' error. The two replicate measures are observed in the first 500 individuals of the study population.
+The simulated data set `sodium` in __mecor__ is a outcome calibration study. In a calibration study, two types of measurements are used to measure the outcome (or exposure). A measurement method prone to 'systematic' error, and a measurement method prone to 'random' error. The measurement prone to 'systematic' error is observed in the full study, the measurement prone to 'classical' error is observed in a subset of the study and repeatedly measured. The dataset `sodium` contains 1000 observations of the systematically error prone outcome $recall$, the randomly error prone outcome $urinary1$ and $urinary2$, and the exposure (in our case a indicator for diet) $diet$. The two replicate measures of the outcome prone to random error are observed in 498 individuals (approximately 50 percent).
 ```{r load_data3, eval = TRUE}
 # load calibration study
-data("ccs", package = "mecor")
-head(ccs)
+data("sodium", package = "mecor")
+head(sodium)
 ```
-When ignoring the measurement error in $X^{*^s}$, one would naively regress $X^{*^s}$ and $Z$ on $Y$. Which results in a biased estimation of the exposure-outcome association:
+When ignoring the measurement error in $recall$, one would naively regress $diet$ on $recall$. Which results in a biased estimation of the exposure-outcome association:
 ```{r uncorfit4, eval = TRUE}
 ## uncorrected regression
-lm(Y ~ X_star + Z, 
-   data = ccs)
+lm(recall ~ diet, 
+   data = sodium)
 ```
-Alternatively, one could use the first half of the study population and use the mean of each of the two replicate measures. Yet, this would still lead to a biased estimation of the exposure-outcome association:
+Alternatively, one could use the first half of the study population and use the mean of each of the two replicate measures. This would lead to an unbiased estimation of the exposure-outcome association since there is random measurement error int he replicate measures:
 ```{r uncorfit5, eval = TRUE}
 ## calculate mean of three replicate measures
-ccs$X_star_12 <- with(ccs, rowMeans(cbind(X_star_1, X_star_2)))
+sodium$urinary_12 <- with(sodium, rowMeans(cbind(urinary1, urinary2)))
 ## uncorrected regression version 2
-lm(Y ~ X_star_12 + Z,
-   data = ccs)
+lm(urinary_12 ~ diet,
+   data = sodium)
 ```
-For an unbiased estimation of the exposure-outcome association, one could use *standard regression calibration* using `mecor()`:
+For an unbiased estimation of the exposure-outcome association, one could alternatively use *standard regression calibration* using `mecor()`:
 ```{r rc3, eval = TRUE}
-mecor(formula = Y ~ MeasError(X_star, replicate = cbind(X_star_1, X_star_2)) + Z,
-      data = ccs)
-```
-The reader who is paying attention would perhaps notice that the subset of 500 individuals of whom $X_1^*$ and $X_2^*$ were observed resembles a replicates study. *Standard regression calibration* therefore could alternatively be applied in the following way:
-```{r rc4, eval = TRUE}
-mecor(formula = Y ~ MeasError(X_star_1, replicate = X_star_2) + Z,
-      data = subset(ccs, !is.na(X_star_2)))
+mecor(formula = MeasError(substitute = recall, replicate = cbind(urinary1, urinary2)) ~ diet,
+      data = sodium)
 ```
 Standard errors of the regression calibration estimator and confidence intervals can be constructed similar to what was shown for an internal validation study.
 
 ## External validation study
-The simulated data set `ecvs` in __mecor__ is a external covariate-validation study. An external validation study is used when in the main study, no information is available to correct for the measurement error in the exposure $X$. Suppose for example that  $X$ is not observed in the internal covariate-validation study `icvs`. An external validation study is a (small) sub study containing observations of the reference measure $X$, the error-prone substitute measure $X^*$ and the covariate $Z$ of the original study. The external validation study is then used to estimate the calibration model, that is subsequently used to correct for the measurement error in the main study. 
+The simulated data set `heamoglogin_ext` in __mecor__ is a external outcome-validation study. An external validation study is used when in the main study, no information is available to correct for the measurement error in the outcome $Y$ (or exposure). Suppose for example that venous heamoglobin levels $venous$ are not observed in the internal outcome-validation study `haemoglobin`. An external validation study is a (small) sub study containing observations of the reference measure venous heamoglobin levels $venous$, the error-prone substitute measure $capillary$ (and the covariate(s) $Z$ in case of an covariate-validation study) of the original study. The external validation study is then used to estimate the calibration model, that is subsequently used to correct for the measurement error in the main study. 
 ```{r load_data4, eval = TRUE}
 # load internal covariate validation study
-data("ecvs", package = "mecor")
-head(ecvs)
-data("icvs", package = "mecor")
+data("haemoglobin_ext", package = "mecor")
+head(haemoglobin_ext)
+data("haemoglobin", package = "mecor")
 ```
 Suppose reference measure $X$ is not observed in dataset `icvs`. To correct the bias in the naive association between exposure $X^*$ and outcome $Y$ given $Z$, using the external validation study, one can proceed as follows using `mecor()`:
 ```{r extrc, eval = TRUE}
 # Estimate the calibration model in the external validation study
-calmod <- lm(X ~ X_star + Z, 
-             data = ecvs)
+calmod <- lm(capillary ~ venous, 
+             data = haemoglobin)
 # Use the calibration model for measurement error correction:
-mecor(Y ~ MeasErrorExt(substitute = X_star, model = calmod) + Z,
-      data = icvs)
+mecor(MeasErrorExt(substitute = capillary, model = calmod) ~ supplement,
+      data = haemoglobin)
 ```
 In the above, a `MeasErrorExt()` object is used, indicating that external information is used for measurement error correction. The model argument of a `MeasErrorExt()` object takes a linear model of class lm (in the above `calmod`). Alternatively, a named list with the coefficients of the calibration model can be used as follows:
 ```{r extrc2, eval = TRUE}
 # Use coefficients for measurement error correction:
-mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.8, 2))) + Z,
-      data = icvs)
+mecor(MeasErrorExt(capillary, model = list(coef = c(-7, 1.1))) ~ supplement,
+      data = haemoglobin)
 ```
 
 
