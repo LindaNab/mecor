@@ -28,8 +28,8 @@ wants to correct for random measurement error in that variable
 \examples{
 ## random measurement error in a covariate:
 # internal covariate-validation study
-data(icvs)
-with(icvs, MeasErrorRandom(X_star, variance = 0.25))
+data(bloodpressure)
+with(bloodpressure, MeasErrorRandom(sbp30, variance = 0.25))
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

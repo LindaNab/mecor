@@ -42,73 +42,46 @@ mecor provides correction methods for measurement error in a continuous
 covariate or outcome in linear regression models with a continuous outcome
 }
 \examples{
-## measurement error in a covariate:
+## measurement error in a covariate/outcome:
 # internal covariate-validation study
-data(icvs)
+data(vat)
 out <-
-mecor(Y ~ MeasError(X_star, reference = X) + Z,
-      data = icvs,
+mecor(ir_ln ~ MeasError(wc, reference = vat) + sex + age + tbf,
+      data = vat,
       method = "standard",
       B = 999)
 # replicates study
-data(rs)
-mecor(Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, X_star_3)) + Z1 + Z2,
-      data = rs,
+data(bloodpressure)
+mecor(creatinine ~ MeasError(sbp30, replicate = cbind(sbp60, sbp120)) + age,
+      data = bloodpressure,
       method = "mle")
-# covariate-calibration study
-data(ccs)
-mecor(Y ~ MeasError(X_star, replicate = cbind(X_star_1, X_star_2)) + Z,
-      data = ccs,
+# outcome-calibration study
+data(sodium)
+mecor(MeasError(recall, replicate = cbind(urinary1, urinary2)) ~ diet,
+      data = sodium,
       method = "efficient")
-# external covariate-validation study
-data(ecvs)
-calmod_fit <- lm(X ~ X_star + Z, data = ecvs)
-data(icvs) # suppose reference X is not available
-mecor(Y ~ MeasErrorExt(X_star, model = calmod_fit) + Z,
-      data = icvs)
-# sensitivity analyses
-data(icvs) # suppose reference X is not available
-# guesstimate the coefficients of the calibration model:
-mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.9, 0.2))) + Z,
-      data = icvs)
-# assume random measurement error in X_star of magnitude 0.25:
-mecor(Y ~ MeasErrorRandom(X_star, variance = 0.25) + Z,
-      data = icvs)
-data(rs) # suppose replicates X_star_2 and X_star_2 are not available
-mecor(Y ~ MeasErrorRandom(X_star_1, variance = 0.25) + Z1 + Z2,
-      data = rs)
-
-## measurement error in the outcome:
-# internal outcome-validation study
-data(iovs)
-mecor(MeasError(Y_star, reference = Y) ~ X + Z,
-      data = iovs,
-      method = "standard")
 # external outcome-validation study
-data(eovs)
-memod_fit <- lm(Y_star ~ Y, data = eovs)
-data(iovs) # suppose reference Y is not available
-mecor(MeasErrorExt(Y_star, model = memod_fit) ~ X + Z,
-      data = iovs,
-      method = "standard")
+data(haemoglobin_ext)
+calmod_fit <- lm(capillary ~ venous, data = haemoglobin_ext)
+data(haemoglobin) # suppose reference venous is not available
+mecor(MeasErrorExt(capillary, model = calmod_fit) ~ supplement,
+      data = haemoglobin)
 # sensitivity analyses
-data(iovs) # suppose reference Y is not available
-# guesstimate the coefficients of the measurement error model:
-mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5))) ~ X + Z,
-      data = iovs,
-      method = "standard")
+data(vat) # suppose reference vat is not available
+# guesstimate the coefficients of the calibration model:
+mecor(ir_ln ~ MeasErrorExt(wc, model = list(coef = c(0.2, 0.5, -1.3, 0, 0.6))) + sex + age + tbf,
+      data = vat)
+# assume random measurement error in wc of magnitude 0.25:
+mecor(ir_ln ~ MeasErrorRandom(wc, variance = 0.25) + sex + age + tbf,
+      data = vat)
+data(bloodpressure) # suppose replicates sbp60 and sbp60 are not available
+mecor(creatinine ~ MeasErrorRandom(sbp30, variance = 25) + age,
+      data = bloodpressure)
 
 ## differential measurement error in the outcome:
 # internal outcome-validation study
-data(iovs_diff)
-mecor(MeasError(Y_star, reference = Y, differential = X) ~ X,
-      data = iovs_diff,
-      method = "standard")
-# sensitivity analysis
-data(iovs_diff) # suppose reference Y is not available
-# guesstimate the coefficients of the measurement error model:
-mecor(MeasErrorExt(Y_star, model = list(coef = c(0, 0.5, 1, 1))) ~ X,
-      data = iovs_diff,
+mecor(MeasError(capillary, reference = venous, differential = supplement) ~ supplement,
+      data = haemoglobin,
       method = "standard")
 }
 \references{

@@ -33,49 +33,28 @@ calibration model (covariate-measurement error) or measurement error model
 (outcome-measurement error)
 }
 \examples{
-## measurement error in a covariate:
-# external covariate-validation study
-data(ecvs)
+## measurement error in a outcome:
+# external outcome-validation study
+data(haemoglobin_ext)
 # calibration model
-calmod_fit <- lm(X ~ X_star + Z, data = ecvs)
+calmod_fit <- lm(capillary ~ venous, data = haemoglobin)
 # the external covariate-validation study can be used to correct for the
 # measurement error in X_star in the dataset 'icvs', using the fitted
 # calibration model
-data(icvs)
-with (icvs, MeasErrorExt(substitute = X_star,
-                         model = calmod_fit))
+data(haemoglobin)
+with (haemoglobin, MeasErrorExt(substitute = capillary,
+                                model = calmod_fit))
 # identical to:
 calmod_coef <- coefficients(calmod_fit)
 calmod_vcov <- vcov(calmod_fit)
-with (icvs, MeasErrorExt(substitute = X_star,
-                         model = list(coef = calmod_coef,
-                                     vcov = calmod_vcov)))
+with (haemoglobin, MeasErrorExt(substitute = capillary,
+                                model = list(coef = calmod_coef,
+                                             vcov = calmod_vcov)))
 # when no external data is available, guesstimations of the coefficients of
 # the calibration model can be used instead:
-with (icvs, MeasErrorExt(substitute = X_star,
-                         model = list(coef = c('(Intercept)' = 0,
-                                               'X_star' = 0.8,
-                                               'Z' = 0.2))))
-## measurement error in the outcome:
-# external outcome-validation study
-data(eovs)
-memod_fit <- lm(Y_star ~ Y, data = eovs)
-# the external outcome-validation study can be used to correct for the
-# measurement error in Y_star in the dataset 'iovs', using the fitted
-# measurement error model
-with (iovs, MeasErrorExt(substitute = Y_star,
-                         model = memod_fit))
-# identical to:
-memod_coef <- coefficients(memod_fit)
-memod_vcov <- vcov(memod_fit)
-with (iovs, MeasErrorExt(substitute = Y_star,
-                         model = list(coef = memod_coef,
-                                      vcov = memod_vcov)))
-# when no external data is available, guesstimations of the coefficients of
-# the measurement error model can be used instead:
-with (iovs, MeasErrorExt(substitute = Y_star,
-                         model = list(coef = c('(Intercept)' = 0,
-                                               'Y' = 0.5))))
+with (haemoglobin, MeasErrorExt(substitute = capillary,
+                                model = list(coef = c('(Intercept)' = -7,
+                                                      'venous' = 1.1))))
 }
 \author{
 Linda Nab, \email{l.nab@lumc.nl}

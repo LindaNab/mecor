@@ -29,28 +29,28 @@
 #' @examples
 #' ## measurement error in a covariate:
 #' # internal covariate-validation study
-#' data(icvs)
-#' with (icvs, MeasError(substitute = X_star,
-#'                       reference = X))
+#' data(vat)
+#' with (vat, MeasError(substitute = wc,
+#'                      reference = vat))
 #' # replicates study
-#' data(rs)
-#' with (rs, MeasError(substitute = X_star_1,
-#'                     replicate = cbind(X_star_2, X_star_3)))
-#' # covariate-calibration study
-#' data(ccs)
-#' with(ccs, MeasError(substitute = X_star,
-#'                     replicate = cbind(X_star_1, X_star_2)))
+#' data(bloodpressure)
+#' with (bloodpressure, MeasError(substitute = sbp30,
+#'                                replicate = cbind(sbp60, sbp120)))
+#' # outcome-calibration study
+#' data(sodium)
+#' with(sodium, MeasError(substitute = recall,
+#'                        replicate = cbind(urinary1, urinary2)))
 #' ## measurement error in the outcome:
 #' # internal outcome-validation study
-#' data(iovs)
-#' with(iovs, MeasError(substitute = Y_star,
-#'                      reference = Y))
+#' data(haemoglobin)
+#' with(haemoglobin, MeasError(substitute = capillary,
+#'                             reference = venous))
 #' # internal outcome- validation study with differential measurement error in
 #' # the dependent variable
-#' data(iovs_diff)
-#' with(iovs_diff, MeasError(substitute = Y_star,
-#'                           reference = Y,
-#'                           differential = X))
+#' data(haemoglobin)
+#' with(haemoglobin, MeasError(substitute = capillary,
+#'                             reference = venous,
+#'                             differential = supplement))
 #' @export
 MeasError <- function(substitute,
                       reference,

@@ -21,8 +21,8 @@
 #' @examples
 #' ## random measurement error in a covariate:
 #' # internal covariate-validation study
-#' data(icvs)
-#' with(icvs, MeasErrorRandom(X_star, variance = 0.25))
+#' data(bloodpressure)
+#' with(bloodpressure, MeasErrorRandom(sbp30, variance = 0.25))
 #' @export
 MeasErrorRandom <- function(substitute,
                             variance) {

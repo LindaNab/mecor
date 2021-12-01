@@ -36,9 +36,9 @@ fitted corrected model and fitted uncorrected model.
 \examples{
 ## measurement error in a covariate:
 # internal covariate-validation study
-data(icvs)
-mecor_fit <- mecor(Y ~ MeasError(X_star, reference = X) + Z,
-                   data = icvs,
+data(vat)
+mecor_fit <- mecor(ir_ln ~ MeasError(wc, reference = vat) + sex + age + tbf,
+                   data = vat,
                    method = "standard")
 summary(mecor_fit)
 summary(mecor_fit, zerovar = TRUE, fieller = TRUE)
