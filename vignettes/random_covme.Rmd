@@ -79,7 +79,7 @@ matrix1 %*% solve(matrix)
 # Or, more familiar, the calibration model,
 # E[X|X_star, Z] = lambda0 + lambda1 * X_star + lambda2 * Z
 lambda1 <- 1 / model_matrix[1, 1]
-lambda2 <- model_matrix[2,1] * -lambda1
+lambda2 <- model_matrix[2,1] * - lambda1
 # From standard theory, we have,
 # lambda0 = mean(X) - lambda1 * mean(X_star) - lambda2 * mean(Z)
 # mean(X) = mean(X_star) since we assume random measurement error

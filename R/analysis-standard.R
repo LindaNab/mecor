@@ -18,7 +18,7 @@ standard <- function(response,
     vcov_beta_star <- get_vcovHC3(uncor_fit,
                                   dm_uncor)
   } else if (calc_vcov) vcov_beta_star <- get_vcov(uncor_fit)
-  # estimate calibration model (cov-me)/measurement error model (out-me)
+  # estimate calibration model (cov-me) or measurement error model (out-me)
   model <- model(response,
                  covars,
                  me,
@@ -172,7 +172,7 @@ model.MeasErrorRandom <- function(response,
   n_model_matrix <- nrow(model_matrix)
   lambda1 <- 1 / model_matrix[1, 1]
   if (!is.null(covars)) {
-    lambda2 <- model_matrix[2:n_model_matrix, 1] * -lambda1
+    lambda2 <- model_matrix[2:n_model_matrix, 1] * - lambda1
     lambda0 <- mean(me$substitute) - lambda1 * mean(me$substitute) -
       t(lambda2) %*% colMeans(covars)
     out <- list(coef = c(lambda1, lambda0, lambda2))
