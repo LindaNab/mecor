@@ -27,13 +27,13 @@ __mecor__ is an R package for Measurement Error CORrection. __mecor__ implements
 We assume that $X^*$ is measured with random measurement error. This means that we assume that $X^* = X + U$, where $U$ has mean 0 and variance $\tau^2$. More specifically, we assume non-differential random measurement error, i.e. $X^*|X$ is independent of $Y$ (our outcome). 
 
 ## Random measurement error correction in __mecor__
-The object `MeasErrorRandom()` in __mecor__ is used for random measurement error correction in a covariate. We explain the usage of the `MeasErrorRandom()` object in the following. We first introduce the simulated data set `vat`. The simulated data set `vat` is an internal covariate-validation study. We will use this data set to explore random measurement error correction without using the reference measure visceral adipose tissue $VAT$ that is available in the data set. The data set `vat` contains 1000 observations of the outcome insulin resistance $IR_{ln}$, the error-prone exposure waist circumference $WC$ and the covariate age $age$. The reference exposure $VAT$ is observed in approximately 25% of the individuals in the study, but will be ignored.
+The object `MeasErrorRandom()` in __mecor__ is used for random measurement error correction in a covariate. We explain the usage of the `MeasErrorRandom()` object in the following. We first introduce the simulated data set `vat`. The simulated data set `vat` is an internal covariate-validation study. We will use this data set to explore random measurement error correction without using the reference measure visceral adipose tissue $VAT$ that is available in the data set. The data set `vat` contains 1000 observations of the outcome insulin resistance $IR_{ln}$, the error-prone exposure waist circumference $WC$ and the covariate age $age$. The reference exposure $VAT$ is observed in approximately 25% of the individuals in the study, but will be ignored. In this example, we assume that there is random measurement error in the exposure $WC$.
 ```{r load_data, eval = TRUE}
 # load internal covariate validation study
 data("vat", package = "mecor")
 head(vat)
 ```
-When ignoring the measurement error in $X^*$, one would naively regress $X^*$ and $Z$ on $Y$. This results in a biased estimation of the exposure-outcome association:
+When ignoring the measurement error in $WC$, one would naively regress $WC$ and $age$ on $IR_{ln}$. This results in a biased estimation of the exposure-outcome association:
 ```{r uncorfit, eval = TRUE}
 # naive estimate of the exposure-outcome association
 data(vat)

@@ -22,10 +22,10 @@ Quick demo
 ``` r
 library(mecor)
 # load the internal covariate validation study
-data("icvs", package = "mecor")
-head(icvs)
+data("vat", package = "mecor")
+head(vat)
 # correct the biased exposure-outcome association
-mecor(Y ~ MeasError(X_star, reference = X) + Z, data = icvs, method = "standard")
+mecor(ir_ln ~ MeasError(substitute = wc, reference = vat) + age + sex + tbf, data = vat, method = "standard")
 ```
 
 More examples
